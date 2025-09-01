@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Place Value Playbox</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Nunito', sans-serif;
+      }
+      @keyframes pop-in {
+        0% { transform: scale(0.5); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      .animate-pop-in {
+        animation: pop-in 0.3s ease-out forwards;
+      }
+      @keyframes shake-it {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+      }
+      .animate-shake {
+        animation: shake-it 0.3s ease-in-out;
+      }
+      @keyframes regroup-out {
+        0% { transform: scale(1) translateY(0); opacity: 1; }
+        100% { transform: scale(0) translateY(-50px); opacity: 0; }
+      }
+      .animate-regroup-out {
+        animation: regroup-out 0.5s ease-in forwards;
+      }
+      @keyframes celebrate {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.7); }
+        50% { transform: scale(1.1); box-shadow: 0 0 20px 10px rgba(45, 212, 191, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(45, 212, 191, 0); }
+      }
+      .animate-celebrate {
+        animation: celebrate 0.6s ease-in-out;
+      }
+      @keyframes tada {
+        0% { transform: scale(1); }
+        10%, 20% { transform: scale(0.9) rotate(-3deg); }
+        30%, 50%, 70%, 90% { transform: scale(1.1) rotate(3deg); }
+        40%, 60%, 80% { transform: scale(1.1) rotate(-3deg); }
+        100% { transform: scale(1) rotate(0); }
+      }
+      .animate-tada {
+        animation: tada 1s ease-in-out;
+      }
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+      }
+      .animate-float {
+        animation: float 3s ease-in-out infinite;
+      }
+      @keyframes guide-pulse {
+        0%, 100% {
+          box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+          transform: scale(1);
+        }
+        50% {
+          box-shadow: 0 0 0 20px rgba(59, 130, 246, 0);
+          transform: scale(1.05);
+        }
+      }
+      .animate-guide-pulse {
+        animation: guide-pulse 2s infinite;
+      }
+      @keyframes point-right {
+        0%, 100% { transform: translateX(0); }
+        50% { transform: translateX(10px); }
+      }
+      .animate-point-right {
+        animation: point-right 1.5s ease-in-out infinite;
+      }
+      @keyframes ghost-move-one {
+        0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+        100% { transform: translate(18vw, 5vh) scale(0.5); opacity: 0; }
+      }
+      .animate-ghost-move-one {
+          position: fixed;
+          bottom: 12rem;
+          left: 48%;
+          animation: ghost-move-one 2.5s ease-in-out infinite;
+          animation-delay: 0.5s;
+          pointer-events: none;
+          z-index: 30;
+      }
+      @keyframes ghost-move-ten {
+        0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+        100% { transform: translate(2vw, -10vh) scale(0.5); opacity: 0; }
+      }
+      .animate-ghost-move-ten {
+          position: fixed;
+          bottom: 12rem;
+          left: 40%;
+          animation: ghost-move-ten 2.5s ease-in-out infinite;
+          animation-delay: 0.5s;
+          pointer-events: none;
+          z-index: 30;
+      }
+      @keyframes ghost-move-hundred {
+        0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+        100% { transform: translate(-14vw, -20vh) scale(0.5); opacity: 0; }
+      }
+      .animate-ghost-move-hundred {
+          position: fixed;
+          bottom: 12rem;
+          left: 32%;
+          animation: ghost-move-hundred 2.5s ease-in-out infinite;
+          animation-delay: 0.5s;
+          pointer-events: none;
+          z-index: 30;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

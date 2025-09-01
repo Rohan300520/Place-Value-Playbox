@@ -1,0 +1,5 @@
+{
+  "name": "Place Value Playbox",
+  "description": "An interactive and animated application for young children to learn about place value (Ones, Tens, Hundreds) through a fun drag-and-drop experience.",
+  "requestFramePermissions": []
+}
