@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { AppState } from '../types';
 
@@ -20,7 +21,7 @@ const ModeCard: React.FC<{
       <div className="flex items-center justify-center w-16 h-16 bg-white/30 rounded-full mb-4">
           {icon}
       </div>
-      <h3 className="text-4xl font-black tracking-tight">{title}</h3>
+      <h3 className="text-3xl sm:text-4xl font-black tracking-tight">{title}</h3>
       <p className="mt-2 text-lg">{description}</p>
     </button>
   );

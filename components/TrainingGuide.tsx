@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NumberBlock } from './NumberBlock';
 import type { TrainingStep, PlaceValueCategory } from '../types';
@@ -18,7 +19,7 @@ const GuideBox: React.FC<{ children: React.ReactNode; className?: string }> = ({
 };
 
 const FeedbackBox: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-green-100 border-4 border-green-400 p-8 rounded-2xl shadow-xl text-3xl font-black text-green-700 animate-tada z-40 flex items-center gap-4">
+    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-green-100 border-4 border-green-400 p-8 rounded-2xl shadow-xl text-3xl sm:text-4xl font-black text-green-700 animate-tada z-40 flex items-center gap-4">
         {children}
     </div>
 );

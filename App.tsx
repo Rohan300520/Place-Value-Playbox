@@ -9,6 +9,8 @@ import { ChallengePanel } from './components/ChallengePanel';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { ModeSelector } from './components/ModeSelector';
 import { TrainingGuide } from './components/TrainingGuide';
+import { HelpModal } from './components/HelpModal';
+import { NumberBlock } from './components/NumberBlock';
 
 const trainingPlan: TrainingStep[] = [
   // Step 1: Add one '1' block
@@ -77,11 +79,21 @@ function App() {
   const [trainingStep, setTrainingStep] = useState(0);
   const [trainingFeedback, setTrainingFeedback] = useState<string | null>(null);
 
+  // Help Modal State
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  
+  // Touch Drag State
+  const [touchDrag, setTouchDrag] = useState<{ value: BlockValue | null; x: number; y: number; }>({ value: null, x: 0, y: 0 });
+  const [activeTouchTarget, setActiveTouchTarget] = useState<PlaceValueCategory | null>(null);
+
+
+  const playDragSound = useSimpleSound(300, 0.05);
   const playDropSound = useSimpleSound(440, 0.1);
   const playRegroupSound = useSimpleSound(880, 0.2);
   const playSuccessSound = useSimpleSound(1200, 0.4);
   const playErrorSound = useSimpleSound(220, 0.2);
-  const playStepCompleteSound = useSimpleSound(660, 0.15);
+  const playFeedbackSound = useSimpleSound(1046, 0.3);
+  const playMagicFeedbackSound = useSimpleSound(1318, 0.4);
 
   const total = useMemo(() => {
     const onesValue = columns.ones.filter(b => !b.isAnimating).length * 1;
@@ -123,7 +135,8 @@ function App() {
 
   const handleDragStart = useCallback((value: BlockValue) => {
     setDraggedValue(value);
-  }, []);
+    playDragSound();
+  }, [playDragSound]);
 
   const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>, category: PlaceValueCategory) => {
     event.preventDefault();
@@ -138,14 +151,60 @@ function App() {
     if (isDropAllowed(category) && draggedValue) {
       const newBlock: Block = { id: `block-${Date.now()}-${Math.random()}`, value: draggedValue };
       setColumns(prev => ({ ...prev, [category]: [...prev[category], newBlock] }));
+      playDropSound();
       
-      if(appState !== 'training') {
-          playDropSound();
-          if (challengeStatus !== 'playing') setChallengeStatus('playing');
+      if(appState === 'challenge' && challengeStatus !== 'playing') {
+          setChallengeStatus('playing');
       }
     }
     setDraggedValue(null);
   }, [draggedValue, isDropAllowed, appState, challengeStatus, playDropSound]);
+  
+  // Touch Handlers
+  const handleTouchMove = useCallback((event: TouchEvent) => {
+      event.preventDefault();
+      const touch = event.touches[0];
+      setTouchDrag(prev => ({ ...prev, x: touch.clientX, y: touch.clientY }));
+
+      const elementUnderFinger = document.elementFromPoint(touch.clientX, touch.clientY);
+      const dropTarget = elementUnderFinger?.closest('[data-droptarget]');
+      
+      let targetCategory: PlaceValueCategory | null = null;
+      if (dropTarget) {
+          const category = dropTarget.getAttribute('data-droptarget') as PlaceValueCategory;
+          if (isDropAllowed(category)) {
+            targetCategory = category;
+          }
+      }
+      setActiveTouchTarget(targetCategory);
+  }, [isDropAllowed]);
+
+  const handleTouchEnd = useCallback(() => {
+      if (activeTouchTarget) {
+          handleDrop(activeTouchTarget);
+      }
+      
+      setTouchDrag({ value: null, x: 0, y: 0 });
+      setDraggedValue(null);
+      setActiveTouchTarget(null);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchEnd);
+  }, [activeTouchTarget, handleDrop, handleTouchMove]);
+  
+  const handleTouchStart = useCallback((value: BlockValue, event: React.TouchEvent) => {
+      event.preventDefault();
+      const touch = event.touches[0];
+      
+      setDraggedValue(value);
+      setTouchDrag({ value, x: touch.clientX, y: touch.clientY });
+      playDragSound();
+      
+      window.addEventListener('touchmove', handleTouchMove, { passive: false });
+      window.addEventListener('touchend', handleTouchEnd);
+      window.addEventListener('touchcancel', handleTouchEnd);
+  }, [playDragSound, handleTouchMove, handleTouchEnd]);
+
 
   const checkAnswer = () => {
     if (total === targetNumber) {
@@ -209,7 +268,11 @@ function App() {
     const { type, text, duration, clearBoardAfter } = currentTrainingStepConfig;
 
     if ((type === 'feedback' || type === 'magic_feedback') && text && duration) {
-      playStepCompleteSound();
+      if (type === 'magic_feedback') {
+        playMagicFeedbackSound();
+      } else {
+        playFeedbackSound();
+      }
       setTrainingFeedback(text);
 
       const timer = setTimeout(() => {
@@ -222,7 +285,7 @@ function App() {
 
       return () => clearTimeout(timer);
     }
-  }, [appState, currentTrainingStepConfig, handleReset, playStepCompleteSound]);
+  }, [appState, currentTrainingStepConfig, handleReset, playFeedbackSound, playMagicFeedbackSound]);
 
 
   // Regrouping Effects
@@ -280,6 +343,32 @@ function App() {
 
   return (
     <div className="min-h-screen bg-sky-100 text-gray-800 flex flex-col items-center p-4 sm:p-8 overflow-hidden relative">
+      {touchDrag.value && (
+        <div style={{
+            position: 'fixed',
+            top: touchDrag.y,
+            left: touchDrag.x,
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+            zIndex: 9999
+        }}>
+            <NumberBlock value={touchDrag.value} isDraggable={false} />
+        </div>
+      )}
+      {isHelpModalOpen && <HelpModal onClose={() => setIsHelpModalOpen(false)} />}
+      
+      {appState !== 'training' && (
+        <button
+          onClick={() => setIsHelpModalOpen(true)}
+          className="fixed top-4 right-4 z-40 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-full h-12 w-12 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform"
+          aria-label="Open help and instructions"
+        >
+          <svg xmlns="http://www.w.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
+      )}
+
       {appState === 'training' && 
         <TrainingGuide 
             currentStepConfig={currentTrainingStepConfig}
@@ -311,24 +400,28 @@ function App() {
               onDragOver={handleDragOver} isRegroupingDestination={regrouping?.to === 'hundreds'}
               isDropAllowed={isDropAllowed('hundreds')} isDragging={!!draggedValue} color="yellow"
               isSpotlighted={currentTrainingStepConfig?.column === 'hundreds'}
+              isTouchTarget={activeTouchTarget === 'hundreds'}
             />
             <PlaceValueColumn
               title="Tens" category="tens" blocks={columns.tens} onDrop={handleDrop}
               onDragOver={handleDragOver} isRegroupingDestination={regrouping?.to === 'tens'}
               isDropAllowed={isDropAllowed('tens')} isDragging={!!draggedValue} color="green"
               isSpotlighted={currentTrainingStepConfig?.column === 'tens'}
+              isTouchTarget={activeTouchTarget === 'tens'}
             />
             <PlaceValueColumn
               title="Ones" category="ones" blocks={columns.ones} onDrop={handleDrop}
               onDragOver={handleDragOver} isRegroupingDestination={false}
               isDropAllowed={isDropAllowed('ones')} isDragging={!!draggedValue} color="blue"
               isSpotlighted={currentTrainingStepConfig?.column === 'ones'}
+              isTouchTarget={activeTouchTarget === 'ones'}
             />
           </div>
           
-          <div className={`mt-8 p-6 bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg flex flex-col md:flex-row items-center justify-center gap-6 transition-all duration-300 ${currentTrainingStepConfig ? 'relative z-20' : ''}`}>
+          <div className={`mt-8 p-4 sm:p-6 bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg flex flex-col md:flex-row items-center justify-center gap-4 sm:gap-6 transition-all duration-300 ${currentTrainingStepConfig ? 'relative z-20' : ''}`}>
             <BlockSource 
               onDragStart={handleDragStart} 
+              onTouchStart={handleTouchStart}
               isTraining={appState === 'training'}
               spotlightOn={currentTrainingStepConfig?.source}
             />
