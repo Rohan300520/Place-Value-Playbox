@@ -31,11 +31,11 @@ const trainingPlan: TrainingStep[] = [
 
   // Step 5: Regroup ones to tens
   { step: 8, type: 'action_multi', source: 1, column: 'ones', count: 10, text: "Time for some magic! ✨ Add 10 blue blocks to see what happens." },
-  { step: 9, type: 'magic_feedback', text: "Poof! 10 'Ones' became 1 'Ten'. That's regrouping!", duration: 4000, clearBoardAfter: true },
+  { step: 9, type: 'magic_feedback', text: "Poof! 10 'Ones' became 1 'Ten'. That's regrouping!", duration: 4000, clearBoardAfter: true, targetColumn: 'tens' },
 
   // Step 6: Regroup tens to hundreds
   { step: 10, type: 'action_multi', source: 10, column: 'tens', count: 10, text: "Let's do it again! Add 10 green blocks to the 'Tens' column." },
-  { step: 11, type: 'magic_feedback', text: "Amazing! 🪄 10 'Tens' make 1 'Hundred' block!", duration: 4000, clearBoardAfter: true },
+  { step: 11, type: 'magic_feedback', text: "Amazing! 🪄 10 'Tens' make 1 'Hundred' block!", duration: 4000, clearBoardAfter: true, targetColumn: 'hundreds' },
   
   // Step 7: Complete
   { step: 12, type: 'complete', text: "Training Complete! You're ready to play!" },
@@ -267,12 +267,9 @@ function App() {
 
     const { type, text, duration, clearBoardAfter } = currentTrainingStepConfig;
 
-    if ((type === 'feedback' || type === 'magic_feedback') && text && duration) {
-      if (type === 'magic_feedback') {
-        playMagicFeedbackSound();
-      } else {
-        playFeedbackSound();
-      }
+    // Handle standard feedback pop-ups
+    if (type === 'feedback' && text && duration) {
+      playFeedbackSound();
       setTrainingFeedback(text);
 
       const timer = setTimeout(() => {
@@ -284,6 +281,18 @@ function App() {
       }, duration);
 
       return () => clearTimeout(timer);
+    }
+    
+    // Handle magic feedback timing without setting the feedback text state
+    if (type === 'magic_feedback' && duration) {
+        playMagicFeedbackSound();
+        const timer = setTimeout(() => {
+            if (clearBoardAfter) {
+                handleReset();
+            }
+            setTrainingStep(prev => prev + 1);
+        }, duration);
+        return () => clearTimeout(timer);
     }
   }, [appState, currentTrainingStepConfig, handleReset, playFeedbackSound, playMagicFeedbackSound]);
 
@@ -363,7 +372,7 @@ function App() {
           className="fixed top-4 right-4 z-40 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-full h-12 w-12 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform"
           aria-label="Open help and instructions"
         >
-          <svg xmlns="http://www.w.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </button>

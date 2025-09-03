@@ -77,6 +77,27 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
                         </GuideBox>
                     </>
                 );
+            case 'magic_feedback': {
+                let positionClass = '';
+                switch (currentStepConfig.targetColumn) {
+                    case 'tens':
+                        // Center on mobile, middle column on desktop
+                        positionClass = 'top-20 left-1/2 -translate-x-1/2';
+                        break;
+                    case 'hundreds':
+                        // Center on mobile, left column on desktop
+                        positionClass = 'top-20 left-1/2 lg:left-[16.66%] -translate-x-1/2';
+                        break;
+                    default:
+                        // Fallback to center if no target is specified
+                        positionClass = 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2';
+                }
+                return (
+                    <GuideBox className={`${positionClass} guide-box-arrow`}>
+                        <p>{currentStepConfig.text}</p>
+                    </GuideBox>
+                );
+            }
             case 'complete':
                  return (
                     <GuideBox className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">

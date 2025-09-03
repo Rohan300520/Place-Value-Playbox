@@ -23,4 +23,5 @@ export interface TrainingStep {
     text: string;
     duration?: number;
     clearBoardAfter?: boolean;
+    targetColumn?: PlaceValueCategory;
 }
