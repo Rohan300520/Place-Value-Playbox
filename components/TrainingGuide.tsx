@@ -67,7 +67,7 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
                 return (
                     <>
                         <GhostBlock value={currentStepConfig.source!} />
-                        <GuideBox className="top-1/4 left-1/2 -translate-x-1/2">
+                        <GuideBox className="bottom-[25vh] left-1/2 -translate-x-1/2 w-[90%] sm:max-w-lg guide-box-arrow">
                             <p>{colorSpan(currentStepConfig.text)}</p>
                             {currentStepConfig.type === 'action_multi' && (
                                 <div className={`mt-4 text-4xl font-black ${colorMap[column]} tabular-nums`}>
@@ -82,11 +82,11 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
                 switch (currentStepConfig.targetColumn) {
                     case 'tens':
                         // Center on mobile, middle column on desktop
-                        positionClass = 'top-20 left-1/2 -translate-x-1/2';
+                        positionClass = 'top-[15vh] left-1/2 -translate-x-1/2';
                         break;
                     case 'hundreds':
                         // Center on mobile, left column on desktop
-                        positionClass = 'top-20 left-1/2 lg:left-[16.66%] -translate-x-1/2';
+                        positionClass = 'top-[15vh] left-1/2 lg:left-[16.66%] -translate-x-1/2';
                         break;
                     default:
                         // Fallback to center if no target is specified

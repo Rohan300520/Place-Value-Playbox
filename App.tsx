@@ -361,7 +361,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-sky-100 text-gray-800 flex flex-col items-center p-2 sm:p-4 overflow-hidden relative">
+    <div className="min-h-screen bg-sky-100 text-gray-800 flex flex-col items-center p-2 sm:p-4 relative">
       {touchDrag.value && (
         <div style={{
             position: 'fixed',

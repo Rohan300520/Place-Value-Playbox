@@ -61,7 +61,7 @@ export const PlaceValueColumn: React.FC<PlaceValueColumnProps> = ({
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         data-droptarget={category}
-        className={`flex-grow min-h-[200px] sm:min-h-[300px] p-2 sm:p-4 transition-all duration-300 rounded-b-2xl border-4 border-dashed border-transparent ${borderStyle} ${isRegroupingDestination ? 'animate-pulse' : ''} ${isSpotlighted && !isBeingDraggedOver ? 'animate-guide-pulse' : ''}`}
+        className={`flex-grow min-h-[180px] sm:min-h-[300px] p-2 sm:p-4 transition-all duration-300 rounded-b-2xl border-4 border-dashed border-transparent ${borderStyle} ${isRegroupingDestination ? 'animate-pulse' : ''} ${isSpotlighted && !isBeingDraggedOver ? 'animate-guide-pulse' : ''}`}
       >
         <div className="flex flex-wrap-reverse items-end justify-center gap-1 h-full content-start">
           {blocks.map(block => (
