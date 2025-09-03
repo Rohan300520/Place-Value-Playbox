@@ -1,0 +1,16 @@
+{
+  "short_name": "Playbox",
+  "name": "Place Value Playbox",
+  "description": "An interactive and animated application for young children to learn about place value (Ones, Tens, Hundreds) through a fun drag-and-drop experience.",
+  "icons": [
+    {
+      "src": "/assets/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#38bdf8",
+  "background_color": "#e0f2fe"
+}
