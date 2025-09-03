@@ -12,14 +12,14 @@ interface TrainingGuideProps {
 
 const GuideBox: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => {
     return (
-        <div className={`fixed bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl text-2xl font-bold text-slate-700 max-w-lg text-center animate-pop-in z-30 ${className}`}>
+        <div className={`fixed bg-white/90 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-xl text-xl sm:text-2xl font-bold text-slate-700 max-w-sm sm:max-w-lg text-center animate-pop-in z-30 ${className}`}>
            {children}
         </div>
     )
 };
 
 const FeedbackBox: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-green-100 border-4 border-green-400 p-8 rounded-2xl shadow-xl text-3xl sm:text-4xl font-black text-green-700 animate-tada z-40 flex items-center gap-4">
+    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-green-100 border-4 border-green-400 p-6 sm:p-8 rounded-2xl shadow-xl text-2xl sm:text-4xl font-black text-green-700 animate-tada z-40 flex items-center gap-4">
         {children}
     </div>
 );

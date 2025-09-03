@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { PlaceValueColumns, BlockValue, PlaceValueCategory, Block, AppState, TrainingStep } from './types';
 import { PlaceValueColumn } from './components/PlaceValueColumn';
 import { BlockSource } from './components/BlockSource';
@@ -85,6 +85,7 @@ function App() {
   // Touch Drag State
   const [touchDrag, setTouchDrag] = useState<{ value: BlockValue | null; x: number; y: number; }>({ value: null, x: 0, y: 0 });
   const [activeTouchTarget, setActiveTouchTarget] = useState<PlaceValueCategory | null>(null);
+  const activeTouchTargetRef = useRef<PlaceValueCategory | null>(null);
 
 
   const playDragSound = useSimpleSound(300, 0.05);
@@ -161,37 +162,6 @@ function App() {
   }, [draggedValue, isDropAllowed, appState, challengeStatus, playDropSound]);
   
   // Touch Handlers
-  const handleTouchMove = useCallback((event: TouchEvent) => {
-      event.preventDefault();
-      const touch = event.touches[0];
-      setTouchDrag(prev => ({ ...prev, x: touch.clientX, y: touch.clientY }));
-
-      const elementUnderFinger = document.elementFromPoint(touch.clientX, touch.clientY);
-      const dropTarget = elementUnderFinger?.closest('[data-droptarget]');
-      
-      let targetCategory: PlaceValueCategory | null = null;
-      if (dropTarget) {
-          const category = dropTarget.getAttribute('data-droptarget') as PlaceValueCategory;
-          if (isDropAllowed(category)) {
-            targetCategory = category;
-          }
-      }
-      setActiveTouchTarget(targetCategory);
-  }, [isDropAllowed]);
-
-  const handleTouchEnd = useCallback(() => {
-      if (activeTouchTarget) {
-          handleDrop(activeTouchTarget);
-      }
-      
-      setTouchDrag({ value: null, x: 0, y: 0 });
-      setDraggedValue(null);
-      setActiveTouchTarget(null);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
-      window.removeEventListener('touchcancel', handleTouchEnd);
-  }, [activeTouchTarget, handleDrop, handleTouchMove]);
-  
   const handleTouchStart = useCallback((value: BlockValue, event: React.TouchEvent) => {
       event.preventDefault();
       const touch = event.touches[0];
@@ -199,11 +169,51 @@ function App() {
       setDraggedValue(value);
       setTouchDrag({ value, x: touch.clientX, y: touch.clientY });
       playDragSound();
-      
-      window.addEventListener('touchmove', handleTouchMove, { passive: false });
-      window.addEventListener('touchend', handleTouchEnd);
-      window.addEventListener('touchcancel', handleTouchEnd);
-  }, [playDragSound, handleTouchMove, handleTouchEnd]);
+  }, [playDragSound]);
+  
+  useEffect(() => {
+    if (touchDrag.value === null) {
+      setActiveTouchTarget(null);
+      return;
+    }
+
+    const handleMove = (e: TouchEvent) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      setTouchDrag(prev => ({...prev, x: touch.clientX, y: touch.clientY}));
+
+      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+      const dropTarget = element?.closest('[data-droptarget]');
+      let targetCategory: PlaceValueCategory | null = null;
+      if (dropTarget) {
+        const category = dropTarget.getAttribute('data-droptarget') as PlaceValueCategory;
+        if (isDropAllowed(category)) {
+          targetCategory = category;
+        }
+      }
+      activeTouchTargetRef.current = targetCategory;
+      setActiveTouchTarget(current => current === targetCategory ? current : targetCategory);
+    };
+
+    const handleEnd = () => {
+      if (activeTouchTargetRef.current) {
+        handleDrop(activeTouchTargetRef.current);
+      }
+      setTouchDrag({ value: null, x: 0, y: 0 });
+      setDraggedValue(null);
+      activeTouchTargetRef.current = null;
+    };
+
+    window.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchend', handleEnd);
+    window.addEventListener('touchcancel', handleEnd);
+
+    return () => {
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleEnd);
+      window.removeEventListener('touchcancel', handleEnd);
+    };
+  }, [touchDrag.value, isDropAllowed, handleDrop]);
 
 
   const checkAnswer = () => {
@@ -351,7 +361,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-sky-100 text-gray-800 flex flex-col items-center p-4 sm:p-8 overflow-hidden relative">
+    <div className="min-h-screen bg-sky-100 text-gray-800 flex flex-col items-center p-2 sm:p-4 overflow-hidden relative">
       {touchDrag.value && (
         <div style={{
             position: 'fixed',
@@ -369,10 +379,10 @@ function App() {
       {appState !== 'training' && (
         <button
           onClick={() => setIsHelpModalOpen(true)}
-          className="fixed top-4 right-4 z-40 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-full h-12 w-12 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform"
+          className="fixed top-2 right-2 sm:top-4 sm:right-4 z-40 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-full h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform"
           aria-label="Open help and instructions"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </button>
@@ -392,7 +402,7 @@ function App() {
       }
       <div className="w-full max-w-7xl mx-auto">
         <Header appState={appState} total={total} onBack={() => setAppState('mode_selection')} />
-        <main className="mt-6">
+        <main className="mt-4 sm:mt-6">
           {appState === 'challenge' && (
             <ChallengePanel 
               target={targetNumber} 
@@ -403,7 +413,7 @@ function App() {
             />
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-8">
             <PlaceValueColumn
               title="Hundreds" category="hundreds" blocks={columns.hundreds} onDrop={handleDrop}
               onDragOver={handleDragOver} isRegroupingDestination={regrouping?.to === 'hundreds'}
@@ -427,7 +437,7 @@ function App() {
             />
           </div>
           
-          <div className={`mt-8 p-4 sm:p-6 bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg flex flex-col md:flex-row items-center justify-center gap-4 sm:gap-6 transition-all duration-300 ${currentTrainingStepConfig ? 'relative z-20' : ''}`}>
+          <div className={`mt-4 sm:mt-8 p-2 sm:p-6 bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg flex flex-col md:flex-row items-center justify-center gap-2 sm:gap-6 transition-all duration-300 ${currentTrainingStepConfig ? 'relative z-20' : ''}`}>
             <BlockSource 
               onDragStart={handleDragStart} 
               onTouchStart={handleTouchStart}

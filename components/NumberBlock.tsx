@@ -29,16 +29,16 @@ export const NumberBlock: React.FC<NumberBlockProps> = ({ value, isDraggable, on
   
   switch (value) {
     case 1:
-      blockStyle = 'w-5 h-5 sm:w-6 sm:h-6 bg-sky-500 hover:bg-sky-400 border-2 border-sky-700 shadow-md';
+      blockStyle = 'w-4 h-4 sm:w-6 sm:h-6 bg-sky-500 hover:bg-sky-400 border-2 border-sky-700 shadow-md';
       break;
     case 10:
-      blockStyle = 'w-5 h-20 sm:w-6 sm:h-24 bg-emerald-500 hover:bg-emerald-400 border-2 border-emerald-700 shadow-lg flex flex-col justify-around items-center py-1';
+      blockStyle = 'w-4 h-16 sm:w-6 sm:h-24 bg-emerald-500 hover:bg-emerald-400 border-2 border-emerald-700 shadow-lg flex flex-col justify-around items-center py-1';
       blockContent = Array.from({ length: 10 }).map((_, i) => (
-        <div key={i} className="w-3 h-1 sm:w-4 bg-emerald-700/50 rounded-full"></div>
+        <div key={i} className="w-2 h-0.5 sm:w-4 sm:h-1 bg-emerald-700/50 rounded-full"></div>
       ));
       break;
     case 100:
-      blockStyle = 'w-20 h-20 sm:w-24 sm:h-24 bg-amber-400 hover:bg-amber-300 border-2 border-amber-600 shadow-xl grid grid-cols-10 gap-px p-1';
+      blockStyle = 'w-16 h-16 sm:w-24 sm:h-24 bg-amber-400 hover:bg-amber-300 border-2 border-amber-600 shadow-xl grid grid-cols-10 gap-px p-0.5 sm:p-1';
       blockContent = Array.from({ length: 100 }).map((_, i) => (
          <div key={i} className="w-full h-full bg-amber-600/50 rounded-sm"></div>
       ));

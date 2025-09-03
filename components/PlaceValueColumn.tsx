@@ -54,14 +54,14 @@ export const PlaceValueColumn: React.FC<PlaceValueColumnProps> = ({
 
   return (
     <div className={`flex flex-col ${styles.bg} rounded-2xl shadow-lg ${styles.shadow} transition-all duration-300 ${isSpotlighted ? 'relative z-20' : ''}`}>
-      <h2 className={`text-2xl sm:text-3xl font-black text-center p-4 ${styles.text} border-b-4 ${styles.border}`}>
+      <h2 className={`text-xl sm:text-3xl font-black text-center p-2 sm:p-4 ${styles.text} border-b-4 ${styles.border}`}>
         {title}
       </h2>
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         data-droptarget={category}
-        className={`flex-grow min-h-[250px] sm:min-h-[300px] p-4 transition-all duration-300 rounded-b-2xl border-4 border-dashed border-transparent ${borderStyle} ${isRegroupingDestination ? 'animate-pulse' : ''} ${isSpotlighted && !isBeingDraggedOver ? 'animate-guide-pulse' : ''}`}
+        className={`flex-grow min-h-[200px] sm:min-h-[300px] p-2 sm:p-4 transition-all duration-300 rounded-b-2xl border-4 border-dashed border-transparent ${borderStyle} ${isRegroupingDestination ? 'animate-pulse' : ''} ${isSpotlighted && !isBeingDraggedOver ? 'animate-guide-pulse' : ''}`}
       >
         <div className="flex flex-wrap-reverse items-end justify-center gap-1 h-full content-start">
           {blocks.map(block => (
