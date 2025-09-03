@@ -18,9 +18,9 @@ interface PlaceValueColumnProps {
 }
 
 const colorClasses = {
-  blue: { bg: 'bg-sky-200', border: 'border-sky-400', text: 'text-sky-800', shadow: 'shadow-sky-300/50' },
-  green: { bg: 'bg-emerald-200', border: 'border-emerald-400', text: 'text-emerald-800', shadow: 'shadow-emerald-300/50' },
-  yellow: { bg: 'bg-amber-200', border: 'border-amber-400', text: 'text-amber-800', shadow: 'shadow-amber-300/50' },
+  blue: { bg: 'bg-sky-300', border: 'border-sky-500', text: 'text-sky-900', shadow: 'shadow-sky-400/50' },
+  green: { bg: 'bg-teal-300', border: 'border-teal-500', text: 'text-teal-900', shadow: 'shadow-teal-400/50' },
+  yellow: { bg: 'bg-amber-300', border: 'border-amber-500', text: 'text-amber-900', shadow: 'shadow-amber-400/50' },
 };
 
 export const PlaceValueColumn: React.FC<PlaceValueColumnProps> = ({ 

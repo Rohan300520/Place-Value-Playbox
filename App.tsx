@@ -361,7 +361,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-sky-100 text-gray-800 flex flex-col items-center p-2 sm:p-4 relative">
+    <div className="min-h-screen bg-slate-600 text-gray-800 flex flex-col items-center p-2 sm:p-4 relative">
       {touchDrag.value && (
         <div style={{
             position: 'fixed',
@@ -437,7 +437,7 @@ function App() {
             />
           </div>
           
-          <div className={`mt-4 sm:mt-8 p-2 sm:p-6 bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg flex flex-col md:flex-row items-center justify-center gap-2 sm:gap-6 transition-all duration-300 ${currentTrainingStepConfig ? 'relative z-20' : ''}`}>
+          <div className={`mt-4 sm:mt-8 p-2 sm:p-6 bg-slate-200 rounded-2xl shadow-lg flex flex-col md:flex-row items-center justify-center gap-2 sm:gap-6 transition-all duration-300 ${currentTrainingStepConfig ? 'relative z-20' : ''}`}>
             <BlockSource 
               onDragStart={handleDragStart} 
               onTouchStart={handleTouchStart}

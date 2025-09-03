@@ -11,7 +11,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ total, appState, onBack }) => {
   if (appState === 'training') {
     return (
-      <header className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-3 sm:p-6 flex justify-center items-center w-full relative">
+      <header className="bg-slate-200 rounded-2xl shadow-lg p-3 sm:p-4 flex justify-center items-center w-full relative">
         <h1 className="text-2xl sm:text-4xl font-black text-blue-800 tracking-tight">
           Training Mode
         </h1>

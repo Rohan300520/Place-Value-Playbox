@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NumberBlock } from './NumberBlock';
 import type { TrainingStep, PlaceValueCategory } from '../types';
@@ -12,7 +11,7 @@ interface TrainingGuideProps {
 
 const GuideBox: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => {
     return (
-        <div className={`fixed bg-white/90 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-xl text-xl sm:text-2xl font-bold text-slate-700 max-w-sm sm:max-w-lg text-center animate-pop-in z-30 ${className}`}>
+        <div className={`fixed bg-slate-200/95 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-xl text-xl sm:text-2xl font-bold text-slate-700 max-w-sm sm:max-w-lg text-center animate-pop-in z-30 ${className}`}>
            {children}
         </div>
     )
@@ -67,7 +66,7 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
                 return (
                     <>
                         <GhostBlock value={currentStepConfig.source!} />
-                        <GuideBox className="bottom-[25vh] left-1/2 -translate-x-1/2 w-[90%] sm:max-w-lg guide-box-arrow">
+                        <GuideBox className="bottom-4 right-4 sm:bottom-6 sm:right-6 w-[80vw] max-w-xs text-left guide-box-arrow">
                             <p>{colorSpan(currentStepConfig.text)}</p>
                             {currentStepConfig.type === 'action_multi' && (
                                 <div className={`mt-4 text-4xl font-black ${colorMap[column]} tabular-nums`}>

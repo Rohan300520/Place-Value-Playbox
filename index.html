@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -78,12 +77,11 @@
       .guide-box-arrow::after {
         content: '';
         position: absolute;
-        bottom: -15px;
-        left: 50%;
-        transform: translateX(-50%);
-        border-width: 15px 15px 0 15px;
+        top: -15px; /* Position above the box */
+        left: 1.5rem; /* Indent from left edge */
+        border-width: 0 15px 15px 15px; /* Makes a downward-pointing triangle shape */
         border-style: solid;
-        border-color: rgba(255, 255, 255, 0.9) transparent transparent transparent;
+        border-color: transparent transparent rgba(226, 232, 240, 0.95) transparent; /* colors the bottom border */
       }
       @keyframes point-right {
         0%, 100% { transform: translateX(0); }
