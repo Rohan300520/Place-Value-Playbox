@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { PlaceValueColumns, BlockValue, PlaceValueCategory, Block, AppState, TrainingStep } from './types';
 import { PlaceValueColumn } from './components/PlaceValueColumn';
@@ -400,7 +401,7 @@ function App() {
             feedback={trainingFeedback}
         />
       }
-      <div className="w-full max-w-7xl mx-auto">
+      <div className={`w-full max-w-7xl mx-auto ${appState === 'training' ? 'relative z-20' : ''}`}>
         <Header appState={appState} total={total} onBack={() => setAppState('mode_selection')} />
         <main className="mt-4 sm:mt-6">
           {appState === 'challenge' && (

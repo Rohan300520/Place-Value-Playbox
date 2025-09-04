@@ -1,4 +1,3 @@
-
 import React from 'react';
 import type { AppState } from '../types';
 
@@ -12,6 +11,15 @@ export const Header: React.FC<HeaderProps> = ({ total, appState, onBack }) => {
   if (appState === 'training') {
     return (
       <header className="bg-slate-200 rounded-2xl shadow-lg p-3 sm:p-4 flex justify-center items-center w-full relative">
+         <button 
+           onClick={onBack}
+           className="absolute top-1/2 left-2 sm:left-4 -translate-y-1/2 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-full h-8 w-8 sm:h-12 sm:w-12 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform"
+           aria-label="Go back to mode selection"
+         >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+         </button>
         <h1 className="text-2xl sm:text-4xl font-black text-blue-800 tracking-tight">
           Training Mode
         </h1>
