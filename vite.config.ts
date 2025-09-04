@@ -13,6 +13,34 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png}'],
         runtimeCaching: [
           {
+            urlPattern: /^https:\/\/aistudiocdn\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'aistudio-cdn-cache',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 365 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/cdn\.tailwindcss\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'tailwindcss-cdn-cache',
+              expiration: {
+                maxEntries: 2,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 365 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
             options: {

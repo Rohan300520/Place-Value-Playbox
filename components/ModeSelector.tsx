@@ -10,7 +10,8 @@ interface ModeSelectorProps {
 const ModeCard: React.FC<{
   title: string;
   description: string;
-  icon: JSX.Element;
+  // FIX: Changed type from JSX.Element to React.ReactNode to fix type compatibility issues with SVG elements.
+  icon: React.ReactNode;
   onClick: () => void;
   color: string;
 }> = ({ title, description, icon, onClick, color }) => {
