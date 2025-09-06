@@ -6,6 +6,7 @@ export interface Block {
   id: string;
   value: BlockValue;
   isAnimating?: boolean;
+  isNewlyRegrouped?: boolean;
 }
 
 export interface PlaceValueColumns {

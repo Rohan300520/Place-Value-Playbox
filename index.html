@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/assets/icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#38bdf8" />
+    <meta name="theme-color" content="#0c1445" />
     <title>Place Value Playbox</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,14 +14,41 @@
     <style>
       body {
         font-family: 'Nunito', sans-serif;
-        overflow-x: hidden;
+        background-color: #0c1445;
+        background-image: radial-gradient(circle at top right, #4a2a6c, transparent),
+                          radial-gradient(circle at bottom left, #0e346e, transparent);
+        overflow: hidden;
       }
-      @keyframes pop-in {
+      .star {
+        position: fixed;
+        background: white;
+        border-radius: 50%;
+        animation: twinkle 2s ease-in-out infinite alternate;
+        box-shadow: 0 0 8px 2px rgba(255, 255, 255, 0.5);
+      }
+      @keyframes twinkle {
+        0% { opacity: 0.2; transform: scale(0.8); }
+        100% { opacity: 1; transform: scale(1); }
+      }
+      @keyframes launch-rocket {
+        0% { bottom: -200px; transform: translateX(-50%) rotate(0deg); opacity: 1;}
+        20% { bottom: 40vh; transform: translateX(-50%) rotate(0deg); }
+        25% { transform: translateX(-50%) rotate(-10deg); }
+        30% { transform: translateX(-50%) rotate(10deg); }
+        35% { transform: translateX(-50%) rotate(0deg); }
+        100% { bottom: 120vh; transform: translateX(-50%) rotate(0deg); opacity: 0.5; }
+      }
+      .animate-launch-rocket {
+        animation: launch-rocket 3s ease-in forwards;
+      }
+      @keyframes bouncy-pop-in {
         0% { transform: scale(0.5); opacity: 0; }
+        60% { transform: scale(1.1); opacity: 1; }
+        80% { transform: scale(0.95); }
         100% { transform: scale(1); opacity: 1; }
       }
-      .animate-pop-in {
-        animation: pop-in 0.3s ease-out forwards;
+      .animate-bouncy-pop-in {
+        animation: bouncy-pop-in 0.5s ease-out forwards;
       }
       @keyframes shake-it {
         0%, 100% { transform: translateX(0); }
@@ -31,20 +58,20 @@
       .animate-shake {
         animation: shake-it 0.3s ease-in-out;
       }
-      @keyframes regroup-out {
-        0% { transform: scale(1) translateY(0); opacity: 1; }
-        100% { transform: scale(0) translateY(-50px); opacity: 0; }
+      @keyframes regroup-swirl-out {
+        0% { transform: scale(1) rotate(0deg) translateY(0); opacity: 1; }
+        100% { transform: scale(0) rotate(720deg) translateY(-50px); opacity: 0; }
       }
-      .animate-regroup-out {
-        animation: regroup-out 0.5s ease-in forwards;
+      .animate-regroup-swirl-out {
+        animation: regroup-swirl-out 0.6s ease-in forwards;
       }
       @keyframes celebrate {
         0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.7); }
-        50% { transform: scale(1.1); box-shadow: 0 0 20px 10px rgba(45, 212, 191, 0); }
+        50% { transform: scale(1.1); box-shadow: 0 0 40px 15px rgba(45, 212, 191, 0); }
         100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(45, 212, 191, 0); }
       }
       .animate-celebrate {
-        animation: celebrate 0.6s ease-in-out;
+        animation: celebrate 0.8s ease-in-out;
       }
       @keyframes tada {
         0% { transform: scale(1); }
@@ -65,7 +92,7 @@
       }
       @keyframes guide-pulse {
         0%, 100% {
-          box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+          box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.9);
           transform: scale(1);
         }
         50% {
@@ -79,11 +106,11 @@
       .guide-box-arrow::after {
         content: '';
         position: absolute;
-        top: -15px; /* Position above the box */
-        left: 1.5rem; /* Indent from left edge */
-        border-width: 0 15px 15px 15px; /* Makes a downward-pointing triangle shape */
+        top: -15px;
+        left: 1.5rem;
+        border-width: 0 15px 15px 15px;
         border-style: solid;
-        border-color: transparent transparent rgba(226, 232, 240, 0.95) transparent; /* colors the bottom border */
+        border-color: transparent transparent rgba(15, 23, 42, 0.9) transparent;
       }
       @keyframes point-right {
         0%, 100% { transform: translateX(0); }
@@ -130,6 +157,48 @@
           animation-delay: 0.5s;
           pointer-events: none;
           z-index: 30;
+      }
+      /* New Animations */
+      @keyframes pop-in {
+        0% { transform: scale(0.5); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      .animate-pop-in {
+        animation: pop-in 0.3s ease-out forwards;
+      }
+      @keyframes column-pulse {
+        0%, 100% { background-color: rgba(0,0,0,0.2); }
+        50% { background-color: rgba(56, 189, 248, 0.2); }
+      }
+      .animate-column-pulse {
+        animation: column-pulse 0.5s ease-in-out;
+      }
+      @keyframes sparkle-flicker {
+        0% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+        50% { opacity: 1; transform: scale(1.5) rotate(180deg); }
+        100% { opacity: 0; transform: scale(0.5) rotate(360deg); }
+      }
+      .sparkle-effect::before, .sparkle-effect::after {
+        content: '✨';
+        position: absolute;
+        font-size: 2rem;
+        animation: sparkle-flicker 1s ease-in-out;
+      }
+      .sparkle-effect::before { top: -20%; left: -20%; animation-delay: 0s; }
+      .sparkle-effect::after { bottom: -20%; right: -20%; animation-delay: 0.3s; }
+
+      @keyframes confetti-fall {
+          0% { transform: translateY(-20vh) rotateZ(0deg); opacity: 1; }
+          100% { transform: translateY(120vh) rotateZ(720deg); opacity: 0; }
+      }
+      .confetti-piece {
+          position: absolute;
+          width: 10px;
+          height: 20px;
+          opacity: 0;
+          animation-name: confetti-fall;
+          animation-timing-function: linear;
+          animation-iteration-count: 1;
       }
     </style>
 <script type="importmap">

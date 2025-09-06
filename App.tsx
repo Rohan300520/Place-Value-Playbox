@@ -12,6 +12,9 @@ import { TrainingGuide } from './components/TrainingGuide';
 import { HelpModal } from './components/HelpModal';
 import { NumberBlock } from './components/NumberBlock';
 import { numberToWords } from './utils/numberToWords';
+import { Starfield } from './components/Starfield';
+import { RocketAnimation } from './components/RocketAnimation';
+import { Confetti } from './components/Confetti';
 
 const trainingPlan: TrainingStep[] = [
   // Step 1: Add one '1' block
@@ -46,7 +49,6 @@ const useSimpleSound = (freq: number, duration: number) => {
   return () => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      // FIX: Changed audio-context to audioContext to fix reference errors.
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       oscillator.connect(gainNode);
@@ -76,6 +78,8 @@ function App() {
   const [targetNumber, setTargetNumber] = useState(generateTargetNumber());
   const [score, setScore] = useState(0);
   const [challengeStatus, setChallengeStatus] = useState<'playing' | 'correct' | 'incorrect'>('playing');
+  const [showRocket, setShowRocket] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   // Training Mode State
   const [trainingStep, setTrainingStep] = useState(0);
@@ -92,10 +96,13 @@ function App() {
   const playDragSound = useSimpleSound(300, 0.05);
   const playDropSound = useSimpleSound(440, 0.1);
   const playRegroupSound = useSimpleSound(880, 0.2);
+  const playSparkleSound = useSimpleSound(1400, 0.2);
   const playSuccessSound = useSimpleSound(1200, 0.4);
+  const playConfettiSound = useSimpleSound(1600, 0.5);
   const playErrorSound = useSimpleSound(220, 0.2);
   const playFeedbackSound = useSimpleSound(1046, 0.3);
   const playMagicFeedbackSound = useSimpleSound(1318, 0.4);
+  const playRocketSound = useSimpleSound(150, 2);
 
   const total = useMemo(() => {
     const onesValue = columns.ones.filter(b => !b.isAnimating).length * 1;
@@ -224,6 +231,10 @@ function App() {
       setChallengeStatus('correct');
       setScore(s => s + 10);
       playSuccessSound();
+      setShowRocket(true);
+      playRocketSound();
+      setShowConfetti(true);
+      playConfettiSound();
     } else {
       setChallengeStatus('incorrect');
       playErrorSound();
@@ -248,7 +259,6 @@ function App() {
 
     const { type, column, count } = currentTrainingStepConfig;
 
-    // This hook only deals with advancing from action steps
     if (type !== 'action' && type !== 'action_multi') {
         return;
     }
@@ -258,11 +268,11 @@ function App() {
     if (type === 'action' && column && columns[column].length >= 1) {
       shouldAdvance = true;
     } else if (type === 'action_multi' && column && count) {
-      if (count >= 10) { // Regrouping step
+      if (count >= 10) { 
         if (regrouping?.from === column) {
           shouldAdvance = true;
         }
-      } else { // Simple count step
+      } else { 
         if (columns[column].length >= count) {
           shouldAdvance = true;
         }
@@ -280,7 +290,6 @@ function App() {
 
     const { type, text, duration, clearBoardAfter } = currentTrainingStepConfig;
 
-    // Handle standard feedback pop-ups
     if (type === 'feedback' && text && duration) {
       playFeedbackSound();
       setTrainingFeedback(text);
@@ -296,7 +305,6 @@ function App() {
       return () => clearTimeout(timer);
     }
     
-    // Handle magic feedback timing without setting the feedback text state
     if (type === 'magic_feedback' && duration) {
         playMagicFeedbackSound();
         const timer = setTimeout(() => {
@@ -317,7 +325,6 @@ function App() {
       
     const isReadyForRegroup = appState === 'playground' || appState === 'challenge' || isTrainingRegroupStep;
 
-    // Ones to Tens
     if (isReadyForRegroup && columns.ones.filter(b => !b.isAnimating).length >= 10 && !regrouping) {
         setRegrouping({ from: 'ones', to: 'tens' });
         playRegroupSound();
@@ -326,16 +333,16 @@ function App() {
             ones: prev.ones.slice(0, -10).concat(prev.ones.slice(-10).map(b => ({ ...b, isAnimating: true })))
         }));
         setTimeout(() => {
+            playSparkleSound();
             setColumns(prev => ({
                 ...prev,
                 ones: prev.ones.filter(b => !b.isAnimating),
-                tens: [...prev.tens, { id: `block-${Date.now()}`, value: 10 }],
+                tens: [...prev.tens, { id: `block-${Date.now()}`, value: 10, isNewlyRegrouped: true }],
             }));
             setRegrouping(null);
-        }, 500);
+        }, 600);
     }
     
-    // Tens to Hundreds
     if (isReadyForRegroup && columns.tens.filter(b => !b.isAnimating).length >= 10 && !regrouping) {
         setRegrouping({ from: 'tens', to: 'hundreds' });
         playRegroupSound();
@@ -344,15 +351,35 @@ function App() {
             tens: prev.tens.slice(0, -10).concat(prev.tens.slice(-10).map(b => ({ ...b, isAnimating: true })))
         }));
         setTimeout(() => {
+            playSparkleSound();
             setColumns(prev => ({
                 ...prev,
                 tens: prev.tens.filter(b => !b.isAnimating),
-                hundreds: [...prev.hundreds, { id: `block-${Date.now()}`, value: 100 }],
+                hundreds: [...prev.hundreds, { id: `block-${Date.now()}`, value: 100, isNewlyRegrouped: true }],
             }));
             setRegrouping(null);
-        }, 500);
+        }, 600);
     }
-  }, [columns, regrouping, appState, playRegroupSound, currentTrainingStepConfig]);
+  }, [columns, regrouping, appState, playRegroupSound, playSparkleSound, currentTrainingStepConfig]);
+
+  // Effect to clean up the 'isNewlyRegrouped' flag after animation
+    useEffect(() => {
+        const hasNewlyRegrouped =
+            columns.tens.some(b => b.isNewlyRegrouped) ||
+            columns.hundreds.some(b => b.isNewlyRegrouped);
+
+        if (hasNewlyRegrouped) {
+            const timer = setTimeout(() => {
+                setColumns(prev => ({
+                    ...prev,
+                    tens: prev.tens.map(b => ({ ...b, isNewlyRegrouped: false })),
+                    hundreds: prev.hundreds.map(b => ({ ...b, isNewlyRegrouped: false })),
+                }));
+            }, 1000); // Duration of the sparkle animation
+            return () => clearTimeout(timer);
+        }
+    }, [columns]);
+
 
   if (appState === 'welcome') {
     return <WelcomeScreen onStart={() => setAppState('mode_selection')} />;
@@ -363,7 +390,11 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-600 text-gray-800 flex flex-col items-center p-2 sm:p-4 relative">
+    <div className="min-h-screen text-gray-200 flex flex-col items-center p-2 sm:p-4 relative overflow-hidden">
+      <Starfield />
+      {showRocket && <RocketAnimation onComplete={() => setShowRocket(false)} />}
+      {showConfetti && <Confetti onComplete={() => setShowConfetti(false)} />}
+      
       {touchDrag.value && (
         <div style={{
             position: 'fixed',
@@ -381,7 +412,7 @@ function App() {
       {appState !== 'training' && (
         <button
           onClick={() => setIsHelpModalOpen(true)}
-          className="fixed top-2 right-2 sm:top-4 sm:right-4 z-40 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-full h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform"
+          className="fixed top-2 right-2 sm:top-4 sm:right-4 z-40 bg-blue-500 hover:bg-blue-400 text-white font-bold rounded-full h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center shadow-lg shadow-blue-500/50 transform hover:scale-110 transition-transform"
           aria-label="Open help and instructions"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -444,7 +475,7 @@ function App() {
             />
           </div>
           
-          <div className={`mt-4 sm:mt-8 p-2 sm:p-6 bg-slate-200 rounded-2xl shadow-lg flex flex-col md:flex-row items-center justify-center gap-2 sm:gap-6 transition-all duration-300 ${currentTrainingStepConfig ? 'relative z-20' : ''}`}>
+          <div className={`mt-4 sm:mt-8 p-2 sm:p-6 bg-slate-900/50 border border-sky-400/20 rounded-2xl shadow-lg flex flex-col md:flex-row items-center justify-center gap-2 sm:gap-6 transition-all duration-300 ${currentTrainingStepConfig ? 'relative z-20' : ''}`}>
             <BlockSource 
               onDragStart={handleDragStart} 
               onTouchStart={handleTouchStart}

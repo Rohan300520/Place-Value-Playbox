@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NumberBlock } from './NumberBlock';
 import type { TrainingStep, PlaceValueCategory } from '../types';
@@ -11,14 +12,14 @@ interface TrainingGuideProps {
 
 const GuideBox: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => {
     return (
-        <div className={`fixed bg-slate-200/95 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-xl text-xl sm:text-2xl font-bold text-slate-700 max-w-sm sm:max-w-lg text-center animate-pop-in z-30 ${className}`}>
+        <div className={`fixed bg-slate-900/90 backdrop-blur-sm border border-sky-400/30 p-4 sm:p-6 rounded-2xl shadow-xl text-xl sm:text-2xl font-bold text-slate-200 max-w-sm sm:max-w-lg text-center animate-pop-in z-30 ${className}`}>
            {children}
         </div>
     )
 };
 
 const FeedbackBox: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-green-100 border-4 border-green-400 p-6 sm:p-8 rounded-2xl shadow-xl text-2xl sm:text-4xl font-black text-green-700 animate-tada z-40 flex items-center gap-4">
+    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-green-500/20 border-4 border-green-400 p-6 sm:p-8 rounded-2xl shadow-xl text-2xl sm:text-4xl font-black text-green-300 animate-tada z-40 flex items-center gap-4">
         {children}
     </div>
 );
@@ -38,16 +39,16 @@ const GhostBlock: React.FC<{ value: number }> = ({ value }) => {
 };
 
 const colorSpan = (text: string) => {
-    if (text.includes("'1'")) return <span className="text-sky-600">{text}</span>
-    if (text.includes("'10'")) return <span className="text-emerald-600">{text}</span>
-    if (text.includes("'100'")) return <span className="text-amber-600">{text}</span>
+    if (text.includes("'1'")) return <span className="text-sky-400">{text}</span>
+    if (text.includes("'10'")) return <span className="text-emerald-400">{text}</span>
+    if (text.includes("'100'")) return <span className="text-amber-400">{text}</span>
     return text;
 };
 
 const colorMap = {
-    ones: 'text-sky-500',
-    tens: 'text-emerald-500',
-    hundreds: 'text-amber-500',
+    ones: 'text-sky-400',
+    tens: 'text-emerald-400',
+    hundreds: 'text-amber-400',
 };
 
 export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig, columnCounts, onComplete, feedback }) => {
@@ -80,15 +81,12 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
                 let positionClass = '';
                 switch (currentStepConfig.targetColumn) {
                     case 'tens':
-                        // Center on mobile, middle column on desktop
                         positionClass = 'top-[15vh] left-1/2 -translate-x-1/2';
                         break;
                     case 'hundreds':
-                        // Center on mobile, left column on desktop
                         positionClass = 'top-[15vh] left-1/2 lg:left-[16.66%] -translate-x-1/2';
                         break;
                     default:
-                        // Fallback to center if no target is specified
                         positionClass = 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2';
                 }
                 return (
@@ -114,7 +112,7 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
 
     return (
        <>
-        <div className="fixed inset-0 bg-black/60 z-10" />
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-10" />
         {renderContent()}
        </>
     );
