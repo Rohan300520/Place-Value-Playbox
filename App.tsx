@@ -1,5 +1,4 @@
 
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { PlaceValueColumns, BlockValue, PlaceValueCategory, Block, AppState, TrainingStep } from './types';
 import { PlaceValueColumn } from './components/PlaceValueColumn';
@@ -12,6 +11,7 @@ import { ModeSelector } from './components/ModeSelector';
 import { TrainingGuide } from './components/TrainingGuide';
 import { HelpModal } from './components/HelpModal';
 import { NumberBlock } from './components/NumberBlock';
+import { numberToWords } from './utils/numberToWords';
 
 const trainingPlan: TrainingStep[] = [
   // Step 1: Add one '1' block
@@ -46,6 +46,7 @@ const useSimpleSound = (freq: number, duration: number) => {
   return () => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // FIX: Changed audio-context to audioContext to fix reference errors.
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       oscillator.connect(gainNode);
@@ -88,7 +89,6 @@ function App() {
   const [activeTouchTarget, setActiveTouchTarget] = useState<PlaceValueCategory | null>(null);
   const activeTouchTargetRef = useRef<PlaceValueCategory | null>(null);
 
-
   const playDragSound = useSimpleSound(300, 0.05);
   const playDropSound = useSimpleSound(440, 0.1);
   const playRegroupSound = useSimpleSound(880, 0.2);
@@ -103,6 +103,8 @@ function App() {
     const hundredsValue = columns.hundreds.filter(b => !b.isAnimating).length * 100;
     return hundredsValue + tensValue + onesValue;
   }, [columns]);
+
+  const totalInWords = useMemo(() => numberToWords(total), [total]);
   
   const handleReset = useCallback(() => {
     setColumns({ ones: [], tens: [], hundreds: [] });
@@ -307,7 +309,6 @@ function App() {
     }
   }, [appState, currentTrainingStepConfig, handleReset, playFeedbackSound, playMagicFeedbackSound]);
 
-
   // Regrouping Effects
   useEffect(() => {
     const isTrainingRegroupStep = appState === 'training' && 
@@ -402,7 +403,12 @@ function App() {
         />
       }
       <div className={`w-full max-w-7xl mx-auto ${appState === 'training' ? 'relative z-20' : ''}`}>
-        <Header appState={appState} total={total} onBack={() => setAppState('mode_selection')} />
+        <Header 
+            appState={appState} 
+            total={total}
+            totalInWords={totalInWords}
+            onBack={() => setAppState('mode_selection')} 
+        />
         <main className="mt-4 sm:mt-6">
           {appState === 'challenge' && (
             <ChallengePanel 
