@@ -1,6 +1,6 @@
-export type BlockValue = 1 | 10 | 100;
-export type PlaceValueCategory = 'ones' | 'tens' | 'hundreds';
-export type AppState = 'welcome' | 'mode_selection' | 'training' | 'playground' | 'challenge';
+export type BlockValue = 1 | 10 | 100 | 1000;
+export type PlaceValueCategory = 'ones' | 'tens' | 'hundreds' | 'thousands';
+export type AppState = 'welcome' | 'mode_selection' | 'training' | 'playground' | 'challenge' | 'stem_connection';
 
 export interface Block {
   id: string;
@@ -13,6 +13,7 @@ export interface PlaceValueColumns {
   ones: Block[];
   tens: Block[];
   hundreds: Block[];
+  thousands: Block[];
 }
 
 export interface TrainingStep {
@@ -25,4 +26,12 @@ export interface TrainingStep {
     duration?: number;
     clearBoardAfter?: boolean;
     targetColumn?: PlaceValueCategory;
+}
+
+export interface ChallengeQuestion {
+    id: number;
+    level: number;
+    question: string;
+    answer: number;
+    type: 'build' | 'interpret';
 }

@@ -1,8 +1,5 @@
-
-
 import React from 'react';
 import type { AppState } from '../types';
-import { Starfield } from './Starfield';
 
 interface ModeSelectorProps {
   onSelectMode: (mode: AppState) => void;
@@ -15,11 +12,12 @@ const ModeCard: React.FC<{
   onClick: () => void;
   color: string;
   shadow: string;
-}> = ({ title, description, icon, onClick, color, shadow }) => {
+  fullWidth?: boolean;
+}> = ({ title, description, icon, onClick, color, shadow, fullWidth = false }) => {
   return (
     <button
       onClick={onClick}
-      className={`p-6 sm:p-8 rounded-3xl shadow-lg text-left text-white w-full max-w-sm transform hover:-translate-y-2 transition-transform duration-300 border border-white/20 ${color} ${shadow}`}
+      className={`p-6 sm:p-8 rounded-3xl shadow-lg text-left text-white w-full ${fullWidth ? 'lg:col-span-3' : 'max-w-sm'} transform hover:-translate-y-2 transition-transform duration-300 border border-white/20 ${color} ${shadow}`}
     >
       <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-white/20 rounded-full mb-4">
           {icon}
@@ -32,14 +30,8 @@ const ModeCard: React.FC<{
 
 export const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode }) => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-       <Starfield />
-       <div className="text-center mb-8 sm:mb-12 animate-pop-in">
-            <h1 className="text-4xl md:text-7xl font-black text-sky-300 tracking-tight" style={{ textShadow: '0 0 15px #38bdf8' }}>
-                Choose Your Adventure!
-            </h1>
-       </div>
-      <div className="flex flex-col lg:flex-row gap-8 animate-pop-in" style={{ animationDelay: '0.2s' }}>
+    <div className="flex-grow flex flex-col items-center justify-center p-4">
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-pop-in" style={{ animationDelay: '0.2s' }}>
         <ModeCard
           title="Training"
           description="Learn how to play with a fun, step-by-step guide."
@@ -63,6 +55,15 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode }) => {
           onClick={() => onSelectMode('challenge')}
           color="bg-gradient-to-br from-amber-500 to-orange-600"
           shadow="shadow-amber-500/40"
+        />
+         <ModeCard
+          title="STEM Connection"
+          description="Discover how place value relates to the building blocks of our world!"
+          icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 sm:h-10 sm:w-10" viewBox="0 0 20 20" fill="currentColor"><path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V5a1 1 0 00-1.447-.894l-4 2A1 1 0 0011 7v10zM4 17a1 1 0 001.447.894l4-2A1 1 0 0010 15V5a1 1 0 00-1.447-.894l-4 2A1 1 0 004 7v10z" /></svg>}
+          onClick={() => onSelectMode('stem_connection')}
+          color="bg-gradient-to-br from-indigo-500 to-purple-600"
+          shadow="shadow-indigo-500/40"
+          fullWidth={true}
         />
       </div>
     </div>

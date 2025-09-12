@@ -1,12 +1,9 @@
-
 import React from 'react';
 import { NumberBlock } from './NumberBlock';
-import { Starfield } from './Starfield';
 
 export const WelcomeScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center overflow-hidden">
-      <Starfield />
+    <div className="flex-grow flex flex-col items-center justify-center p-4 text-center">
       <div className="bg-slate-900/50 backdrop-blur-sm border border-sky-400/20 p-6 sm:p-8 rounded-3xl shadow-2xl shadow-sky-500/20 animate-pop-in">
         <h1 className="text-4xl md:text-7xl font-black text-sky-300 tracking-tight animate-float" style={{ animationDelay: '0.1s' }}>
           Welcome to the

@@ -1,29 +1,31 @@
-
 import React, { useMemo } from 'react';
-import type { BlockValue } from '../types';
+import type { BlockValue, PlaceValueCategory } from '../types';
 import { NumberBlock } from './NumberBlock';
 
 interface BlockSourceProps {
-  onDragStart: (value: BlockValue) => void;
+  onDragStart: (value: BlockValue, origin?: { category: PlaceValueCategory, id: string }) => void;
   onTouchStart: (value: BlockValue, event: React.TouchEvent) => void;
   isTraining: boolean;
   spotlightOn?: BlockValue;
 }
 
 const blockData = [
+  { value: 1000 as BlockValue, label: '1000', colorClass: 'text-purple-300' },
   { value: 100 as BlockValue, label: '100', colorClass: 'text-amber-300' },
   { value: 10 as BlockValue, label: '10', colorClass: 'text-emerald-300' },
   { value: 1 as BlockValue, label: '1', colorClass: 'text-sky-300' },
 ];
 
-const BlockWrapper: React.FC<{
+interface BlockWrapperProps {
   value: BlockValue;
-  onDragStart: (value: BlockValue) => void;
+  onDragStart: (value: BlockValue, origin?: { category: PlaceValueCategory, id: string }) => void;
   onTouchStart: (value: BlockValue, event: React.TouchEvent) => void;
   isSpotlighted: boolean;
   label: string;
   colorClass: string;
-}> = ({ value, onDragStart, onTouchStart, isSpotlighted, label, colorClass }) => {
+}
+
+const BlockWrapper: React.FC<BlockWrapperProps> = React.memo(({ value, onDragStart, onTouchStart, isSpotlighted, label, colorClass }) => {
     const animationDelay = useMemo(() => `${Math.random()}s`, []);
     const animationClass = isSpotlighted ? 'animate-guide-pulse' : 'animate-float';
 
@@ -36,7 +38,7 @@ const BlockWrapper: React.FC<{
             <span className={`mt-2 font-bold text-lg ${colorClass}`}>{label}</span>
         </div>
     );
-};
+});
 
 
 export const BlockSource: React.FC<BlockSourceProps> = ({ onDragStart, onTouchStart, isTraining, spotlightOn }) => {

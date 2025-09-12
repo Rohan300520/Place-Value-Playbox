@@ -13,7 +13,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png}'],
         // Exclude the icon from the glob pattern since it's added by the manifest.
         // This prevents a duplicate entry error in the service worker.
-        globIgnores: ['assets/icon.svg'],
+        globIgnores: [],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/aistudiocdn\.com\/.*/i,

@@ -1,0 +1,6 @@
+<svg width="200" height="40" viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg" fill="#c7d2fe">
+    <path d="M25,5 C15,5 5,15 5,25 C5,35 15,40 25,40 C35,40 45,30 45,20 C45,10 35,5 25,5 M25,10 C30,10 35,15 35,20 C35,25 30,35 25,35 C20,35 15,30 15,25 C15,20 20,10 25,10" transform="rotate(20, 25, 22.5)"/>
+    <text x="55" y="28" font-family="Nunito, sans-serif" font-size="20" font-weight="900" letter-spacing="0.5">
+        Smart Cerebrum
+    </text>
+</svg>
