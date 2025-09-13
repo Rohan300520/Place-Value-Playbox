@@ -34,9 +34,24 @@ export const WelcomeScreen: React.FC<{ onStart: () => void }> = ({ onStart }) =>
             </div>
         </div>
 
+        {/* New Company Details Section */}
+        <div className="mt-8 border-t-2 pt-6" style={{ borderColor: 'var(--border-primary)' }}>
+          <div className="flex items-center justify-center gap-4">
+            <img src="/assets/logo.svg" alt="SMART C Logo" className="h-14" style={{ color: 'var(--text-primary)' }} />
+            <div className="text-left">
+              <p className="text-sm font-bold tracking-wide" style={{ color: 'var(--text-secondary)' }}>
+                An interactive digital lab from the creators at
+              </p>
+              <p className="text-2xl font-display font-bold -mt-1" style={{ color: 'var(--text-accent)' }}>
+                SMART C
+              </p>
+            </div>
+          </div>
+        </div>
+
         <button
           onClick={onStart}
-          className="mt-8 sm:mt-12 text-white font-bold text-2xl sm:text-3xl py-3 px-8 sm:py-4 sm:px-12 rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300 animate-guide-pulse border-b-8 active:border-b-4 font-display wobble-on-hover"
+          className="mt-8 text-white font-bold text-2xl sm:text-3xl py-3 px-8 sm:py-4 sm:px-12 rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300 animate-guide-pulse border-b-8 active:border-b-4 font-display wobble-on-hover"
           style={{ 
               backgroundColor: 'var(--btn-action-bg)',
               borderColor: 'var(--btn-action-border)',
