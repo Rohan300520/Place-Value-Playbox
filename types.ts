@@ -1,6 +1,7 @@
 export type BlockValue = 1 | 10 | 100 | 1000;
 export type PlaceValueCategory = 'ones' | 'tens' | 'hundreds' | 'thousands';
-export type AppState = 'welcome' | 'mode_selection' | 'training' | 'playground' | 'challenge' | 'stem_connection';
+export type AppState = 'welcome' | 'mode_selection' | 'training' | 'playground' | 'challenge' | 'stem_connection' | 'challenge_difficulty_selection';
+export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export interface Block {
   id: string;

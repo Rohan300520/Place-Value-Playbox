@@ -1,0 +1,9 @@
+<svg viewBox="0 0 400 100" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(50, 50)">
+    <path d="M0,35 C -30,35 -30,-35 0,-35 C 30,-35 30,25 0,25 C -20,25 -20,-15 0,-15 C 20,-15 20,5 0,5"
+          stroke="#F97316" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <line x1="20" y1="-40" x2="20" y2="40" stroke="#F97316" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <text x="120" y="70" style="font: bold 48px Arial, sans-serif; fill: #00008B;">SMART C</text>
+  <text x="125" y="95" style="font: 24px Arial, sans-serif; fill: black;">सुसंस्था - सुविधा</text>
+</svg>

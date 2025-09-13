@@ -9,18 +9,18 @@ interface ChallengePanelProps {
   onNext: () => void;
   onTimeOut: () => void;
   correctAnswer: number | null;
+  timeLimit: number;
 }
 
-const Timer: React.FC<{ onTimeOut: () => void, status: string }> = ({ onTimeOut, status }) => {
-    const DURATION = 30;
-    const [timeLeft, setTimeLeft] = useState(DURATION);
+const Timer: React.FC<{ onTimeOut: () => void, status: string, duration: number }> = ({ onTimeOut, status, duration }) => {
+    const [timeLeft, setTimeLeft] = useState(duration);
 
     useEffect(() => {
         if (status !== 'playing') {
             return;
         }
 
-        setTimeLeft(DURATION);
+        setTimeLeft(duration);
 
         const interval = setInterval(() => {
             setTimeLeft(prev => {
@@ -34,9 +34,9 @@ const Timer: React.FC<{ onTimeOut: () => void, status: string }> = ({ onTimeOut,
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [status, onTimeOut]);
+    }, [status, onTimeOut, duration]);
     
-    const percentage = (timeLeft / DURATION) * 100;
+    const percentage = (timeLeft / duration) * 100;
     let timerColor = 'bg-green-500';
     if (percentage < 50) timerColor = 'bg-yellow-500';
     if (percentage < 25) timerColor = 'bg-red-500';
@@ -53,7 +53,7 @@ const Timer: React.FC<{ onTimeOut: () => void, status: string }> = ({ onTimeOut,
     )
 }
 
-export const ChallengePanel: React.FC<ChallengePanelProps> = ({ question, score, status, onCheck, onNext, onTimeOut, correctAnswer }) => {
+export const ChallengePanel: React.FC<ChallengePanelProps> = ({ question, score, status, onCheck, onNext, onTimeOut, correctAnswer, timeLimit }) => {
     
     let statusClasses = 'border-sky-400/30 shadow-sky-500/20';
     if(status === 'correct') statusClasses = 'border-green-400 shadow-green-400/40 animate-celebrate';
@@ -87,7 +87,7 @@ export const ChallengePanel: React.FC<ChallengePanelProps> = ({ question, score,
 
             <div className="w-full flex flex-col sm:flex-row items-center justify-between mt-2 gap-4">
                  <div className="w-full sm:w-1/2">
-                    {status === 'playing' && <Timer onTimeOut={onTimeOut} status={status} />}
+                    {status === 'playing' && <Timer onTimeOut={onTimeOut} status={status} duration={timeLimit} />}
                  </div>
                  <div className="mt-3 sm:mt-0">
                     {status === 'correct' || status === 'incorrect' || status === 'timed_out' ? (

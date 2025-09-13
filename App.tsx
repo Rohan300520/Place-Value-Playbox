@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import type { PlaceValueColumns, BlockValue, PlaceValueCategory, Block, AppState, TrainingStep, ChallengeQuestion } from './types';
+import type { PlaceValueColumns, BlockValue, PlaceValueCategory, Block, AppState as GameState, TrainingStep, ChallengeQuestion, Difficulty } from './types';
 import { PlaceValueColumn } from './components/PlaceValueColumn';
 import { BlockSource } from './components/BlockSource';
-import { Header } from './components/Header';
 import { ResetButton } from './components/ResetButton';
 import { ChallengePanel } from './components/ChallengePanel';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { ModeSelector } from './components/ModeSelector';
+import { DifficultySelector } from './components/DifficultySelector';
 import { TrainingGuide } from './components/TrainingGuide';
 import { HelpModal } from './components/HelpModal';
 import { NumberBlock } from './components/NumberBlock';
@@ -17,33 +17,100 @@ import { Confetti } from './components/Confetti';
 import { challengeQuestions } from './utils/challenges';
 import { StemConnection } from './components/StemConnection';
 import { CandyReward } from './components/CandyReward';
+import { Header } from './components/Header';
+import { Sidebar } from './components/Sidebar';
+import { Footer } from './components/Footer';
 
+// --- Game-specific Header (previously components/Header.tsx) ---
+const GameHeader: React.FC<{
+  total: number;
+  appState: GameState;
+  onBack?: () => void;
+  totalInWords: string;
+}> = ({ total, appState, onBack, totalInWords }) => {
+  const [isAnimating, setIsAnimating] = useState(false);
+  const prevTotalRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    if (prevTotalRef.current !== undefined && prevTotalRef.current !== total) {
+      setIsAnimating(true);
+      const timer = setTimeout(() => setIsAnimating(false), 1000);
+      return () => clearTimeout(timer);
+    }
+    prevTotalRef.current = total;
+  }, [total]);
+
+  const showBackButton = onBack && (appState === 'playground' || appState === 'challenge' || appState === 'training' || appState === 'stem_connection' || appState === 'challenge_difficulty_selection');
+
+  const getSubTitle = () => {
+    switch (appState) {
+      case 'training': return 'Training Mode';
+      case 'challenge': return 'Challenge Mode';
+      case 'playground': return 'Playground';
+      case 'stem_connection': return 'STEM Connection';
+      case 'mode_selection': return 'Choose Your Adventure!';
+      case 'challenge_difficulty_selection': return 'Select Difficulty';
+      default: return null;
+    }
+  }
+
+  const subTitle = getSubTitle();
+  const showScore = appState === 'playground' || appState === 'challenge' || appState === 'training';
+
+  return (
+    <header className="bg-slate-900/50 backdrop-blur-sm rounded-2xl shadow-lg border border-sky-400/20 p-2 sm:p-4 flex justify-between items-center w-full">
+      <div className="flex-1">
+        {showBackButton && (
+          <button
+            onClick={onBack}
+            className="bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-full h-8 w-8 sm:h-12 sm:w-12 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform z-10"
+            aria-label="Go back to mode selection"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center text-center">
+        <h1 className="text-2xl sm:text-4xl font-black text-sky-200 tracking-tight">Place Value Playbox</h1>
+        {subTitle && (
+            <h2 className="text-lg sm:text-2xl font-bold text-sky-300 tracking-tight -mt-1 sm:-mt-2">
+                {subTitle}
+            </h2>
+        )}
+      </div>
+      <div className="flex-1 flex justify-end">
+        {showScore && (
+          <div className={`text-center bg-slate-800/50 rounded-2xl px-3 sm:px-6 py-1 sm:py-2 shadow-inner border border-sky-400/20 ${isAnimating ? 'animate-tada' : ''}`}>
+            <div className="text-4xl sm:text-6xl font-black text-emerald-400 tabular-nums tracking-tighter" style={{ textShadow: '0 0 10px #34d399' }}>
+              {new Intl.NumberFormat().format(total)}
+            </div>
+            <div className="text-xs sm:text-lg font-bold text-slate-400 capitalize min-h-[1.25rem] sm:min-h-[1.75rem] flex items-center justify-center">
+                {total > 0 ? totalInWords : '\u00A0'}
+            </div>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+};
+
+
+// --- Place Value Playbox Application Logic ---
 const trainingPlan: TrainingStep[] = [
-  // Step 1: Add one '1' block
   { step: 0, type: 'action', source: 1, column: 'ones', text: "Let's start! Drag a blue '1' block to the 'Ones' column." },
   { step: 1, type: 'feedback', text: "Great Job! ✨", duration: 2000, clearBoardAfter: true },
-  
-  // Step 2: Add three '1' blocks to practice multiple adds
   { step: 2, type: 'action_multi', source: 1, column: 'ones', count: 3, text: "Good! Now, let's add a few more. Add 3 blue blocks to the 'Ones' column." },
   { step: 3, type: 'feedback', text: "Perfect! You added 3. 🚀", duration: 2000, clearBoardAfter: true },
-
-  // Step 3: Add one '10' block
   { step: 4, type: 'action', source: 10, column: 'tens', text: "Awesome! Now drag a green '10' block to the 'Tens' column." },
   { step: 5, type: 'feedback', text: "You got it! 👍", duration: 2000, clearBoardAfter: true },
-  
-  // Step 4: Add one '100' block
   { step: 6, type: 'action', source: 100, column: 'hundreds', text: "You're a pro! Drag a yellow '100' block to the 'Hundreds' column." },
   { step: 7, type: 'feedback', text: "Fantastic! 🌟", duration: 2000, clearBoardAfter: true },
-
-  // Step 5: Regroup ones to tens
   { step: 8, type: 'action_multi', source: 1, column: 'ones', count: 10, text: "Time for some magic! ✨ Add 10 blue blocks to see what happens." },
   { step: 9, type: 'magic_feedback', text: "Poof! 10 'Ones' became 1 'Ten'. That's regrouping!", duration: 4000, clearBoardAfter: true, targetColumn: 'tens' },
-
-  // Step 6: Regroup tens to hundreds
   { step: 10, type: 'action_multi', source: 10, column: 'tens', count: 10, text: "Let's do it again! Add 10 green blocks to the 'Tens' column." },
   { step: 11, type: 'magic_feedback', text: "Amazing! 🪄 10 'Tens' make 1 'Hundred' block!", duration: 4000, clearBoardAfter: true, targetColumn: 'hundreds' },
-  
-  // Step 7: Complete
   { step: 12, type: 'complete', text: "Training Complete! You're ready to play!" },
 ];
 
@@ -68,31 +135,27 @@ const useSimpleSound = (freq: number, duration: number) => {
   }, [freq, duration]);
 };
 
-function App() {
-  const [appState, setAppState] = useState<AppState>('welcome');
+const DURATION_MAP: Record<Difficulty, number> = { easy: 45, medium: 30, hard: 20 };
+const DIFFICULTY_LEVEL_MAP: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 3 };
+
+const PlaceValuePlayboxApp: React.FC = () => {
+  const [appState, setAppState] = useState<GameState>('welcome');
   const [columns, setColumns] = useState<PlaceValueColumns>({ ones: [], tens: [], hundreds: [], thousands: [] });
   const [dragInfo, setDragInfo] = useState<{ value: BlockValue, origin?: { category: PlaceValueCategory, id: string } } | null>(null);
   const dragInfoRef = useRef<{ value: BlockValue, origin?: { category: PlaceValueCategory, id: string } } | null>(null);
   const [regrouping, setRegrouping] = useState<{ from: PlaceValueCategory, to: PlaceValueCategory } | null>(null);
-  
-  // Challenge Mode State
   const [questions, setQuestions] = useState<ChallengeQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [challengeStatus, setChallengeStatus] = useState<'playing' | 'correct' | 'incorrect' | 'timed_out'>('playing');
+  const [challengeDifficulty, setChallengeDifficulty] = useState<Difficulty>('medium');
   const [showRocket, setShowRocket] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showCandy, setShowCandy] = useState(false);
   const [correctAnswer, setCorrectAnswer] = useState<number | null>(null);
-
-  // Training Mode State
   const [trainingStep, setTrainingStep] = useState(0);
   const [trainingFeedback, setTrainingFeedback] = useState<string | null>(null);
-
-  // Help Modal State
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
-  
-  // Touch Drag State (Simplified for this version)
   const [touchDrag, setTouchDrag] = useState<{ value: BlockValue | null; x: number; y: number; }>({ value: null, x: 0, y: 0 });
   const [activeTouchTarget, setActiveTouchTarget] = useState<PlaceValueCategory | null>(null);
   const activeTouchTargetRef = useRef<PlaceValueCategory | null>(null);
@@ -109,6 +172,17 @@ function App() {
   const playMagicFeedbackSound = useSimpleSound(1318, 0.4);
   const playRocketSound = useSimpleSound(150, 2);
   const playCandySound = useSimpleSound(1800, 0.3);
+
+  useEffect(() => {
+    try {
+        const savedDifficulty = localStorage.getItem('placeValueDifficulty') as Difficulty | null;
+        if (savedDifficulty && ['easy', 'medium', 'hard'].includes(savedDifficulty)) {
+            setChallengeDifficulty(savedDifficulty);
+        }
+    } catch (e) {
+        console.error("Could not read from localStorage:", e);
+    }
+  }, []);
 
   const total = useMemo(() => {
     const onesValue = columns.ones.filter(b => !b.isAnimating).length * 1;
@@ -175,7 +249,6 @@ function App() {
   const handleDrop = useCallback((category: PlaceValueCategory) => {
     const currentDragInfo = dragInfoRef.current;
     if (isDropAllowed(category) && currentDragInfo) {
-      // If dragging from a column to another (not really supported, but prevents duplication)
       if(currentDragInfo.origin) {
          setColumns(prev => ({
             ...prev,
@@ -198,8 +271,6 @@ function App() {
   
   const handleDropToRemove = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    // If the drop target is a valid column, let the column's handler manage it.
-    // This provides a safety net if stopPropagation fails for any reason.
     const target = e.target as HTMLElement;
     if (target.closest('[data-droptarget]')) {
         return;
@@ -210,13 +281,11 @@ function App() {
         const { category, id } = currentDragInfo.origin;
         const blockToRemove = columns[category].find(b => b.id === id);
         if (blockToRemove) {
-            // Set isAnimating to false to trigger poof-out animation
             setColumns(prev => ({
                 ...prev,
                 [category]: prev[category].map(b => b.id === id ? { ...b, isAnimating: false } : b)
             }));
             playRemoveSound();
-            // Actually remove after animation
             setTimeout(() => {
                 setColumns(prev => ({
                     ...prev,
@@ -229,7 +298,6 @@ function App() {
     setDragInfo(null);
   }, [appState, columns, playRemoveSound]);
 
-  // Touch Handlers
   const handleTouchStart = useCallback((value: BlockValue, event: React.TouchEvent) => {
       event.preventDefault();
       const touch = event.touches[0];
@@ -266,9 +334,8 @@ function App() {
 
     const handleEnd = () => {
       if (activeTouchTargetRef.current) {
-        handleDrop(activeTouchTargetRef.current); // This will clear ref and state
+        handleDrop(activeTouchTargetRef.current);
       } else {
-        // If drop was not on a target, clear manually
         dragInfoRef.current = null;
         setDragInfo(null);
       }
@@ -321,24 +388,37 @@ function App() {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(i => i + 1);
     } else {
-      // Reshuffle and start over for endless play
       setQuestions(prev => [...prev].sort(() => 0.5 - Math.random()));
       setCurrentQuestionIndex(0);
     }
   };
 
-  const handleModeSelection = (mode: AppState) => {
+  const handleModeSelection = (mode: GameState) => {
     handleReset();
     setScore(0);
     setTrainingStep(0);
-    setAppState(mode);
     if(mode === 'challenge') {
-        setQuestions(challengeQuestions.sort(() => 0.5 - Math.random()));
-        setCurrentQuestionIndex(0);
+        setAppState('challenge_difficulty_selection');
+    } else {
+        setAppState(mode);
     }
   }
 
-  // Effect to handle advancing training steps from ACTION steps based on player actions
+  const handleStartChallenge = (difficulty: Difficulty) => {
+    setChallengeDifficulty(difficulty);
+    try {
+        localStorage.setItem('placeValueDifficulty', difficulty);
+    } catch(e) {
+        console.error("Could not write to localStorage:", e);
+    }
+    const difficultyLevel = DIFFICULTY_LEVEL_MAP[difficulty];
+    const filteredQuestions = challengeQuestions.filter(q => q.level === difficultyLevel);
+    setQuestions(filteredQuestions.sort(() => 0.5 - Math.random()));
+    setCurrentQuestionIndex(0);
+    handleReset();
+    setAppState('challenge');
+  };
+
   useEffect(() => {
     if (appState !== 'training' || !currentTrainingStepConfig) return;
     const { type, column, count } = currentTrainingStepConfig;
@@ -357,7 +437,6 @@ function App() {
     if (shouldAdvance) setTrainingStep(prev => prev + 1);
   }, [appState, columns, regrouping, currentTrainingStepConfig]);
 
-  // Effect to handle FEEDBACK steps
   useEffect(() => {
     if (appState !== 'training' || !currentTrainingStepConfig) return;
     const { type, text, duration, clearBoardAfter } = currentTrainingStepConfig;
@@ -375,7 +454,6 @@ function App() {
     }
   }, [appState, currentTrainingStepConfig, handleReset, playFeedbackSound, playMagicFeedbackSound]);
 
-  // Regrouping Effects
   useEffect(() => {
     const isReadyForRegroup = appState === 'playground' || appState === 'challenge' || (appState === 'training' && (currentTrainingStepConfig?.count ?? 0) >= 10);
 
@@ -400,7 +478,6 @@ function App() {
 
   }, [columns, regrouping, appState, playRegroupSound, playSparkleSound, currentTrainingStepConfig]);
 
-  // Effect to clean up the 'isNewlyRegrouped' flag
     useEffect(() => {
         const hasNewlyRegrouped = columns.tens.some(b => b.isNewlyRegrouped) || columns.hundreds.some(b => b.isNewlyRegrouped) || columns.thousands.some(b => b.isNewlyRegrouped);
         if (hasNewlyRegrouped) {
@@ -422,6 +499,8 @@ function App() {
             return <WelcomeScreen onStart={() => setAppState('mode_selection')} />;
         case 'mode_selection':
             return <ModeSelector onSelectMode={handleModeSelection} />;
+        case 'challenge_difficulty_selection':
+            return <DifficultySelector onSelectDifficulty={handleStartChallenge} onBack={() => setAppState('mode_selection')} />;
         case 'stem_connection':
             return <StemConnection />;
         case 'training':
@@ -441,7 +520,7 @@ function App() {
                     }
                 }}>
                   {appState === 'challenge' && (
-                    <ChallengePanel question={currentQuestion} score={score} status={challengeStatus} onCheck={checkAnswer} onNext={nextChallenge} onTimeOut={handleTimeOut} correctAnswer={correctAnswer}/>
+                    <ChallengePanel question={currentQuestion} score={score} status={challengeStatus} onCheck={checkAnswer} onNext={nextChallenge} onTimeOut={handleTimeOut} correctAnswer={correctAnswer} timeLimit={DURATION_MAP[challengeDifficulty]}/>
                   )}
         
                   <div className="grid grid-cols-4 gap-1 sm:gap-2 md:gap-4">
@@ -462,10 +541,8 @@ function App() {
     }
   }
 
-
   return (
-    <div className="min-h-screen text-gray-200 flex flex-col items-center p-1 sm:p-2 md:p-4 relative overflow-hidden" onDragOver={(e) => handleDragOver(e)} onDrop={handleDropToRemove}>
-      <Starfield />
+    <div className="w-full h-full flex flex-col items-center relative" onDragOver={(e) => handleDragOver(e)} onDrop={handleDropToRemove}>
       {showRocket && <RocketAnimation onComplete={() => setShowRocket(false)} />}
       {showConfetti && <Confetti onComplete={() => setShowConfetti(false)} />}
       {showCandy && <CandyReward onComplete={() => setShowCandy(false)} />}
@@ -493,9 +570,41 @@ function App() {
         <TrainingGuide currentStepConfig={currentTrainingStepConfig} columnCounts={{ ones: columns.ones.length, tens: columns.tens.length, hundreds: columns.hundreds.length, thousands: columns.thousands.length }} onComplete={() => setAppState('mode_selection')} feedback={trainingFeedback} />
       }
       <div className={`w-full max-w-7xl mx-auto flex-grow flex flex-col ${appState === 'training' ? 'relative z-20' : ''}`}>
-        <Header appState={appState} total={total} totalInWords={totalInWords} onBack={() => setAppState('mode_selection')} />
+        <GameHeader appState={appState} total={total} totalInWords={totalInWords} onBack={() => setAppState('mode_selection')} />
         {renderMainContent()}
       </div>
+    </div>
+  );
+};
+
+
+// --- Main Application Shell ---
+function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeModel, setActiveModel] = useState<string | null>(null);
+
+  return (
+    <div className="min-h-screen text-gray-200 flex flex-col">
+      <div className="fixed top-0 left-0 w-full h-full -z-10">
+        <Starfield />
+      </div>
+      <Header onMenuClick={() => setIsSidebarOpen(true)} />
+      <Sidebar 
+          isOpen={isSidebarOpen} 
+          onClose={() => setIsSidebarOpen(false)}
+          onSelectModel={setActiveModel}
+      />
+      <main className="flex-grow flex flex-col items-center justify-center p-1 sm:p-2 md:p-4 relative">
+          {activeModel === 'place-value-playbox' ? (
+              <PlaceValuePlayboxApp />
+          ) : (
+              <div className="text-center bg-slate-900/50 backdrop-blur-sm p-8 rounded-2xl border border-sky-400/20 shadow-2xl animate-pop-in">
+                  <h1 className="text-4xl font-bold text-sky-300">Welcome to SMART C Digital Labs</h1>
+                  <p className="mt-4 text-xl text-slate-400">Please select a math model from the sidebar to get started.</p>
+              </div>
+          )}
+      </main>
+      <Footer />
     </div>
   );
 }
