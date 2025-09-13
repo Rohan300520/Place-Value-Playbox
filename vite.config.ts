@@ -11,6 +11,7 @@ export default defineConfig({
       injectRegister: 'script',
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png}'],
+        maximumFileSizeToCacheInBytes: 30 * 1024 * 1024,
         // Exclude the icon from the glob pattern since it's added by the manifest.
         // This prevents a duplicate entry error in the service worker.
         globIgnores: [],
