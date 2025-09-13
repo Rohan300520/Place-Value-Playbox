@@ -11,7 +11,7 @@ import { TrainingGuide } from './components/TrainingGuide';
 import { HelpModal } from './components/HelpModal';
 import { NumberBlock } from './components/NumberBlock';
 import { numberToWords } from './utils/numberToWords';
-import { Starfield } from './components/Starfield';
+import { BackgroundManager } from './components/Starfield';
 import { RocketAnimation } from './components/RocketAnimation';
 import { Confetti } from './components/Confetti';
 import { challengeQuestions } from './utils/challenges';
@@ -20,6 +20,7 @@ import { CandyReward } from './components/CandyReward';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { Footer } from './components/Footer';
+import { ModelIntroScreen } from './components/ModelIntroScreen';
 
 // --- Game-specific Header (previously components/Header.tsx) ---
 const GameHeader: React.FC<{
@@ -58,12 +59,22 @@ const GameHeader: React.FC<{
   const showScore = appState === 'playground' || appState === 'challenge' || appState === 'training';
 
   return (
-    <header className="bg-slate-900/50 backdrop-blur-sm rounded-2xl shadow-lg border border-sky-400/20 p-2 sm:p-4 flex justify-between items-center w-full">
+    <header className="rounded-2xl shadow-lg p-2 sm:p-4 flex justify-between items-center w-full" style={{
+        backgroundColor: 'var(--backdrop-bg)',
+        border: '1px solid var(--border-primary)',
+        backdropFilter: 'blur(10px)',
+    }}>
       <div className="flex-1">
         {showBackButton && (
           <button
             onClick={onBack}
-            className="bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-full h-8 w-8 sm:h-12 sm:w-12 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform z-10"
+            className="text-white font-bold rounded-full h-8 w-8 sm:h-12 sm:w-12 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform z-10 border-b-4 active:border-b-2"
+            style={{ 
+                backgroundColor: 'var(--btn-help-bg)', 
+                borderColor: 'var(--btn-help-border)'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--btn-help-hover)'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--btn-help-bg)'}
             aria-label="Go back to mode selection"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -73,20 +84,23 @@ const GameHeader: React.FC<{
         )}
       </div>
       <div className="flex-1 flex flex-col items-center justify-center text-center">
-        <h1 className="text-2xl sm:text-4xl font-black text-sky-200 tracking-tight">Place Value Playbox</h1>
+        <h1 className="text-2xl sm:text-4xl font-black tracking-tight font-display" style={{ color: 'var(--text-primary)' }}>Place Value Playbox</h1>
         {subTitle && (
-            <h2 className="text-lg sm:text-2xl font-bold text-sky-300 tracking-tight -mt-1 sm:-mt-2">
+            <h2 className="text-lg sm:text-2xl font-bold tracking-tight -mt-1 sm:-mt-2" style={{ color: 'var(--text-accent)'}}>
                 {subTitle}
             </h2>
         )}
       </div>
       <div className="flex-1 flex justify-end">
         {showScore && (
-          <div className={`text-center bg-slate-800/50 rounded-2xl px-3 sm:px-6 py-1 sm:py-2 shadow-inner border border-sky-400/20 ${isAnimating ? 'animate-tada' : ''}`}>
-            <div className="text-4xl sm:text-6xl font-black text-emerald-400 tabular-nums tracking-tighter" style={{ textShadow: '0 0 10px #34d399' }}>
+          <div className={`text-center rounded-2xl px-3 sm:px-6 py-1 sm:py-2 shadow-inner ${isAnimating ? 'animate-tada' : ''}`} style={{
+              backgroundColor: 'var(--panel-bg)',
+              border: '1px solid var(--border-primary)',
+          }}>
+            <div className="text-4xl sm:text-6xl font-black text-green-600 tabular-nums tracking-tighter" style={{ textShadow: '0 0 10px rgba(22, 163, 74, 0.3)' }}>
               {new Intl.NumberFormat().format(total)}
             </div>
-            <div className="text-xs sm:text-lg font-bold text-slate-400 capitalize min-h-[1.25rem] sm:min-h-[1.75rem] flex items-center justify-center">
+            <div className="text-xs sm:text-lg font-bold capitalize min-h-[1.25rem] sm:min-h-[1.75rem] flex items-center justify-center" style={{ color: 'var(--text-secondary)'}}>
                 {total > 0 ? totalInWords : '\u00A0'}
             </div>
           </div>
@@ -530,7 +544,7 @@ const PlaceValuePlayboxApp: React.FC = () => {
                     <PlaceValueColumn title="Ones" category="ones" blocks={columns.ones} onDrop={handleDrop} onDragOver={handleDragOver} isRegroupingDestination={false} isDropAllowed={isDropAllowed('ones')} isDragging={!!dragInfo} color="blue" isSpotlighted={currentTrainingStepConfig?.column === 'ones'} isTouchTarget={activeTouchTarget === 'ones'} appState={appState} />
                   </div>
                   
-                  <div className={`mt-4 sm:mt-8 p-2 sm:p-6 bg-slate-900/50 border border-sky-400/20 rounded-2xl shadow-lg flex flex-col md:flex-row items-center justify-center gap-2 sm:gap-6 transition-all duration-300 ${currentTrainingStepConfig ? 'relative z-20' : ''}`}>
+                  <div className={`mt-4 sm:mt-8 p-2 sm:p-6 backdrop-blur-sm border rounded-2xl shadow-md flex flex-col md:flex-row items-center justify-center gap-2 sm:gap-6 transition-all duration-300 ${currentTrainingStepConfig ? 'relative z-20' : ''}`} style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)'}}>
                     <BlockSource onDragStart={handleDragStart} onTouchStart={handleTouchStart} isTraining={appState === 'training'} spotlightOn={currentTrainingStepConfig?.source} />
                     {appState !== 'training' && <ResetButton onClick={handleReset} />}
                   </div>
@@ -557,7 +571,13 @@ const PlaceValuePlayboxApp: React.FC = () => {
       {appState !== 'training' && appState !== 'welcome' && (
         <button
           onClick={() => setIsHelpModalOpen(true)}
-          className="fixed top-2 right-2 sm:top-4 sm:right-4 z-40 bg-blue-500 hover:bg-blue-400 text-white font-bold rounded-full h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center shadow-lg shadow-blue-500/50 transform hover:scale-110 transition-transform"
+          className="fixed top-2 right-2 sm:top-4 sm:right-4 z-40 text-white font-bold rounded-full h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform border-b-4 active:border-b-2"
+          style={{ 
+            backgroundColor: 'var(--btn-help-bg)', 
+            borderColor: 'var(--btn-help-border)'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--btn-help-hover)'}
+          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--btn-help-bg)'}
           aria-label="Open help and instructions"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -582,25 +602,33 @@ const PlaceValuePlayboxApp: React.FC = () => {
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeModel, setActiveModel] = useState<string | null>(null);
+  const [showModelIntro, setShowModelIntro] = useState(false);
 
   return (
-    <div className="min-h-screen text-gray-200 flex flex-col">
-      <div className="fixed top-0 left-0 w-full h-full -z-10">
-        <Starfield />
-      </div>
+    <div className="min-h-screen flex flex-col" style={{ color: 'var(--text-primary)'}}>
+      <BackgroundManager />
       <Header onMenuClick={() => setIsSidebarOpen(true)} />
       <Sidebar 
           isOpen={isSidebarOpen} 
           onClose={() => setIsSidebarOpen(false)}
-          onSelectModel={setActiveModel}
+          onSelectModel={(model) => {
+              setActiveModel(model);
+              setShowModelIntro(true);
+          }}
       />
       <main className="flex-grow flex flex-col items-center justify-center p-1 sm:p-2 md:p-4 relative">
-          {activeModel === 'place-value-playbox' ? (
+          {showModelIntro && activeModel === 'place-value-playbox' ? (
+              <ModelIntroScreen onContinue={() => setShowModelIntro(false)} />
+          ) : activeModel === 'place-value-playbox' ? (
               <PlaceValuePlayboxApp />
           ) : (
-              <div className="text-center bg-slate-900/50 backdrop-blur-sm p-8 rounded-2xl border border-sky-400/20 shadow-2xl animate-pop-in">
-                  <h1 className="text-4xl font-bold text-sky-300">Welcome to SMART C Digital Labs</h1>
-                  <p className="mt-4 text-xl text-slate-400">Please select a math model from the sidebar to get started.</p>
+              <div className="text-center p-8 rounded-2xl border shadow-xl animate-pop-in" style={{ 
+                  backgroundColor: 'var(--backdrop-bg)', 
+                  borderColor: 'var(--border-primary)',
+                  backdropFilter: 'blur(10px)',
+                }}>
+                  <h1 className="text-4xl font-bold font-display" style={{ color: 'var(--text-accent)'}}>Welcome to SMART C Digital Labs</h1>
+                  <p className="mt-4 text-xl" style={{ color: 'var(--text-secondary)'}}>Please select a math model from the sidebar to get started.</p>
               </div>
           )}
       </main>

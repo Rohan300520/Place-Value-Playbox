@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { NumberBlock } from './NumberBlock';
 import type { TrainingStep, PlaceValueCategory } from '../types';
@@ -12,19 +13,27 @@ interface TrainingGuideProps {
 
 const GuideBox: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => {
     return (
-        <div className={`fixed bg-slate-900/90 backdrop-blur-sm border border-sky-400/30 p-4 sm:p-6 rounded-2xl shadow-xl text-xl sm:text-2xl font-bold text-slate-200 max-w-sm sm:max-w-lg text-center animate-pop-in z-30 ${className}`}>
+        <div className={`fixed backdrop-blur-sm border-2 p-4 sm:p-6 rounded-2xl shadow-xl text-xl sm:text-2xl font-bold max-w-sm sm:max-w-lg text-center animate-pop-in z-30 ${className}`}
+          style={{ 
+            backgroundColor: 'rgba(30, 41, 59, 0.95)',
+            borderColor: 'rgba(56, 189, 248, 0.5)',
+            color: '#f1f5f9',
+            '--guide-box-bg': 'rgba(30, 41, 59, 0.95)'
+          } as React.CSSProperties}
+        >
            {children}
         </div>
     )
 };
 
 const FeedbackBox: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-green-500/20 border-4 border-green-400 p-6 sm:p-8 rounded-2xl shadow-xl text-2xl sm:text-4xl font-black text-green-300 animate-tada z-40 flex items-center gap-4">
+    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-green-500/95 border-4 border-white/50 p-6 sm:p-8 rounded-2xl shadow-xl text-2xl sm:text-4xl font-black text-white animate-tada z-40 flex items-center gap-4 font-display">
         {children}
     </div>
 );
 
 const GhostBlock: React.FC<{ value: number }> = ({ value }) => {
+    // These animations are defined in index.html and are not theme-dependent
     let animationClass = '';
     switch(value) {
         case 1: animationClass = 'animate-ghost-move-one'; break;
@@ -49,6 +58,7 @@ const colorMap = {
     ones: 'text-sky-400',
     tens: 'text-emerald-400',
     hundreds: 'text-amber-400',
+    thousands: 'text-purple-400',
 };
 
 export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig, columnCounts, onComplete, feedback }) => {
@@ -70,7 +80,7 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
                         <GuideBox className="bottom-4 right-4 sm:bottom-6 sm:right-6 w-[80vw] max-w-xs text-left guide-box-arrow">
                             <p>{colorSpan(currentStepConfig.text)}</p>
                             {currentStepConfig.type === 'action_multi' && (
-                                <div className={`mt-4 text-4xl font-black ${colorMap[column]} tabular-nums`}>
+                                <div className={`mt-4 text-4xl font-black ${colorMap[column]} tabular-nums font-display`}>
                                     {columnCounts[column]} / {currentStepConfig.count}
                                 </div>
                             )}
@@ -91,7 +101,7 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
                 }
                 return (
                     <GuideBox className={`${positionClass} guide-box-arrow`}>
-                        <p>{currentStepConfig.text}</p>
+                        <p className="font-display text-3xl">{currentStepConfig.text}</p>
                     </GuideBox>
                 );
             }
@@ -99,8 +109,8 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
                  return (
                     <GuideBox className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                         <p className="text-5xl">🎓</p>
-                        <p className="mt-4 text-4xl">{currentStepConfig.text}</p>
-                        <button onClick={onComplete} className="mt-6 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold text-xl py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 transition-all">
+                        <p className="mt-4 text-4xl font-display">{currentStepConfig.text}</p>
+                        <button onClick={onComplete} className="mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xl py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 transition-all border-b-4 border-orange-700 active:border-b-2">
                             Back to Menu
                         </button>
                     </GuideBox>
@@ -112,7 +122,7 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
 
     return (
        <>
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-10" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-10" />
         {renderContent()}
        </>
     );

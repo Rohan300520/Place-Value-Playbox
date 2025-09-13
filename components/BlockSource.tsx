@@ -10,10 +10,10 @@ interface BlockSourceProps {
 }
 
 const blockData = [
-  { value: 1000 as BlockValue, label: '1000', colorClass: 'text-purple-300' },
-  { value: 100 as BlockValue, label: '100', colorClass: 'text-amber-300' },
-  { value: 10 as BlockValue, label: '10', colorClass: 'text-emerald-300' },
-  { value: 1 as BlockValue, label: '1', colorClass: 'text-sky-300' },
+  { value: 1000 as BlockValue, label: '1000', colorVar: 'var(--col-purple-text)' },
+  { value: 100 as BlockValue, label: '100', colorVar: 'var(--col-yellow-text)' },
+  { value: 10 as BlockValue, label: '10', colorVar: 'var(--col-green-text)' },
+  { value: 1 as BlockValue, label: '1', colorVar: 'var(--col-blue-text)' },
 ];
 
 interface BlockWrapperProps {
@@ -22,10 +22,10 @@ interface BlockWrapperProps {
   onTouchStart: (value: BlockValue, event: React.TouchEvent) => void;
   isSpotlighted: boolean;
   label: string;
-  colorClass: string;
+  colorVar: string;
 }
 
-const BlockWrapper: React.FC<BlockWrapperProps> = React.memo(({ value, onDragStart, onTouchStart, isSpotlighted, label, colorClass }) => {
+const BlockWrapper: React.FC<BlockWrapperProps> = React.memo(({ value, onDragStart, onTouchStart, isSpotlighted, label, colorVar }) => {
     const animationDelay = useMemo(() => `${Math.random()}s`, []);
     const animationClass = isSpotlighted ? 'animate-guide-pulse' : 'animate-float';
 
@@ -35,7 +35,7 @@ const BlockWrapper: React.FC<BlockWrapperProps> = React.memo(({ value, onDragSta
           style={{ animationDelay: isSpotlighted ? '0s' : animationDelay }}
         >
             <NumberBlock value={value} isDraggable={true} onDragStart={onDragStart} onTouchStart={onTouchStart} />
-            <span className={`mt-2 font-bold text-lg ${colorClass}`}>{label}</span>
+            <span className={`mt-2 font-bold text-lg`} style={{ color: colorVar }}>{label}</span>
         </div>
     );
 });
@@ -57,7 +57,7 @@ export const BlockSource: React.FC<BlockSourceProps> = ({ onDragStart, onTouchSt
           onDragStart={onDragStart}
           onTouchStart={onTouchStart}
           label={block.label}
-          colorClass={block.colorClass}
+          colorVar={block.colorVar}
           isSpotlighted={isTraining && spotlightOn === block.value}
         />
       ))}

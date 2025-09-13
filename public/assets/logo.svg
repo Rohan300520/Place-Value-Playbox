@@ -4,6 +4,6 @@
           stroke="#F97316" stroke-width="8" fill="none" stroke-linecap="round"/>
     <line x1="20" y1="-40" x2="20" y2="40" stroke="#F97316" stroke-width="8" stroke-linecap="round"/>
   </g>
-  <text x="120" y="70" style="font: bold 48px Arial, sans-serif; fill: #00008B;">SMART C</text>
-  <text x="125" y="95" style="font: 24px Arial, sans-serif; fill: black;">सुसंस्था - सुविधा</text>
+  <text x="120" y="70" style="font: bold 48px Arial, sans-serif;" fill="currentColor">SMART C</text>
+  <text x="125" y="95" style="font: 24px Arial, sans-serif;" fill="currentColor">सुसंस्था - सुविधा</text>
 </svg>

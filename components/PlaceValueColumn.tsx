@@ -17,18 +17,18 @@ interface PlaceValueColumnProps {
   appState: string;
 }
 
-const colorClasses = {
-  blue: { bg: 'bg-sky-900/50', border: 'border-sky-400', text: 'text-sky-200', glow: 'shadow-sky-400/20', ring: 'ring-sky-300' },
-  green: { bg: 'bg-teal-900/50', border: 'border-teal-400', text: 'text-teal-200', glow: 'shadow-teal-400/20', ring: 'ring-teal-300' },
-  yellow: { bg: 'bg-amber-900/50', border: 'border-amber-400', text: 'text-amber-200', glow: 'shadow-amber-400/20', ring: 'ring-amber-300' },
-  purple: { bg: 'bg-purple-900/50', border: 'border-purple-400', text: 'text-purple-200', glow: 'shadow-purple-400/20', ring: 'ring-purple-300' },
+const colorVars = {
+  blue: { bg: 'var(--col-blue-bg)', border: 'var(--col-blue-border)', text: 'var(--col-blue-text)', ring: 'ring-sky-500' },
+  green: { bg: 'var(--col-green-bg)', border: 'var(--col-green-border)', text: 'var(--col-green-text)', ring: 'ring-emerald-500' },
+  yellow: { bg: 'var(--col-yellow-bg)', border: 'var(--col-yellow-border)', text: 'var(--col-yellow-text)', ring: 'ring-amber-500' },
+  purple: { bg: 'var(--col-purple-bg)', border: 'var(--col-purple-border)', text: 'var(--col-purple-text)', ring: 'ring-purple-500' },
 };
 
 export const PlaceValueColumn: React.FC<PlaceValueColumnProps> = ({ 
   title, category, blocks, onDrop, onDragOver, isRegroupingDestination, 
   isDropAllowed, isDragging, color, isSpotlighted, isTouchTarget, appState
 }) => {
-  const styles = colorClasses[color];
+  const styles = colorVars[color];
   const [isPulsing, setIsPulsing] = useState(false);
   const prevBlockCount = useRef(blocks.length);
 
@@ -43,39 +43,39 @@ export const PlaceValueColumn: React.FC<PlaceValueColumnProps> = ({
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.stopPropagation(); // Prevents the event from bubbling up to the main container
+    e.stopPropagation(); 
     onDrop(category);
   };
   
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.stopPropagation(); // Prevents the event from bubbling up to the main container.
+    e.stopPropagation();
     onDragOver(e, category);
   };
 
-  let borderStyle = styles.border;
+  let borderStyle = 'border-transparent';
   const isBeingDraggedOver = isDragging || isTouchTarget;
   
   if (isBeingDraggedOver) {
     if (isDropAllowed) {
-      borderStyle = isSpotlighted ? `border-blue-400 ring-4 ${styles.ring}` : `border-green-400 ring-4 ring-green-300`;
+      borderStyle = isSpotlighted ? `border-blue-500 ring-4 ${styles.ring}` : `border-green-600 ring-4 ring-green-500`;
     } else {
-      borderStyle = 'border-red-500 ring-4 ring-red-300';
+      borderStyle = 'border-red-600 ring-4 ring-red-500';
     }
   } else if (isSpotlighted) {
-    borderStyle = `border-blue-400 ring-4 ${styles.ring}`;
+    borderStyle = `border-blue-500 ring-4 ${styles.ring}`;
   }
 
 
   return (
-    <div className={`flex flex-col rounded-2xl shadow-lg ${styles.glow} transition-all duration-300 ${isSpotlighted ? 'relative z-20' : ''} ${styles.bg}`}>
-      <h2 className={`text-xl sm:text-2xl font-black text-center p-2 sm:p-4 border-b-4 ${styles.text} ${styles.border}`}>
+    <div className={`flex flex-col rounded-2xl shadow-xl transition-all duration-300 ${isSpotlighted ? 'relative z-20' : ''}`} style={{ backgroundColor: styles.bg }}>
+      <h2 className={`font-display text-xl sm:text-2xl font-black text-center p-2 sm:p-4 border-b-4`} style={{ color: styles.text, borderColor: styles.border }}>
         {title}
       </h2>
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         data-droptarget={category}
-        className={`flex-grow min-h-[180px] sm:min-h-[300px] p-1 sm:p-2 md:p-4 transition-all duration-300 rounded-b-2xl border-4 border-dashed bg-black/20 border-transparent ${borderStyle} ${isRegroupingDestination ? 'animate-pulse' : ''} ${isSpotlighted && !isBeingDraggedOver ? 'animate-guide-pulse' : ''} ${isPulsing ? 'animate-column-pulse' : ''}`}
+        className={`flex-grow min-h-[180px] sm:min-h-[300px] p-1 sm:p-2 md:p-4 transition-all duration-300 rounded-b-2xl border-4 border-dashed bg-black/5 ${borderStyle} ${isRegroupingDestination ? 'animate-pulse' : ''} ${isSpotlighted && !isBeingDraggedOver ? 'animate-guide-pulse' : ''} ${isPulsing ? 'animate-column-pulse' : ''}`}
       >
         <div className="flex flex-wrap-reverse items-end justify-center gap-1 h-full content-start">
           {blocks.map(block => (
@@ -86,7 +86,6 @@ export const PlaceValueColumn: React.FC<PlaceValueColumnProps> = ({
               value={block.value} 
               isDraggable={false}
               isDraggableFromColumn={appState === 'playground'}
-              // onDragStart is handled by App.tsx through context or prop drilling if needed
               isAnimating={block.isAnimating}
               isNewlyRegrouped={block.isNewlyRegrouped}
             />

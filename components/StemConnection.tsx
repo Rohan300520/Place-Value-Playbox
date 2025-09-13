@@ -1,85 +1,243 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useId } from 'react';
 
-type StemTab = 'biology' | 'computing';
+// --- SVG Icon Components ---
 
-const ConceptCard: React.FC<{ title: string, subtitle: string, icon: React.ReactNode, description: string, color: string }> = ({ title, subtitle, icon, description, color }) => (
-    <div className="flex flex-col items-center text-center p-2 flex-1 min-w-[120px]">
-        <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mb-2 border-4 ${color.replace('text-', 'border-')}`}>
-            {icon}
-        </div>
-        <h3 className={`text-xl sm:text-2xl font-black ${color}`}>{title}</h3>
-        <p className="text-sm sm:text-base font-bold text-slate-300 h-12 sm:h-auto">{subtitle}</p>
-        <p className="mt-2 text-xs sm:text-sm text-slate-400 hidden sm:block">{description}</p>
-    </div>
+const CellIcon: React.FC<{ isPulsing?: boolean }> = ({ isPulsing = true }) => (
+  <svg viewBox="0 0 100 100" className={`w-12 h-12 ${isPulsing ? 'animate-cell-pulse' : ''}`}>
+    <defs>
+      <radialGradient id="cellGrad">
+        <stop offset="0%" stopColor="#60a5fa" />
+        <stop offset="100%" stopColor="#3b82f6" />
+      </radialGradient>
+    </defs>
+    <circle cx="50" cy="50" r="45" fill="url(#cellGrad)" stroke="#2563eb" strokeWidth="4" />
+    <circle cx="50" cy="50" r="15" fill="#dbeafe" opacity="0.7" />
+  </svg>
 );
 
-const Arrow: React.FC = () => (
-    <div className="text-4xl font-black text-sky-400 my-2 sm:my-0 sm:mx-2 self-center sm:rotate-0 rotate-90">
-        →
-    </div>
+const TissueIcon: React.FC = () => (
+  <svg viewBox="0 0 100 100" className="w-20 h-20">
+    <defs>
+      <radialGradient id="tissueGrad">
+        <stop offset="0%" stopColor="#4ade80" />
+        <stop offset="100%" stopColor="#16a34a" />
+      </radialGradient>
+    </defs>
+    <circle cx="35" cy="35" r="20" fill="url(#tissueGrad)" stroke="#15803d" strokeWidth="3" />
+    <circle cx="65" cy="35" r="20" fill="url(#tissueGrad)" stroke="#15803d" strokeWidth="3" />
+    <circle cx="35" cy="65" r="20" fill="url(#tissueGrad)" stroke="#15803d" strokeWidth="3" />
+    <circle cx="65" cy="65" r="20" fill="url(#tissueGrad)" stroke="#15803d" strokeWidth="3" />
+    <circle cx="50" cy="50" r="18" fill="url(#tissueGrad)" stroke="#15803d" strokeWidth="3" />
+  </svg>
 );
 
-const TabButton: React.FC<{ active: boolean, onClick: () => void, children: React.ReactNode }> = ({ active, onClick, children }) => (
-    <button onClick={onClick} className={`px-4 py-2 sm:px-6 sm:py-3 text-lg font-bold rounded-t-lg transition-colors ${active ? 'bg-slate-700/50 text-emerald-300 border-b-4 border-emerald-300' : 'bg-slate-800/50 text-slate-400 hover:bg-slate-800'}`}>
-        {children}
-    </button>
-)
-
-const BiologyConnection = () => (
-    <div className="bg-slate-800/50 p-4 rounded-xl border border-purple-400/20 w-full animate-pop-in">
-        <h3 className="text-center text-2xl font-bold text-purple-300 mb-4">The Blueprints of Life</h3>
-        <div className="flex flex-col sm:flex-row items-stretch justify-around">
-            <ConceptCard title="Cell" subtitle="Basic Unit of Life" description="The smallest living part." color="text-sky-400" icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3" /></svg>} />
-            <Arrow />
-            <ConceptCard title="Tissue" subtitle="Group of Cells" description="Many cells working together." color="text-emerald-400" icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M4 4h4v4H4zM10 4h4v4h-4zM16 4h4v4h-4zM4 10h4v4H4zM10 10h4v4h-4z" /></svg>} />
-            <Arrow />
-            <ConceptCard title="Organ" subtitle="Group of Tissues" description="Tissues forming a heart or lungs." color="text-amber-400" icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>} />
-            <Arrow />
-            <ConceptCard title="System" subtitle="Group of Organs" description="Organs that work together (e.g., digestive system)." color="text-red-400" icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>} />
-            <Arrow />
-            <ConceptCard title="Organism" subtitle="A Complete Being" description="All systems combined to make a living thing." color="text-fuchsia-400" icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg>} />
-        </div>
-    </div>
+const OrganIcon: React.FC = () => (
+    <svg viewBox="0 0 100 100" className="w-24 h-24">
+        <defs>
+            <radialGradient id="organGrad">
+                <stop offset="0%" stopColor="#facc15"/>
+                <stop offset="100%" stopColor="#f59e0b"/>
+            </radialGradient>
+        </defs>
+        <path d="M50 10 C 20 10, 10 40, 50 90 C 90 40, 80 10, 50 10 Z" fill="url(#organGrad)" stroke="#b45309" strokeWidth="4"/>
+        <path d="M50 20 C 35 20, 30 40, 50 70 C 70 40, 65 20, 50 20 Z" fill="none" stroke="#fef3c7" strokeWidth="3" strokeDasharray="5,5"/>
+    </svg>
 );
 
-const ComputingConnection = () => (
-    <div className="bg-slate-800/50 p-4 rounded-xl border border-cyan-400/20 w-full animate-pop-in">
-        <h3 className="text-center text-2xl font-bold text-cyan-300 mb-4">The Secret Code of Computers</h3>
-        <div className="flex flex-col sm:flex-row items-stretch justify-around">
-            <ConceptCard title="Bit" subtitle="The Smallest Switch" description="A single 0 or 1." color="text-sky-400" icon={<div className="font-black text-2xl">01</div>} />
-            <Arrow />
-            <ConceptCard title="Byte" subtitle="A Group of 8 Bits" description="Enough to store a letter, like 'A'." color="text-emerald-400" icon={<div className="font-black text-lg">01000001</div>} />
-            <Arrow />
-            <ConceptCard title="Kilobyte" subtitle="~1000 Bytes" description="Enough to store a short email." color="text-amber-400" icon={<div className="font-black text-3xl">KB</div>} />
-            <Arrow />
-            <ConceptCard title="Megabyte" subtitle="~1000 Kilobytes" description="Enough to store a song." color="text-red-400" icon={<div className="font-black text-3xl">MB</div>} />
-            <Arrow />
-            <ConceptCard title="Gigabyte" subtitle="~1000 Megabytes" description="Enough to store a movie." color="text-fuchsia-400" icon={<div className="font-black text-3xl">GB</div>} />
-        </div>
-    </div>
+const OrganSystemIcon: React.FC = () => (
+    <svg viewBox="0 0 100 100" className="w-28 h-28">
+        <defs>
+            <radialGradient id="systemGrad">
+                <stop offset="0%" stopColor="#a78bfa"/>
+                <stop offset="100%" stopColor="#7c3aed"/>
+            </radialGradient>
+        </defs>
+        <path d="M50,15 C20,15 20,40 35,55 S70,60 70,40 C70,15 80,15 50,15 Z" fill="url(#systemGrad)" stroke="#5b21b6" strokeWidth="4" />
+        <circle cx="50" cy="75" r="15" fill="url(#systemGrad)" stroke="#5b21b6" strokeWidth="4" />
+        <rect x="45" y="55" width="10" height="20" fill="#a78bfa" />
+    </svg>
 );
+
+const icons = {
+  cell: CellIcon,
+  tissue: TissueIcon,
+  organ: OrganIcon,
+  organSystem: OrganSystemIcon,
+};
+
+type BioUnit = 'cell' | 'tissue' | 'organ' | 'organSystem';
+interface Item {
+  id: string;
+  type: BioUnit;
+  state: 'visible' | 'regrouping' | 'forming';
+  top: string;
+  left: string;
+}
+
+const HIERARCHY: BioUnit[] = ['cell', 'tissue', 'organ', 'organSystem'];
+const PLACE_VALUE_MAP: Record<BioUnit, { name: string; color: 'blue' | 'green' | 'yellow' | 'purple'; plural: string }> = {
+  cell: { name: 'Ones', color: 'blue', plural: 'Cells' },
+  tissue: { name: 'Tens', color: 'green', plural: 'Tissues' },
+  organ: { name: 'Hundreds', color: 'yellow', plural: 'Organs' },
+  organSystem: { name: 'Thousands', color: 'purple', plural: 'Organ Systems' },
+};
 
 
 export const StemConnection: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<StemTab>('biology');
+  const [items, setItems] = useState<Item[]>([]);
+  const [regroupingMessage, setRegroupingMessage] = useState<string | null>(null);
+  const baseId = useId();
 
-    return (
-        <div className="flex-grow flex flex-col items-center justify-center p-4 text-white animate-pop-in">
-            <main className="bg-slate-900/50 backdrop-blur-sm border border-sky-400/20 p-4 sm:p-8 rounded-3xl shadow-2xl shadow-sky-500/20 max-w-6xl w-full">
-                <h2 className="text-center text-3xl sm:text-5xl font-black text-emerald-300 mb-2">Building Bigger Things!</h2>
-                <p className="text-center text-md sm:text-lg text-slate-300 max-w-3xl mx-auto mb-6">
-                    Just like we group ones to make thousands, the world around us groups small pieces to build amazing, complex systems!
-                </p>
+  const handleAddItem = (type: BioUnit) => {
+    const newItem: Item = {
+      id: `${baseId}-${type}-${Date.now()}`,
+      type,
+      state: 'forming',
+      top: `${Math.random() * 60 + 20}%`, // Random position within the column
+      left: `${Math.random() * 60 + 20}%`,
+    };
+    setItems(prev => [...prev, newItem]);
+  };
 
-                <div className="flex justify-center border-b border-slate-600 mb-6">
-                    <TabButton active={activeTab === 'biology'} onClick={() => setActiveTab('biology')}>The Blueprints of Life</TabButton>
-                    <TabButton active={activeTab === 'computing'} onClick={() => setActiveTab('computing')}>The Code of Computers</TabButton>
+  const handleReset = useCallback(() => {
+    setItems([]);
+    setRegroupingMessage(null);
+  }, []);
+
+  useEffect(() => {
+    const checkAndRegroup = (
+      sourceType: BioUnit,
+      targetType: BioUnit,
+    ) => {
+      const sourceItems = items.filter(item => item.type === sourceType && item.state === 'visible');
+      
+      if (sourceItems.length >= 10) {
+        setRegroupingMessage(`10 ${PLACE_VALUE_MAP[sourceType].plural} become 1 ${PLACE_VALUE_MAP[targetType].plural.slice(0,-1)}!`);
+        
+        setItems(prev =>
+          prev.map(item =>
+            sourceItems.slice(0, 10).map(s => s.id).includes(item.id)
+              ? { ...item, state: 'regrouping' }
+              : item,
+          ),
+        );
+        
+        setTimeout(() => {
+          setItems(prev => prev.filter(item => item.state !== 'regrouping'));
+          handleAddItem(targetType);
+          setRegroupingMessage(null);
+        }, 700); 
+        
+        return true;
+      }
+      return false;
+    };
+
+    for (let i = 0; i < HIERARCHY.length - 1; i++) {
+        if (checkAndRegroup(HIERARCHY[i], HIERARCHY[i+1])) {
+            break;
+        }
+    }
+
+  }, [items]);
+  
+  useEffect(() => {
+      const formingItems = items.filter(i => i.state === 'forming');
+      if(formingItems.length > 0) {
+          setTimeout(() => {
+              setItems(prev => prev.map(item => item.state === 'forming' ? {...item, state: 'visible'} : item));
+          }, 500);
+      }
+  }, [items])
+
+  return (
+    <div className="flex-grow w-full flex flex-col items-center justify-start p-2 sm:p-4 text-center animate-pop-in">
+        <div className="backdrop-blur-sm border p-4 sm:p-6 rounded-3xl shadow-xl w-full max-w-7xl" style={{ backgroundColor: 'var(--backdrop-bg)', borderColor: 'var(--border-primary)'}}>
+            <h1 className="text-4xl md:text-6xl font-black text-indigo-700 tracking-tight font-display">
+                The Blueprints of Life
+            </h1>
+            <p className="mt-2 text-lg sm:text-xl max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)'}}>
+                Just like with numbers, amazing things are built by grouping smaller pieces into bigger ones. Let's build!
+            </p>
+            <div className="mt-6 flex justify-center items-center gap-4 flex-wrap">
+                <button
+                    onClick={() => handleAddItem('cell')}
+                    className="bg-sky-500 hover:bg-sky-600 text-white font-bold text-xl py-3 px-8 rounded-xl shadow-lg shadow-sky-500/40 transform hover:scale-105 transition-all border-b-4 border-sky-700 active:border-b-2 font-display wobble-on-hover"
+                >
+                    + Add Cell
+                </button>
+                 <button
+                    onClick={() => handleAddItem('tissue')}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xl py-3 px-8 rounded-xl shadow-lg shadow-emerald-500/40 transform hover:scale-105 transition-all border-b-4 border-emerald-700 active:border-b-2 font-display wobble-on-hover"
+                >
+                    + Add Tissue
+                </button>
+                 <button
+                    onClick={() => handleAddItem('organ')}
+                    className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xl py-3 px-8 rounded-xl shadow-lg shadow-amber-500/40 transform hover:scale-105 transition-all border-b-4 border-amber-700 active:border-b-2 font-display wobble-on-hover"
+                >
+                    + Add Organ
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-red-500/40 transform hover:scale-105 transition-all duration-200 border-b-4 border-red-700 active:border-b-2"
+                  aria-label="Reset the builder"
+                >
+                  Clear All
+                </button>
+            </div>
+            
+             {regroupingMessage && (
+                <div className="mt-4 text-2xl font-bold text-green-600 font-display animate-tada">
+                    {regroupingMessage}
                 </div>
-                
-                {activeTab === 'biology' && <BiologyConnection />}
-                {activeTab === 'computing' && <ComputingConnection />}
-
-            </main>
+            )}
         </div>
-    );
-}
+
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-7xl">
+            {HIERARCHY.map(unitType => {
+                const config = PLACE_VALUE_MAP[unitType];
+                const unitItems = items.filter(item => item.type === unitType);
+                const IconComponent = icons[unitType];
+                return (
+                    <div key={unitType} className={`flex flex-col rounded-2xl shadow-xl`} style={{ backgroundColor: `var(--col-${config.color}-bg)`}}>
+                        <div className={`text-center p-3 border-b-4`} style={{ borderColor: `var(--col-${config.color}-border)`}}>
+                            <h2 className={`font-display text-2xl font-black`} style={{ color: `var(--col-${config.color}-text)`}}>
+                                {config.plural}
+                            </h2>
+                            <p className={`font-bold`} style={{ color: `var(--col-${config.color}-text)`}}>({config.name} Place)</p>
+                        </div>
+                        <div className="flex-grow min-h-[250px] p-2 relative">
+                            <div className={`absolute -top-2 right-2 text-white text-3xl font-black rounded-full h-14 w-14 flex items-center justify-center border-4 border-white/80 shadow-lg font-display`} style={{ backgroundColor: `var(--col-${config.color}-border)`}}>
+                                {unitItems.filter(i => i.state !== 'regrouping').length}
+                            </div>
+                            
+                            {unitItems.map(item => (
+                                <div
+                                    key={item.id}
+                                    className="absolute"
+                                    style={{ 
+                                        top: item.top, 
+                                        left: item.left, 
+                                        ...(item.state === 'forming' && {
+                                            '--target-top': item.top,
+                                            '--target-left': item.left
+                                        })
+                                    }}
+                                >
+                                    <div className={
+                                        item.state === 'regrouping' ? 'animate-regroup-to-center' :
+                                        item.state === 'forming' ? 'animate-form-from-center opacity-0' : ''
+                                    }>
+                                        <IconComponent isPulsing={item.type === 'cell'} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )
+            })}
+        </div>
+    </div>
+  );
+};
