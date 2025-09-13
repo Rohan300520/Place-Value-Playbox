@@ -91,7 +91,7 @@ const GameHeader: React.FC<{
             </h2>
         )}
       </div>
-      <div className="flex-1 flex justify-end">
+      <div className="flex-1 flex justify-end items-center gap-2 sm:gap-4">
         {showScore && (
           <div className={`text-center rounded-2xl px-3 sm:px-6 py-1 sm:py-2 shadow-inner ${isAnimating ? 'animate-tada' : ''}`} style={{
               backgroundColor: 'var(--panel-bg)',
@@ -115,17 +115,21 @@ const GameHeader: React.FC<{
 const trainingPlan: TrainingStep[] = [
   { step: 0, type: 'action', source: 1, column: 'ones', text: "Let's start! Drag a blue '1' block to the 'Ones' column." },
   { step: 1, type: 'feedback', text: "Great Job! ✨", duration: 2000, clearBoardAfter: true },
-  { step: 2, type: 'action_multi', source: 1, column: 'ones', count: 3, text: "Good! Now, let's add a few more. Add 3 blue blocks to the 'Ones' column." },
+  { step: 2, type: 'action_multi', source: 1, column: 'ones', count: 3, text: "Good! Now, add 3 blue blocks to the 'Ones' column." },
   { step: 3, type: 'feedback', text: "Perfect! You added 3. 🚀", duration: 2000, clearBoardAfter: true },
   { step: 4, type: 'action', source: 10, column: 'tens', text: "Awesome! Now drag a green '10' block to the 'Tens' column." },
   { step: 5, type: 'feedback', text: "You got it! 👍", duration: 2000, clearBoardAfter: true },
   { step: 6, type: 'action', source: 100, column: 'hundreds', text: "You're a pro! Drag a yellow '100' block to the 'Hundreds' column." },
   { step: 7, type: 'feedback', text: "Fantastic! 🌟", duration: 2000, clearBoardAfter: true },
-  { step: 8, type: 'action_multi', source: 1, column: 'ones', count: 10, text: "Time for some magic! ✨ Add 10 blue blocks to see what happens." },
-  { step: 9, type: 'magic_feedback', text: "Poof! 10 'Ones' became 1 'Ten'. That's regrouping!", duration: 4000, clearBoardAfter: true, targetColumn: 'tens' },
-  { step: 10, type: 'action_multi', source: 10, column: 'tens', count: 10, text: "Let's do it again! Add 10 green blocks to the 'Tens' column." },
-  { step: 11, type: 'magic_feedback', text: "Amazing! 🪄 10 'Tens' make 1 'Hundred' block!", duration: 4000, clearBoardAfter: true, targetColumn: 'hundreds' },
-  { step: 12, type: 'complete', text: "Training Complete! You're ready to play!" },
+  { step: 8, type: 'action', source: 1000, column: 'thousands', text: "Incredible! Drag a purple '1000' block to the 'Thousands' column." },
+  { step: 9, type: 'feedback', text: "Amazing! You're reaching for the stars! 🚀", duration: 2000, clearBoardAfter: true },
+  { step: 10, type: 'action_multi', source: 1, column: 'ones', count: 10, text: "Time for some magic! ✨ Add 10 blue blocks to see what happens." },
+  { step: 11, type: 'magic_feedback', text: "Poof! 10 'Ones' became 1 'Ten'. That's regrouping!", duration: 4000, clearBoardAfter: true, targetColumn: 'tens' },
+  { step: 12, type: 'action_multi', source: 10, column: 'tens', count: 10, text: "Let's do it again! Add 10 green blocks to the 'Tens' column." },
+  { step: 13, type: 'magic_feedback', text: "Amazing! 🪄 10 'Tens' make 1 'Hundred' block!", duration: 4000, clearBoardAfter: true, targetColumn: 'hundreds' },
+  { step: 14, type: 'action_multi', source: 100, column: 'hundreds', count: 10, text: "One last magic trick! Add 10 yellow blocks to the 'Hundreds' column." },
+  { step: 15, type: 'magic_feedback', text: "Wow! 10 'Hundreds' make 1 'Thousand'. You're a place value wizard! 🧙‍♂️", duration: 4000, clearBoardAfter: true, targetColumn: 'thousands' },
+  { step: 16, type: 'complete', text: "Training Complete! You're ready for anything!" },
 ];
 
 const useSimpleSound = (freq: number, duration: number) => {
@@ -169,7 +173,6 @@ const PlaceValuePlayboxApp: React.FC = () => {
   const [correctAnswer, setCorrectAnswer] = useState<number | null>(null);
   const [trainingStep, setTrainingStep] = useState(0);
   const [trainingFeedback, setTrainingFeedback] = useState<string | null>(null);
-  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [touchDrag, setTouchDrag] = useState<{ value: BlockValue | null; x: number; y: number; }>({ value: null, x: 0, y: 0 });
   const [activeTouchTarget, setActiveTouchTarget] = useState<PlaceValueCategory | null>(null);
   const activeTouchTargetRef = useRef<PlaceValueCategory | null>(null);
@@ -566,31 +569,17 @@ const PlaceValuePlayboxApp: React.FC = () => {
             <NumberBlock value={touchDrag.value} isDraggable={false} />
         </div>
       )}
-      {isHelpModalOpen && <HelpModal onClose={() => setIsHelpModalOpen(false)} />}
       
-      {appState !== 'training' && appState !== 'welcome' && (
-        <button
-          onClick={() => setIsHelpModalOpen(true)}
-          className="fixed top-2 right-2 sm:top-4 sm:right-4 z-40 text-white font-bold rounded-full h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform border-b-4 active:border-b-2"
-          style={{ 
-            backgroundColor: 'var(--btn-help-bg)', 
-            borderColor: 'var(--btn-help-border)'
-          }}
-          onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--btn-help-hover)'}
-          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--btn-help-bg)'}
-          aria-label="Open help and instructions"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </button>
-      )}
-
       {appState === 'training' && 
         <TrainingGuide currentStepConfig={currentTrainingStepConfig} columnCounts={{ ones: columns.ones.length, tens: columns.tens.length, hundreds: columns.hundreds.length, thousands: columns.thousands.length }} onComplete={() => setAppState('mode_selection')} feedback={trainingFeedback} />
       }
       <div className={`w-full max-w-7xl mx-auto flex-grow flex flex-col ${appState === 'training' ? 'relative z-20' : ''}`}>
-        <GameHeader appState={appState} total={total} totalInWords={totalInWords} onBack={() => setAppState('mode_selection')} />
+        <GameHeader 
+            appState={appState} 
+            total={total} 
+            totalInWords={totalInWords} 
+            onBack={() => setAppState('mode_selection')}
+        />
         {renderMainContent()}
       </div>
     </div>
@@ -603,11 +592,12 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeModel, setActiveModel] = useState<string | null>(null);
   const [showModelIntro, setShowModelIntro] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ color: 'var(--text-primary)'}}>
       <BackgroundManager />
-      <Header onMenuClick={() => setIsSidebarOpen(true)} />
+      <Header onMenuClick={() => setIsSidebarOpen(true)} onHelpClick={() => setIsHelpModalOpen(true)} />
       <Sidebar 
           isOpen={isSidebarOpen} 
           onClose={() => setIsSidebarOpen(false)}
@@ -633,6 +623,7 @@ function App() {
           )}
       </main>
       <Footer />
+      {isHelpModalOpen && <HelpModal onClose={() => setIsHelpModalOpen(false)} />}
     </div>
   );
 }
