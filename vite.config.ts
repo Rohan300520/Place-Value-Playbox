@@ -10,10 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'script',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png}'],
-        // Exclude the icon from the glob pattern since it's added by the manifest.
-        // This prevents a duplicate entry error in the service worker.
-        globIgnores: [],
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg}'],
+        navigateFallback: '/index.html', // This is the key change for offline SPA support
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/aistudiocdn\.com\/.*/i,
