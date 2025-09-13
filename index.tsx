@@ -1,19 +1,27 @@
+// Fix: Replaced placeholder text with a standard React application entry point.
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import './index.css';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { LanguageProvider } from './contexts/LanguageContext';
+
+/**
+ * This is the main entry point for the React application.
+ * It sets up the root component and wraps it with context providers for theme and language management.
+ */
 
 const rootElement = document.getElementById('root');
+
 if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
+  throw new Error("Could not find the root element with ID 'root' in the document. Please ensure your index.html has `<div id=\"root\"></div>`.");
 }
 
-const root = ReactDOM.createRoot(rootElement);
-root.render(
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <ThemeProvider>
+      <LanguageProvider>
         <App />
+      </LanguageProvider>
     </ThemeProvider>
   </React.StrictMode>
 );
