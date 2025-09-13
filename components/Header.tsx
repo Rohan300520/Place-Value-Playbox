@@ -1,5 +1,6 @@
 import React from 'react';
 import { ThemeSwitcher } from './ThemeSwitcher';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -29,6 +30,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+              <LanguageSwitcher />
               <ThemeSwitcher />
           </div>
         </div>
