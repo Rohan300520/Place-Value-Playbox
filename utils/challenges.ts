@@ -1,36 +1,46 @@
 import type { ChallengeQuestion } from '../types';
 
-// FIX: Define all questions and explicitly type the array.
-// This ensures that all objects conform to the ChallengeQuestion interface,
-// including the literal type for the 'type' property, before filtering.
+// A comprehensive and balanced list of questions covering various concepts.
 const allChallengeQuestions: ChallengeQuestion[] = [
-    { id: 1, level: 1, question: "Build the largest 3-digit number using: 4, 7, 2.", answer: 742, type: 'build' },
-    { id: 2, level: 1, question: "Build the smallest 3-digit number using: 4, 7, 2.", answer: 247, type: 'build' },
-    { id: 3, level: 1, question: "In the number 572, what is the value of the digit 7? Build it.", answer: 70, type: 'interpret' },
-    { id: 4, level: 1, question: "What number is 6 hundreds, 2 tens, and 7 ones?", answer: 627, type: 'build' },
-    { id: 5, level: 1, question: "Build the number three hundred sixty-four.", answer: 364, type: 'build' },
-    { id: 6, level: 1, question: "Build the number seven hundred, forty-eight.", answer: 748, type: 'build' },
-    { id: 7, level: 1, question: "Which digit is in the hundreds place in 4,309? Build its value.", answer: 300, type: 'interpret' },
-    { id: 8, level: 1, question: "Write the number 842 in expanded form? Build the value of the tens place.", answer: 40, type: 'interpret' },
-    { id: 9, level: 1, question: "Write in numbers: Nine hundred seventy-five. Build it.", answer: 975, type: 'build' },
+    // --- LEVEL 1 (EASY) ---
+    // Place Value & Number Words
+    { id: 1, level: 1, question: "What number is 6 hundreds, 2 tens, and 7 ones?", answer: 627, type: 'build', concept: 'place_value' },
+    { id: 2, level: 1, question: "Build the number three hundred sixty-four.", answer: 364, type: 'build', concept: 'number_word' },
+    { id: 3, level: 1, question: "Build the largest 3-digit number you can make with the digits 8, 1, and 5.", answer: 851, type: 'build', concept: 'place_value' },
+    { id: 4, level: 1, question: "What is the value of the digit 7 in the number 572? Build it.", answer: 70, type: 'interpret', concept: 'place_value' },
+    { id: 5, level: 1, question: "Build the number nine hundred seventy-five.", answer: 975, type: 'build', concept: 'number_word' },
+    // Addition & Subtraction (no regrouping)
+    { id: 6, level: 1, question: "What is 245 + 32? Build the answer.", answer: 277, type: 'build', concept: 'addition' },
+    { id: 7, level: 1, question: "What is 568 - 44? Build the answer.", answer: 524, type: 'build', concept: 'subtraction' },
+    { id: 8, level: 1, question: "Find the sum of 610 and 58. Build it.", answer: 668, type: 'build', concept: 'addition' },
+    { id: 9, level: 1, question: "Find the difference between 899 and 150. Build it.", answer: 749, type: 'build', concept: 'subtraction' },
 
-    { id: 10, level: 2, question: "What number do you get if you have 15 tens?", answer: 150, type: 'build' },
-    { id: 11, level: 2, question: "What is the value of the digit 5 in 5,482? Build it.", answer: 5000, type: 'interpret' },
-    { id: 12, level: 2, question: "In 4,798, what is the value of the 7? Build it.", answer: 700, type: 'interpret' },
-    { id: 13, level: 2, question: "What number is 9 thousands, 0 hundreds, 5 tens, and 8 ones?", answer: 9058, type: 'build' },
-    { id: 14, level: 2, question: "Build ninety-five thousand, two hundred ten.", answer: 95210, type: 'build' }, // Note: app currently only supports to 9999
-    { id: 15, level: 2, question: "A magic box shows: 2 thousands, 3 hundreds, 4 tens, 7 ones. Build the number.", answer: 2347, type: 'build' },
-    { id: 16, level: 2, question: "Use exactly 12 tens and 8 ones. What number do you get?", answer: 128, type: 'build' },
-    { id: 17, level: 2, question: "Which digit is in the thousands place in 8,214? Build its value.", answer: 8000, type: 'interpret' },
-    { id: 18, level: 2, question: "Write 4,607 in words. Build the number.", answer: 4607, type: 'build' },
+    // --- LEVEL 2 (MEDIUM) ---
+    // Place Value & Number Words
+    { id: 10, level: 2, question: "What number do you get if you have 15 tens?", answer: 150, type: 'build', concept: 'place_value' },
+    { id: 11, level: 2, question: "What is the value of the digit 5 in 5,482? Build it.", answer: 5000, type: 'interpret', concept: 'place_value' },
+    { id: 12, level: 2, question: "What number is 9 thousands, 0 hundreds, 5 tens, and 8 ones?", answer: 9058, type: 'build', concept: 'place_value' },
+    { id: 13, level: 2, question: "Build the number one thousand, two hundred ten.", answer: 1210, type: 'build', concept: 'number_word' },
+    // Addition & Subtraction (with regrouping)
+    { id: 14, level: 2, question: "What is 358 + 127? Build the answer.", answer: 485, type: 'build', concept: 'addition' },
+    { id: 15, level: 2, question: "What is 734 - 219? Build the answer.", answer: 515, type: 'build', concept: 'subtraction' },
+    { id: 16, level: 2, question: "There are 1,250 fish in a lake. 300 more are added. Build the new total.", answer: 1550, type: 'build', concept: 'addition' },
+    { id: 17, level: 2, question: "A library has 2,468 books. 250 are checked out. How many are left? Build it.", answer: 2218, type: 'build', concept: 'subtraction' },
+    { id: 18, level: 2, question: "Build four thousand, six hundred seven.", answer: 4607, type: 'build', concept: 'number_word' },
     
-    { id: 19, level: 3, question: "What is 300 + 20 + 8? Build the answer.", answer: 328, type: 'build' },
-    { id: 20, level: 3, question: "What is 7000 + 200 + 6? Build the answer.", answer: 7206, type: 'build' },
-    { id: 21, level: 3, question: "Build 278 and 287. Which number is greater? Build the greater number.", answer: 287, type: 'build' },
-    { id: 22, level: 3, question: "Build the number that comes just before 10,000.", answer: 9999, type: 'build' },
-    { id: 23, level: 3, question: "A number has 6 in the tens place and 3 in the thousands place. The hundreds digit is double the thousands digit (3x2=6). The ones digit is 5. What is the number?", answer: 3665, type: 'build' },
-    { id: 24, level: 3, question: "What is 5482 - 482? Build the answer.", answer: 5000, type: 'build' },
-    { id: 25, level: 3, question: "What is 1000 + 400 + 80 + 2? Build the answer.", answer: 1482, type: 'build' },
+    // --- LEVEL 3 (HARD) ---
+    // Place Value & Number Words
+    { id: 19, level: 3, question: "I have 4 hundreds, 12 tens, and 5 ones. What number am I? Build it.", answer: 525, type: 'build', concept: 'place_value' },
+    { id: 20, level: 3, question: "What is 7000 + 200 + 6? Build the answer.", answer: 7206, type: 'build', concept: 'place_value' },
+    { id: 21, level: 3, question: "Build the number that comes just before 10,000.", answer: 9999, type: 'build', concept: 'place_value' },
+    { id: 26, level: 3, question: "Build the number five thousand, fifteen.", answer: 5015, type: 'build', concept: 'number_word' },
+    { id: 27, level: 3, question: "If you have 13 hundreds and 13 tens, what number do you have?", answer: 1430, type: 'build', concept: 'place_value' },
+    // Addition & Subtraction (complex)
+    { id: 22, level: 3, question: "A school has 478 boys and 535 girls. How many students in total? Build the answer.", answer: 1013, type: 'build', concept: 'addition' },
+    { id: 23, level: 3, question: "What is 3000 - 545? Build the answer.", answer: 2455, type: 'build', concept: 'subtraction' },
+    { id: 24, level: 3, question: "A farmer has 1250 apples. He sells 380. How many are left? Build the answer.", answer: 870, type: 'build', concept: 'subtraction' },
+    { id: 25, level: 3, question: "What is 1250 + 345 + 205? Build the answer.", answer: 1800, type: 'build', concept: 'addition' },
 ];
 
-export const challengeQuestions: ChallengeQuestion[] = allChallengeQuestions.filter(q => q.answer < 10000); // Filter out questions that go beyond the thousands place for now
+// Filter out any questions that might exceed the app's current display limit of 4 columns.
+export const challengeQuestions: ChallengeQuestion[] = allChallengeQuestions.filter(q => q.answer < 10000);
