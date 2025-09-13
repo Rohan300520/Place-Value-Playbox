@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { NumberBlock } from './NumberBlock';
-import type { TrainingStep, PlaceValueCategory } from '../types';
+import type { TrainingStep, PlaceValueCategory, BlockValue } from '../types';
 
 interface TrainingGuideProps {
   currentStepConfig: TrainingStep | null;
@@ -33,24 +33,25 @@ const FeedbackBox: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 const GhostBlock: React.FC<{ value: number }> = ({ value }) => {
-    // These animations are defined in index.html and are not theme-dependent
     let animationClass = '';
     switch(value) {
         case 1: animationClass = 'animate-ghost-move-one'; break;
         case 10: animationClass = 'animate-ghost-move-ten'; break;
         case 100: animationClass = 'animate-ghost-move-hundred'; break;
+        case 1000: animationClass = 'animate-ghost-move-thousand'; break;
     }
     return (
         <div className={animationClass}>
-            <NumberBlock value={value as 1|10|100} isDraggable={false} />
+            <NumberBlock value={value as BlockValue} isDraggable={false} />
         </div>
     );
 };
 
 const colorSpan = (text: string) => {
-    if (text.includes("'1'")) return <span className="text-sky-400">{text}</span>
-    if (text.includes("'10'")) return <span className="text-emerald-400">{text}</span>
-    if (text.includes("'100'")) return <span className="text-amber-400">{text}</span>
+    if (text.includes("'1'")) return <span className="text-sky-400">{text}</span>;
+    if (text.includes("'10'")) return <span className="text-emerald-400">{text}</span>;
+    if (text.includes("'100'")) return <span className="text-amber-400">{text}</span>;
+    if (text.includes("'1000'")) return <span className="text-purple-400">{text}</span>;
     return text;
 };
 
@@ -88,13 +89,16 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
                     </>
                 );
             case 'magic_feedback': {
-                let positionClass = '';
+                let positionClass = 'top-[15vh]';
                 switch (currentStepConfig.targetColumn) {
-                    case 'tens':
-                        positionClass = 'top-[15vh] left-1/2 -translate-x-1/2';
+                    case 'thousands':
+                        positionClass += ' left-[12.5%] -translate-x-1/2';
                         break;
                     case 'hundreds':
-                        positionClass = 'top-[15vh] left-1/2 lg:left-[16.66%] -translate-x-1/2';
+                        positionClass += ' left-[37.5%] -translate-x-1/2';
+                        break;
+                    case 'tens':
+                        positionClass += ' left-[62.5%] -translate-x-1/2';
                         break;
                     default:
                         positionClass = 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2';

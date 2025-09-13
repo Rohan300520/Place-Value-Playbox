@@ -3,9 +3,10 @@ import { ThemeSwitcher } from './ThemeSwitcher';
 
 interface HeaderProps {
   onMenuClick: () => void;
+  onHelpClick: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick }) => {
   return (
     <header className="backdrop-blur-sm sticky top-0 z-30 w-full" style={{ 
         backgroundColor: 'var(--header-bg)',
@@ -29,6 +30,19 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+              <button
+                onClick={onHelpClick}
+                className="p-2 rounded-full transition-colors duration-300"
+                style={{
+                  color: 'var(--text-secondary)',
+                  backgroundColor: 'var(--panel-bg)',
+                }}
+                aria-label="Open help and instructions"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
               <ThemeSwitcher />
           </div>
         </div>
