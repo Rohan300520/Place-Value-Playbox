@@ -36,4 +36,5 @@ export interface ChallengeQuestion {
     question: string;
     answer: number;
     type: 'build' | 'interpret';
+    concept: 'place_value' | 'number_word' | 'addition' | 'subtraction';
 }
