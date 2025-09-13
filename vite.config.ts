@@ -11,6 +11,8 @@ export default defineConfig({
       devOptions: {
         enabled: true,
       },
+      // Explicitly include the large image in the precache manifest.
+      includeAssets: ['assets/place-value-box-model.png'],
       manifest: {
         name: 'Place Value Playbox',
         short_name: 'Playbox',
