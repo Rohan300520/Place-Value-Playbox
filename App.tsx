@@ -21,8 +21,6 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { Footer } from './components/Footer';
 import { ModelIntroScreen } from './components/ModelIntroScreen';
-import { useLanguage } from './contexts/LanguageContext';
-import { playAudio } from './utils/audio';
 
 // --- Game-specific Header (previously components/Header.tsx) ---
 const GameHeader: React.FC<{
@@ -115,19 +113,19 @@ const GameHeader: React.FC<{
 
 // --- Place Value Playbox Application Logic ---
 const trainingPlan: TrainingStep[] = [
-  { step: 0, type: 'action', source: 1, column: 'ones', text: "Let's start! Drag a blue '1' block to the 'Ones' column.", audioKey: 'training_0' },
-  { step: 1, type: 'feedback', text: "Great Job! ✨", duration: 2000, clearBoardAfter: true, audioKey: 'training_1' },
-  { step: 2, type: 'action_multi', source: 1, column: 'ones', count: 3, text: "Good! Now, let's add a few more. Add 3 blue blocks to the 'Ones' column.", audioKey: 'training_2' },
-  { step: 3, type: 'feedback', text: "Perfect! You added 3. 🚀", duration: 2000, clearBoardAfter: true, audioKey: 'training_3' },
-  { step: 4, type: 'action', source: 10, column: 'tens', text: "Awesome! Now drag a green '10' block to the 'Tens' column.", audioKey: 'training_4' },
-  { step: 5, type: 'feedback', text: "You got it! 👍", duration: 2000, clearBoardAfter: true, audioKey: 'training_5' },
-  { step: 6, type: 'action', source: 100, column: 'hundreds', text: "You're a pro! Drag a yellow '100' block to the 'Hundreds' column.", audioKey: 'training_6' },
-  { step: 7, type: 'feedback', text: "Fantastic! 🌟", duration: 2000, clearBoardAfter: true, audioKey: 'training_7' },
-  { step: 8, type: 'action_multi', source: 1, column: 'ones', count: 10, text: "Time for some magic! ✨ Add 10 blue blocks to see what happens.", audioKey: 'training_8' },
-  { step: 9, type: 'magic_feedback', text: "Poof! 10 'Ones' became 1 'Ten'. That's regrouping!", duration: 4000, clearBoardAfter: true, targetColumn: 'tens', audioKey: 'training_9' },
-  { step: 10, type: 'action_multi', source: 10, column: 'tens', count: 10, text: "Let's do it again! Add 10 green blocks to the 'Tens' column.", audioKey: 'training_10' },
-  { step: 11, type: 'magic_feedback', text: "Amazing! 🪄 10 'Tens' make 1 'Hundred' block!", duration: 4000, clearBoardAfter: true, targetColumn: 'hundreds', audioKey: 'training_11' },
-  { step: 12, type: 'complete', text: "Training Complete! You're ready to play!", audioKey: 'training_12' },
+  { step: 0, type: 'action', source: 1, column: 'ones', text: "Let's start! Drag a blue '1' block to the 'Ones' column." },
+  { step: 1, type: 'feedback', text: "Great Job! ✨", duration: 2000, clearBoardAfter: true },
+  { step: 2, type: 'action_multi', source: 1, column: 'ones', count: 3, text: "Good! Now, let's add a few more. Add 3 blue blocks to the 'Ones' column." },
+  { step: 3, type: 'feedback', text: "Perfect! You added 3. 🚀", duration: 2000, clearBoardAfter: true },
+  { step: 4, type: 'action', source: 10, column: 'tens', text: "Awesome! Now drag a green '10' block to the 'Tens' column." },
+  { step: 5, type: 'feedback', text: "You got it! 👍", duration: 2000, clearBoardAfter: true },
+  { step: 6, type: 'action', source: 100, column: 'hundreds', text: "You're a pro! Drag a yellow '100' block to the 'Hundreds' column." },
+  { step: 7, type: 'feedback', text: "Fantastic! 🌟", duration: 2000, clearBoardAfter: true },
+  { step: 8, type: 'action_multi', source: 1, column: 'ones', count: 10, text: "Time for some magic! ✨ Add 10 blue blocks to see what happens." },
+  { step: 9, type: 'magic_feedback', text: "Poof! 10 'Ones' became 1 'Ten'. That's regrouping!", duration: 4000, clearBoardAfter: true, targetColumn: 'tens' },
+  { step: 10, type: 'action_multi', source: 10, column: 'tens', count: 10, text: "Let's do it again! Add 10 green blocks to the 'Tens' column." },
+  { step: 11, type: 'magic_feedback', text: "Amazing! 🪄 10 'Tens' make 1 'Hundred' block!", duration: 4000, clearBoardAfter: true, targetColumn: 'hundreds' },
+  { step: 12, type: 'complete', text: "Training Complete! You're ready to play!" },
 ];
 
 const useSimpleSound = (freq: number, duration: number) => {
@@ -175,7 +173,6 @@ const PlaceValuePlayboxApp: React.FC = () => {
   const [touchDrag, setTouchDrag] = useState<{ value: BlockValue | null; x: number; y: number; }>({ value: null, x: 0, y: 0 });
   const [activeTouchTarget, setActiveTouchTarget] = useState<PlaceValueCategory | null>(null);
   const activeTouchTargetRef = useRef<PlaceValueCategory | null>(null);
-  const { language } = useLanguage();
 
   const playDragSound = useSimpleSound(300, 0.05);
   const playDropSound = useSimpleSound(440, 0.1);
@@ -224,18 +221,6 @@ const PlaceValuePlayboxApp: React.FC = () => {
      if (appState !== 'training') return null;
      return trainingPlan.find(s => s.step === trainingStep) || null;
   }, [appState, trainingStep]);
-
-  useEffect(() => {
-    if (appState === 'training' && currentTrainingStepConfig?.audioKey) {
-        const audioPath = `/assets/audio/${language}/${currentTrainingStepConfig.audioKey}.mp3`;
-        // Delay audio for feedback steps to avoid overlapping with other sounds.
-        const delay = (currentTrainingStepConfig.type === 'feedback' || currentTrainingStepConfig.type === 'magic_feedback') ? 500 : 100;
-        const timer = setTimeout(() => {
-            playAudio(audioPath);
-        }, delay);
-        return () => clearTimeout(timer);
-    }
-  }, [appState, currentTrainingStepConfig, language]);
 
   const isDropAllowed = useCallback((category: PlaceValueCategory) => {
     const currentDragInfo = dragInfoRef.current;

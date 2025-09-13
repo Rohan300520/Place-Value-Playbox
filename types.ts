@@ -38,7 +38,6 @@ export interface TrainingStep {
   duration?: number;
   clearBoardAfter?: boolean;
   targetColumn?: PlaceValueCategory;
-  audioKey?: string;
 }
 
 export interface ChallengeQuestion {
@@ -54,4 +53,5 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export type Theme = 'light' | 'dark';
 
+// Fix: Added the missing 'Language' type definition.
 export type Language = 'en' | 'hi' | 'kn';
