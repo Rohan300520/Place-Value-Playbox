@@ -612,30 +612,13 @@ function App() {
           ) : activeModel === 'place-value-playbox' ? (
               <PlaceValuePlayboxApp />
           ) : (
-              <div className="text-center p-4 sm:p-8 flex-grow flex flex-col items-center justify-center">
-                  <div className="backdrop-blur-sm border p-8 sm:p-12 rounded-3xl shadow-xl animate-pop-in max-w-4xl" style={{ 
-                      backgroundColor: 'var(--backdrop-bg)', 
-                      borderColor: 'var(--border-primary)',
-                      backdropFilter: 'blur(10px)',
-                  }}>
-                      <div className="flex justify-center items-center mb-6" style={{ color: 'var(--text-accent)' }}>
-                          <svg width="300" height="60" viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-                              <path d="M25,5 C15,5 5,15 5,25 C5,35 15,40 25,40 C35,40 45,30 45,20 C45,10 35,5 25,5 M25,10 C30,10 35,15 35,20 C35,25 30,35 25,35 C20,35 15,30 15,25 C15,20 20,10 25,10" transform="rotate(20, 25, 22.5)"/>
-                              <text x="55" y="28" style={{ fontFamily: 'Nunito, sans-serif', fontSize: '20px', fontWeight: 900, letterSpacing: '0.5px' }}>
-                                  Smart Cerebrum
-                              </text>
-                          </svg>
-                      </div>
-                      <h1 className="text-4xl sm:text-5xl font-bold font-display" style={{ color: 'var(--text-accent)'}}>
-                          Welcome to the Digital Labs
-                      </h1>
-                      <p className="mt-4 text-lg sm:text-xl max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)'}}>
-                          Interactive tools designed to make learning foundational concepts in Science, Technology, Engineering, and Math (STEM) intuitive and fun.
-                      </p>
-                      <p className="mt-8 text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
-                          Please select a model from the sidebar to begin your learning adventure.
-                      </p>
-                  </div>
+              <div className="text-center p-8 rounded-2xl border shadow-xl animate-pop-in" style={{ 
+                  backgroundColor: 'var(--backdrop-bg)', 
+                  borderColor: 'var(--border-primary)',
+                  backdropFilter: 'blur(10px)',
+                }}>
+                  <h1 className="text-4xl font-bold font-display" style={{ color: 'var(--text-accent)'}}>Welcome to SMART C Digital Labs</h1>
+                  <p className="mt-4 text-xl" style={{ color: 'var(--text-secondary)'}}>Please select a math model from the sidebar to get started.</p>
               </div>
           )}
       </main>

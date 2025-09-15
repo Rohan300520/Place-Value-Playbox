@@ -6,19 +6,6 @@ interface HeaderProps {
   onHelpClick: () => void;
 }
 
-const Logo: React.FC<{ className?: string }> = ({ className }) => (
-    <svg viewBox="0 0 400 100" xmlns="http://www.w3.org/2000/svg" className={className} style={{ color: 'var(--text-primary)' }}>
-      <g transform="translate(50, 50)">
-        <path d="M0,35 C -30,35 -30,-35 0,-35 C 30,-35 30,25 0,25 C -20,25 -20,-15 0,-15 C 20,-15 20,5 0,5"
-              stroke="var(--logo-stroke-color)" strokeWidth="8" fill="none" strokeLinecap="round"/>
-        <line x1="20" y1="-40" x2="20" y2="40" stroke="var(--logo-stroke-color)" strokeWidth="8" strokeLinecap="round"/>
-      </g>
-      <text x="120" y="70" style={{ font: 'bold 48px Arial, sans-serif' }} fill="currentColor">SMART C</text>
-      <text x="125" y="95" style={{ font: '24px Arial, sans-serif' }} fill="currentColor">सुसंस्था - सुविधा</text>
-    </svg>
-);
-
-
 export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick }) => {
   return (
     <header className="backdrop-blur-sm sticky top-0 z-30 w-full" style={{ 
@@ -38,8 +25,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <div className="flex-shrink-0 ml-4 flex items-center">
-              <Logo className="h-12 md:h-16" />
+            <div className="flex-shrink-0 ml-4 flex items-center" style={{ color: 'var(--text-primary)'}}>
+              <img src="/assets/logo.svg" alt="SMART C Logo" className="h-12 md:h-16" />
             </div>
           </div>
           <div className="flex items-center gap-4">
