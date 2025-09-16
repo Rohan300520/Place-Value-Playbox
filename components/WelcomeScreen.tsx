@@ -1,7 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NumberBlock } from './NumberBlock';
+import { useAudio } from '../contexts/AudioContext';
+import { speak, cancelSpeech } from '../utils/speech';
 
 export const WelcomeScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
+  const { isSpeechEnabled } = useAudio();
+  const welcomeText = "Welcome to the Place Value Playbox! Learn about hundreds, tens, and ones in a fun, interactive way. Drag the blocks to build numbers and watch the magic happen!";
+
+  useEffect(() => {
+    if (isSpeechEnabled) {
+      speak(welcomeText, 'en-US');
+    }
+    return () => {
+      cancelSpeech();
+    };
+  }, [isSpeechEnabled]);
+
   return (
     <div className="flex-grow flex flex-col items-center justify-center p-4 text-center">
       <div className="backdrop-blur-sm border p-6 sm:p-8 rounded-3xl shadow-xl animate-pop-in" style={{

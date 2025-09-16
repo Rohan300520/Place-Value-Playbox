@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { ChallengeQuestion } from '../types';
+import { useAudio } from '../contexts/AudioContext';
+import { speak, cancelSpeech } from '../utils/speech';
 
 interface ChallengePanelProps {
   question: ChallengeQuestion | null;
@@ -54,7 +56,17 @@ const Timer: React.FC<{ onTimeOut: () => void, status: string, duration: number 
 }
 
 export const ChallengePanel: React.FC<ChallengePanelProps> = ({ question, score, status, onCheck, onNext, onTimeOut, correctAnswer, timeLimit }) => {
-    
+    const { isSpeechEnabled } = useAudio();
+
+    useEffect(() => {
+        if (isSpeechEnabled && question) {
+            speak(question.question, 'en-US');
+        }
+        return () => {
+            cancelSpeech();
+        }
+    }, [question, isSpeechEnabled]);
+
     let statusClasses = 'border-blue-400/80 shadow-blue-400/50';
     if(status === 'correct') statusClasses = 'border-green-600 shadow-green-500/60 animate-celebrate';
     if(status === 'incorrect' || status === 'timed_out') statusClasses = 'border-red-600 shadow-red-500/60 animate-shake';

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ThemeSwitcher } from './ThemeSwitcher';
+import { SpeechToggle } from './SpeechToggle';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -30,6 +31,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick }) => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+              <SpeechToggle />
               <button
                 onClick={onHelpClick}
                 className="p-2 rounded-full transition-colors duration-300"

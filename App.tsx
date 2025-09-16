@@ -21,6 +21,8 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { Footer } from './components/Footer';
 import { ModelIntroScreen } from './components/ModelIntroScreen';
+import { useAudio } from './contexts/AudioContext';
+import { speak, cancelSpeech } from './utils/speech';
 
 // --- Game-specific Header (previously components/Header.tsx) ---
 const GameHeader: React.FC<{
@@ -176,6 +178,7 @@ const PlaceValuePlayboxApp: React.FC = () => {
   const [touchDrag, setTouchDrag] = useState<{ value: BlockValue | null; x: number; y: number; }>({ value: null, x: 0, y: 0 });
   const [activeTouchTarget, setActiveTouchTarget] = useState<PlaceValueCategory | null>(null);
   const activeTouchTargetRef = useRef<PlaceValueCategory | null>(null);
+  const { isSpeechEnabled } = useAudio();
 
   const playDragSound = useSimpleSound(300, 0.05);
   const playDropSound = useSimpleSound(440, 0.1);
@@ -459,17 +462,61 @@ const PlaceValuePlayboxApp: React.FC = () => {
     const { type, text, duration, clearBoardAfter } = currentTrainingStepConfig;
 
     if (type === 'feedback' || type === 'magic_feedback') {
+      let isCancelled = false;
+      let timerId: number | undefined;
+
+      const advanceStep = () => {
+        if (isCancelled) return;
+        if (clearBoardAfter) handleReset();
+        setTrainingStep(prev => prev + 1);
+        if (type === 'feedback') setTrainingFeedback(null);
+      };
+
+      const runFeedback = async () => {
         type === 'feedback' ? playFeedbackSound() : playMagicFeedbackSound();
         if (type === 'feedback') setTrainingFeedback(text);
 
-        const timer = setTimeout(() => {
-            if (clearBoardAfter) handleReset();
-            setTrainingStep(prev => prev + 1);
-            if (type === 'feedback') setTrainingFeedback(null);
-        }, duration);
-        return () => clearTimeout(timer);
+        if (isSpeechEnabled) {
+          try {
+            const cleanText = text.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+            await speak(cleanText, 'en-US');
+            timerId = window.setTimeout(advanceStep, 500); 
+          } catch (error) {
+            console.error("Speech failed, falling back to timer:", error);
+            timerId = window.setTimeout(advanceStep, duration);
+          }
+        } else {
+          timerId = window.setTimeout(advanceStep, duration);
+        }
+      };
+
+      runFeedback();
+
+      return () => {
+        isCancelled = true;
+        if (timerId) clearTimeout(timerId);
+        cancelSpeech();
+      };
     }
-  }, [appState, currentTrainingStepConfig, handleReset, playFeedbackSound, playMagicFeedbackSound]);
+  }, [appState, currentTrainingStepConfig, handleReset, playFeedbackSound, playMagicFeedbackSound, isSpeechEnabled]);
+
+  useEffect(() => {
+    if (appState !== 'training' || !currentTrainingStepConfig || !isSpeechEnabled) {
+      return;
+    }
+
+    const { type, text } = currentTrainingStepConfig;
+    
+    if (type === 'action' || type === 'action_multi') {
+      const cleanText = text.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+      speak(cleanText, 'en-US').catch(err => console.error("Failed to speak training instruction:", err));
+    }
+
+    return () => {
+      // Cancel speech when the step changes, to avoid overlapping instructions
+      cancelSpeech();
+    };
+  }, [appState, currentTrainingStepConfig, isSpeechEnabled]);
 
   useEffect(() => {
     const isReadyForRegroup = appState === 'playground' || appState === 'challenge' || (appState === 'training' && (currentTrainingStepConfig?.count ?? 0) >= 10);

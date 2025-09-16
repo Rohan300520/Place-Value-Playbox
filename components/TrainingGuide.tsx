@@ -4,6 +4,7 @@ import React from 'react';
 import { NumberBlock } from './NumberBlock';
 import type { TrainingStep, PlaceValueCategory, BlockValue } from '../types';
 
+
 interface TrainingGuideProps {
   currentStepConfig: TrainingStep | null;
   columnCounts: { [key in PlaceValueCategory]: number };
@@ -63,7 +64,6 @@ const colorMap = {
 };
 
 export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig, columnCounts, onComplete, feedback }) => {
-    
     const renderContent = () => {
         if (feedback) {
             return <FeedbackBox>{feedback}</FeedbackBox>
