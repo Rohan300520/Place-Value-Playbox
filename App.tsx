@@ -21,6 +21,8 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { Footer } from './components/Footer';
 import { ModelIntroScreen } from './components/ModelIntroScreen';
+import { useAudio } from './contexts/AudioContext';
+import { speak, cancelSpeech } from './utils/speech';
 
 // --- Game-specific Header (previously components/Header.tsx) ---
 const GameHeader: React.FC<{
@@ -176,6 +178,7 @@ const PlaceValuePlayboxApp: React.FC = () => {
   const [touchDrag, setTouchDrag] = useState<{ value: BlockValue | null; x: number; y: number; }>({ value: null, x: 0, y: 0 });
   const [activeTouchTarget, setActiveTouchTarget] = useState<PlaceValueCategory | null>(null);
   const activeTouchTargetRef = useRef<PlaceValueCategory | null>(null);
+  const { isSpeechEnabled } = useAudio();
 
   const playDragSound = useSimpleSound(300, 0.05);
   const playDropSound = useSimpleSound(440, 0.1);
@@ -459,17 +462,61 @@ const PlaceValuePlayboxApp: React.FC = () => {
     const { type, text, duration, clearBoardAfter } = currentTrainingStepConfig;
 
     if (type === 'feedback' || type === 'magic_feedback') {
+      let isCancelled = false;
+      let timerId: number | undefined;
+
+      const advanceStep = () => {
+        if (isCancelled) return;
+        if (clearBoardAfter) handleReset();
+        setTrainingStep(prev => prev + 1);
+        if (type === 'feedback') setTrainingFeedback(null);
+      };
+
+      const runFeedback = async () => {
         type === 'feedback' ? playFeedbackSound() : playMagicFeedbackSound();
         if (type === 'feedback') setTrainingFeedback(text);
 
-        const timer = setTimeout(() => {
-            if (clearBoardAfter) handleReset();
-            setTrainingStep(prev => prev + 1);
-            if (type === 'feedback') setTrainingFeedback(null);
-        }, duration);
-        return () => clearTimeout(timer);
+        if (isSpeechEnabled) {
+          try {
+            const cleanText = text.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+            await speak(cleanText, 'en-US');
+            timerId = window.setTimeout(advanceStep, 500); 
+          } catch (error) {
+            console.error("Speech failed, falling back to timer:", error);
+            timerId = window.setTimeout(advanceStep, duration);
+          }
+        } else {
+          timerId = window.setTimeout(advanceStep, duration);
+        }
+      };
+
+      runFeedback();
+
+      return () => {
+        isCancelled = true;
+        if (timerId) clearTimeout(timerId);
+        cancelSpeech();
+      };
     }
-  }, [appState, currentTrainingStepConfig, handleReset, playFeedbackSound, playMagicFeedbackSound]);
+  }, [appState, currentTrainingStepConfig, handleReset, playFeedbackSound, playMagicFeedbackSound, isSpeechEnabled]);
+
+  useEffect(() => {
+    if (appState !== 'training' || !currentTrainingStepConfig || !isSpeechEnabled) {
+      return;
+    }
+
+    const { type, text } = currentTrainingStepConfig;
+    
+    if (type === 'action' || type === 'action_multi') {
+      const cleanText = text.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+      speak(cleanText, 'en-US').catch(err => console.error("Failed to speak training instruction:", err));
+    }
+
+    return () => {
+      // Cancel speech when the step changes, to avoid overlapping instructions
+      cancelSpeech();
+    };
+  }, [appState, currentTrainingStepConfig, isSpeechEnabled]);
 
   useEffect(() => {
     const isReadyForRegroup = appState === 'playground' || appState === 'challenge' || (appState === 'training' && (currentTrainingStepConfig?.count ?? 0) >= 10);
@@ -612,30 +659,13 @@ function App() {
           ) : activeModel === 'place-value-playbox' ? (
               <PlaceValuePlayboxApp />
           ) : (
-              <div className="text-center p-4 sm:p-8 flex-grow flex flex-col items-center justify-center">
-                  <div className="backdrop-blur-sm border p-8 sm:p-12 rounded-3xl shadow-xl animate-pop-in max-w-4xl" style={{ 
-                      backgroundColor: 'var(--backdrop-bg)', 
-                      borderColor: 'var(--border-primary)',
-                      backdropFilter: 'blur(10px)',
-                  }}>
-                      <div className="flex justify-center items-center mb-6" style={{ color: 'var(--text-accent)' }}>
-                          <svg width="300" height="60" viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-                              <path d="M25,5 C15,5 5,15 5,25 C5,35 15,40 25,40 C35,40 45,30 45,20 C45,10 35,5 25,5 M25,10 C30,10 35,15 35,20 C35,25 30,35 25,35 C20,35 15,30 15,25 C15,20 20,10 25,10" transform="rotate(20, 25, 22.5)"/>
-                              <text x="55" y="28" style={{ fontFamily: 'Nunito, sans-serif', fontSize: '20px', fontWeight: 900, letterSpacing: '0.5px' }}>
-                                  Smart Cerebrum
-                              </text>
-                          </svg>
-                      </div>
-                      <h1 className="text-4xl sm:text-5xl font-bold font-display" style={{ color: 'var(--text-accent)'}}>
-                          Welcome to the Digital Labs
-                      </h1>
-                      <p className="mt-4 text-lg sm:text-xl max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)'}}>
-                          Interactive tools designed to make learning foundational concepts in Science, Technology, Engineering, and Math (STEM) intuitive and fun.
-                      </p>
-                      <p className="mt-8 text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
-                          Please select a model from the sidebar to begin your learning adventure.
-                      </p>
-                  </div>
+              <div className="text-center p-8 rounded-2xl border shadow-xl animate-pop-in" style={{ 
+                  backgroundColor: 'var(--backdrop-bg)', 
+                  borderColor: 'var(--border-primary)',
+                  backdropFilter: 'blur(10px)',
+                }}>
+                  <h1 className="text-4xl font-bold font-display" style={{ color: 'var(--text-accent)'}}>Welcome to SMART C Digital Labs</h1>
+                  <p className="mt-4 text-xl" style={{ color: 'var(--text-secondary)'}}>Please select a math model from the sidebar to get started.</p>
               </div>
           )}
       </main>
