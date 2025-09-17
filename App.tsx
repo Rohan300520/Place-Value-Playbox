@@ -1,3 +1,5 @@
+
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { PlaceValueColumns, BlockValue, PlaceValueCategory, Block, AppState as GameState, TrainingStep, ChallengeQuestion, Difficulty } from './types';
 import { PlaceValueColumn } from './components/PlaceValueColumn';
@@ -23,6 +25,9 @@ import { Footer } from './components/Footer';
 import { ModelIntroScreen } from './components/ModelIntroScreen';
 import { useAudio } from './contexts/AudioContext';
 import { speak, cancelSpeech } from './utils/speech';
+import { LicenseScreen } from './components/LicenseScreen';
+import { verifyKeyOnServer } from './utils/license';
+import { AdminPage } from './AdminPage';
 
 // --- Game-specific Header (previously components/Header.tsx) ---
 const GameHeader: React.FC<{
@@ -635,11 +640,116 @@ const PlaceValuePlayboxApp: React.FC = () => {
 
 
 // --- Main Application Shell ---
-function App() {
+function MainApp() {
+  const [licenseStatus, setLicenseStatus] = useState<'checking' | 'locked' | 'unlocked' | 'expired' | 'tampered'>('checking');
+  const [expiredLicenseDuration, setExpiredLicenseDuration] = useState<number | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeModel, setActiveModel] = useState<string | null>(null);
   const [showModelIntro, setShowModelIntro] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const expiryTimer = useRef<number | undefined>();
+  
+  useEffect(() => {
+    try {
+      const expiryStr = localStorage.getItem('licenseExpiry');
+      const lastUsedStr = localStorage.getItem('lastUsedTimestamp');
+
+      // 1. Clock Tampering Check
+      // Add a small buffer (e.g., 5 seconds) to account for minor system clock adjustments
+      if (lastUsedStr && Date.now() < parseInt(lastUsedStr, 10) - 5000) {
+        setLicenseStatus('tampered');
+        localStorage.removeItem('licenseExpiry'); // Invalidate license if tampering is detected
+        localStorage.removeItem('licenseValidityInMs');
+        return;
+      }
+
+      // 2. Expiry Check
+      if (expiryStr) {
+        const expiry = parseInt(expiryStr, 10);
+        if (Date.now() > expiry) {
+          setLicenseStatus('expired');
+          const durationStr = localStorage.getItem('licenseValidityInMs');
+          if (durationStr) {
+            setExpiredLicenseDuration(parseInt(durationStr, 10));
+          }
+        } else {
+          // 3. Valid License
+          setLicenseStatus('unlocked');
+          localStorage.setItem('lastUsedTimestamp', Date.now().toString());
+
+          // Set a timer to automatically lock the app when the license expires
+          const timeRemaining = expiry - Date.now();
+          expiryTimer.current = window.setTimeout(() => {
+            setLicenseStatus('expired');
+            const durationStr = localStorage.getItem('licenseValidityInMs');
+            if (durationStr) {
+              setExpiredLicenseDuration(parseInt(durationStr, 10));
+            }
+          }, timeRemaining);
+        }
+      } else {
+        // 4. No License Found
+        setLicenseStatus('locked');
+      }
+    } catch (e) {
+      console.error("Error accessing localStorage for license check:", e);
+      setLicenseStatus('locked'); // Default to locked on any error
+    }
+
+    // Cleanup timer on component unmount
+    return () => {
+      if (expiryTimer.current) {
+        clearTimeout(expiryTimer.current);
+      }
+    };
+  }, []);
+  
+  const handleKeyVerification = async (key: string): Promise<{ success: boolean; message: string; }> => {
+    const result = await verifyKeyOnServer(key);
+    
+    if (result.success && result.validityInMs) {
+      const expiryTime = Date.now() + result.validityInMs;
+      try {
+        localStorage.setItem('licenseExpiry', expiryTime.toString());
+        localStorage.setItem('licenseValidityInMs', result.validityInMs.toString());
+        localStorage.setItem('lastUsedTimestamp', Date.now().toString());
+        
+        // Fix: Resolved an "Expected 1 arguments, but got 0" error by using the standard `window.location.reload()` method.
+        // This is a more robust and explicit way to refresh the application after a successful license verification.
+        window.location.reload();
+
+        return { success: true, message: 'Success! Reloading application...' };
+      } catch(e) {
+        console.error("Could not write license to localStorage:", e);
+        return { success: false, message: 'Could not save license. Storage may be full.' };
+      }
+    }
+    
+    return { success: result.success, message: result.message };
+  };
+  
+  // Render loading state while checking license
+  if (licenseStatus === 'checking') {
+    return (
+      <div className="w-full h-screen flex items-center justify-center" style={{ color: 'var(--text-primary)'}}>
+        <div className="text-2xl font-bold animate-pulse">Loading Application...</div>
+      </div>
+    );
+  }
+
+  // Render lock screen if application is not unlocked
+  if (licenseStatus !== 'unlocked') {
+    return (
+      <div className="min-h-screen">
+          <BackgroundManager />
+          <LicenseScreen 
+            status={licenseStatus} 
+            onVerify={handleKeyVerification} 
+            expiredDuration={expiredLicenseDuration} 
+          />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex flex-col" style={{ color: 'var(--text-primary)'}}>
@@ -674,5 +784,29 @@ function App() {
     </div>
   );
 }
+
+
+const App: React.FC = () => {
+    const [route, setRoute] = useState(window.location.pathname);
+
+    useEffect(() => {
+        const onLocationChange = () => {
+            setRoute(window.location.pathname);
+        };
+        // Listen for browser navigation events
+        window.addEventListener('popstate', onLocationChange);
+        return () => {
+            window.removeEventListener('popstate', onLocationChange);
+        };
+    }, []);
+
+    // Simple router
+    switch (route) {
+        case '/admin':
+            return <AdminPage />;
+        default:
+            return <MainApp />;
+    }
+};
 
 export default App;
