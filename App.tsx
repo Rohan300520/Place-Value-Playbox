@@ -377,10 +377,6 @@ const AppContent: React.FC = () => {
 
                           setTimeout(() => {
                               setTrainingFeedback(null);
-                              const nextInstructionStep = trainingPlan.find(s => s.step === trainingStep + 2);
-                              if (isSpeechEnabled && nextInstructionStep && (nextInstructionStep.type === 'action' || nextInstructionStep.type === 'action_multi')) {
-                                  speak(nextInstructionStep.text, 'en-US');
-                              }
                               setTrainingStep(prev => prev + 2);
                               if (nextStepConfig.clearBoardAfter) {
                                   resetBoard();
@@ -421,10 +417,6 @@ const AppContent: React.FC = () => {
 
             setTimeout(() => {
                 setTrainingFeedback(null);
-                const nextInstructionStep = trainingPlan.find(s => s.step === trainingStep + 2);
-                if (isSpeechEnabled && nextInstructionStep && (nextInstructionStep.type === 'action' || nextInstructionStep.type === 'action_multi')) {
-                    speak(nextInstructionStep.text, 'en-US');
-                }
                 setTrainingStep(prev => prev + 2); // Jump over the feedback step
                 if (nextStepConfig.clearBoardAfter) {
                     resetBoard();
@@ -462,12 +454,15 @@ const AppContent: React.FC = () => {
 
   const currentStepConfig = gameState === 'training' ? trainingPlan.find(s => s.step === trainingStep) : null;
 
-  // This effect will speak the instruction for the very first training step
+  // This effect handles speaking the instructions for the current training step to prevent sync issues.
   useEffect(() => {
-    if (gameState === 'training' && trainingStep === 0 && isSpeechEnabled) {
-      const firstStep = trainingPlan[0];
-      if (firstStep) {
-        speak(firstStep.text, 'en-US');
+    if (gameState === 'training' && isSpeechEnabled) {
+      const currentStepConfig = trainingPlan.find(s => s.step === trainingStep);
+      
+      // Only speak for action steps to avoid re-speaking feedback messages.
+      if (currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi')) {
+        // The speak utility cancels previous speech, ensuring instructions don't overlap.
+        speak(currentStepConfig.text, 'en-US');
       }
     }
   }, [gameState, trainingStep, isSpeechEnabled]);
