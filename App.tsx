@@ -370,39 +370,39 @@ const AppContent: React.FC = () => {
       const updatedColumns = { ...prevColumns, [category]: [...prevColumns[category], newBlock] };
 
       if (gameState === 'training') {
-        const currentStepConfig = trainingPlan[trainingStep];
-        const nextStepConfig = trainingPlan[trainingStep + 1];
+        const currentStepConfig = trainingPlan.find(s => s.step === trainingStep);
+        if (!currentStepConfig) return updatedColumns;
 
-        if (currentStepConfig?.type === 'action' && currentStepConfig.column === category) {
-          setTrainingFeedback(nextStepConfig.text);
-          if (isSpeechEnabled) speak(nextStepConfig.text, 'en-US');
-          setTimeout(() => {
-            setTrainingFeedback(null);
-            setTrainingStep(prev => prev + 2);
-            if (nextStepConfig.clearBoardAfter) {
-              resetBoard();
-            }
-          }, nextStepConfig.duration || 2000);
-        } else if (currentStepConfig?.type === 'action_multi' && currentStepConfig.column === category) {
-          const newCount = updatedColumns[category].length;
-          if (newCount === currentStepConfig.count) {
-            if (nextStepConfig.type !== 'magic_feedback') {
-              setTrainingFeedback(nextStepConfig.text);
-              if (isSpeechEnabled) speak(nextStepConfig.text, 'en-US');
-              setTimeout(() => {
+        const nextStepConfig = trainingPlan.find(s => s.step === trainingStep + 1);
+        if (!nextStepConfig) return updatedColumns;
+
+        const advanceAndShowFeedback = () => {
+            setTrainingFeedback(nextStepConfig.text);
+            if (isSpeechEnabled) speak(nextStepConfig.text, 'en-US');
+
+            setTimeout(() => {
                 setTrainingFeedback(null);
-                setTrainingStep(prev => prev + 2);
+                setTrainingStep(prev => prev + 2); // Jump over the feedback step
                 if (nextStepConfig.clearBoardAfter) {
-                  resetBoard();
+                    resetBoard();
                 }
-              }, nextStepConfig.duration || 2000);
+            }, nextStepConfig.duration || 2000);
+        };
+        
+        if (currentStepConfig.type === 'action' && currentStepConfig.column === category) {
+            advanceAndShowFeedback();
+        } else if (currentStepConfig.type === 'action_multi' && currentStepConfig.column === category) {
+          if (updatedColumns[category].length === currentStepConfig.count) {
+            if (nextStepConfig.type !== 'magic_feedback') {
+                advanceAndShowFeedback();
             }
           }
         }
       }
+
       return updatedColumns;
     });
-  }, [playDropSound, gameState, trainingStep, isSpeechEnabled, resetBoard]);
+  }, [gameState, trainingStep, playDropSound, isSpeechEnabled, resetBoard]);
   
   const removeBlock = useCallback((category: PlaceValueCategory, id: string) => {
     playDropSound();
@@ -500,7 +500,7 @@ const AppContent: React.FC = () => {
     setTouchDragging(null);
     setTouchTarget(null);
     setDraggedValue(null);
-  }, [touchDragging, touchTarget, handleDrop]);
+  }, [touchDragging, touchTarget]);
 
   useEffect(() => {
     window.addEventListener('touchmove', handleTouchMove);

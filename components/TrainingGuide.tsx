@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 import { NumberBlock } from './NumberBlock';
 import type { TrainingStep, PlaceValueCategory, BlockValue } from '../types';
@@ -77,7 +75,7 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
                 const column = currentStepConfig.column!;
                 return (
                     <>
-                        <GhostBlock value={currentStepConfig.source!} />
+                        {currentStepConfig.source && <GhostBlock value={currentStepConfig.source} />}
                         <GuideBox className="bottom-4 right-4 sm:bottom-6 sm:right-6 w-[80vw] max-w-xs text-left guide-box-arrow">
                             <p>{colorSpan(currentStepConfig.text)}</p>
                             {currentStepConfig.type === 'action_multi' && (
@@ -124,10 +122,6 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
         }
     }
 
-    return (
-       <>
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-10" />
-        {renderContent()}
-       </>
-    );
+    // The overlay div has been removed from here to allow interaction.
+    return renderContent();
 };
