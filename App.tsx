@@ -26,6 +26,8 @@ import { speak, cancelSpeech } from './utils/speech';
 import { LicenseScreen } from './components/LicenseScreen';
 import { verifyKeyOnServer } from './utils/license';
 import { AdminPage } from './AdminPage';
+import { ThemeSwitcher } from './components/ThemeSwitcher';
+import { SpeechToggle } from './components/SpeechToggle';
 
 // --- Game-specific Header (previously components/Header.tsx) ---
 const GameHeader: React.FC<{
@@ -33,7 +35,8 @@ const GameHeader: React.FC<{
   appState: GameState;
   onBack?: () => void;
   totalInWords: string;
-}> = ({ total, appState, onBack, totalInWords }) => {
+  onHelpClick: () => void;
+}> = ({ total, appState, onBack, totalInWords, onHelpClick }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const prevTotalRef = useRef<number | undefined>(undefined);
 
@@ -110,6 +113,23 @@ const GameHeader: React.FC<{
             </div>
           </div>
         )}
+        <div className="flex items-center gap-1 sm:gap-2">
+            <SpeechToggle />
+            <ThemeSwitcher />
+            <button
+                onClick={onHelpClick}
+                className="p-2 rounded-full transition-colors duration-300"
+                style={{
+                    color: 'var(--text-secondary)',
+                    backgroundColor: 'var(--panel-bg)',
+                }}
+                aria-label="Open help and instructions"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </button>
+        </div>
       </div>
     </header>
   );
@@ -289,17 +309,15 @@ const AppContent: React.FC = () => {
   
   const handleRegrouping = useCallback((currentColumns: PlaceValueColumns) => {
     let needsUpdate = false;
-    let newColumns = { ...currentColumns };
+    let tempColumns = { ...currentColumns };
 
     const regroup = (source: PlaceValueCategory, dest: PlaceValueCategory, value: BlockValue) => {
-        if (newColumns[source].length >= 10) {
+        if (tempColumns[source].length >= 10) {
             needsUpdate = true;
             playRegroupSound();
-
-            const oldBlocks = newColumns[source].slice(0, 10);
             
-            // Animate out old blocks
-            newColumns[source] = newColumns[source].map((b, i) => i < 10 ? { ...b, isAnimating: true } : b);
+            // Mark old blocks for animation
+            tempColumns[source] = tempColumns[source].map((b, i) => i < 10 ? { ...b, isAnimating: true } : b);
             
             setTimeout(() => {
                 setColumns(prev => {
@@ -323,57 +341,60 @@ const AppContent: React.FC = () => {
                         }, currentStepConfig.duration || 3000);
                     }
                 }
-            }, 600); // Wait for animation to finish
+            }, 600); // Wait for animation
         }
     };
     
-    regroup('ones', 'tens', 10);
-    regroup('tens', 'hundreds', 100);
-    regroup('hundreds', 'thousands', 1000);
+    // Check for regrouping opportunities in order
+    if (tempColumns.ones.length >= 10) regroup('ones', 'tens', 10);
+    else if (tempColumns.tens.length >= 10) regroup('tens', 'hundreds', 100);
+    else if (tempColumns.hundreds.length >= 10) regroup('hundreds', 'thousands', 1000);
 
-    return needsUpdate ? newColumns : currentColumns;
+    if(needsUpdate) {
+      setColumns(tempColumns);
+    }
   }, [playRegroupSound, gameState, trainingStep, isSpeechEnabled, resetBoard]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      setColumns(prev => handleRegrouping(prev));
+      handleRegrouping(columns);
     }, 200);
     return () => clearTimeout(timeout);
   }, [columns, handleRegrouping]);
 
   const addBlock = useCallback((category: PlaceValueCategory, value: BlockValue) => {
     playDropSound();
-    setColumns(prev => ({
-      ...prev,
-      [category]: [...prev[category], { id: `block-${Date.now()}-${Math.random()}`, value }],
-    }));
+    
+    const newBlock = { id: `block-${Date.now()}-${Math.random()}`, value };
+    
+    setColumns(prev => {
+      const newColumns = { ...prev, [category]: [...prev[category], newBlock] };
 
-    if (gameState === 'training') {
+      if (gameState === 'training') {
         const currentStepConfig = trainingPlan[trainingStep];
+        const nextStepConfig = trainingPlan[trainingStep + 1];
+
         if (currentStepConfig?.type === 'action' && currentStepConfig.column === category) {
-            setTrainingFeedback(trainingPlan[trainingStep + 1].text);
-            if (isSpeechEnabled) speak(trainingPlan[trainingStep + 1].text, 'en-US');
+            setTrainingFeedback(nextStepConfig.text);
+            if (isSpeechEnabled) speak(nextStepConfig.text, 'en-US');
             setTimeout(() => {
                 setTrainingFeedback(null);
-                setTrainingStep(prev => prev + 2);
-                if (trainingPlan[trainingStep + 1].clearBoardAfter) {
+                setTrainingStep(prevStep => prevStep + 2);
+                if (nextStepConfig.clearBoardAfter) {
                     resetBoard();
                 }
-            }, trainingPlan[trainingStep + 1].duration || 2000);
+            }, nextStepConfig.duration || 2000);
         } else if (currentStepConfig?.type === 'action_multi' && currentStepConfig.column === category) {
-            const newCount = columns[category].length + 1;
+            const newCount = newColumns[category].length;
             if (newCount === currentStepConfig.count) {
-                const nextStepIndex = trainingStep + 1;
-                const nextStepConfig = trainingPlan[nextStepIndex];
-                
                 if (nextStepConfig.type === 'magic_feedback') {
-                    // Don't show feedback, wait for regrouping animation.
+                    // Let regrouping handle feedback
                 } else {
                     setTrainingFeedback(nextStepConfig.text);
                     if (isSpeechEnabled) speak(nextStepConfig.text, 'en-US');
                     setTimeout(() => {
                         setTrainingFeedback(null);
-                        setTrainingStep(prev => prev + 2);
+                        setTrainingStep(prevStep => prevStep + 2);
                         if (nextStepConfig.clearBoardAfter) {
                             resetBoard();
                         }
@@ -381,11 +402,13 @@ const AppContent: React.FC = () => {
                 }
             }
         }
-    }
-  }, [playDropSound, gameState, trainingStep, isSpeechEnabled, resetBoard, columns]);
+      }
+      return newColumns;
+    });
+  }, [playDropSound, gameState, trainingStep, isSpeechEnabled, resetBoard]);
   
   const removeBlock = useCallback((category: PlaceValueCategory, id: string) => {
-    playDropSound(); // or a different sound
+    playDropSound();
     setColumns(prev => {
         const newCategoryBlocks = prev[category].filter(b => b.id !== id);
         return {
@@ -397,6 +420,15 @@ const AppContent: React.FC = () => {
 
   const isDropAllowedForValue = (category: PlaceValueCategory, value: BlockValue | null) => {
     if (!value) return false;
+
+    if (gameState === 'training') {
+        const currentStepConfig = trainingPlan[trainingStep];
+        if (currentStepConfig && currentStepConfig.type.startsWith('action')) {
+            return currentStepConfig.source === value && currentStepConfig.column === category;
+        }
+        return false;
+    }
+
     return (
         (category === 'ones' && value === 1) ||
         (category === 'tens' && value === 10) ||
@@ -432,18 +464,17 @@ const AppContent: React.FC = () => {
     if (touchDragging) return;
     const touch = event.touches[0];
     
-    // Create a ghost element
     const ghost = document.createElement('div');
     ghost.style.position = 'fixed';
-    ghost.style.left = `${touch.clientX - 25}px`; // center it on finger
+    ghost.style.left = `${touch.clientX - 25}px`;
     ghost.style.top = `${touch.clientY - 25}px`;
     ghost.style.zIndex = '1000';
-    ghost.style.pointerEvents = 'none'; // so it doesn't interfere with drop targets
+    ghost.style.pointerEvents = 'none';
     ghost.innerHTML = event.currentTarget.outerHTML;
     document.body.appendChild(ghost);
     
     setTouchDragging({ value, element: ghost });
-    setDraggedValue(value); // To use the same validation logic
+    setDraggedValue(value);
   };
 
   const handleTouchMove = useCallback((event: TouchEvent) => {
@@ -452,7 +483,6 @@ const AppContent: React.FC = () => {
     touchDragging.element.style.left = `${touch.clientX - 25}px`;
     touchDragging.element.style.top = `${touch.clientY - 25}px`;
 
-    // Check what we are hovering over
     const elementUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
     const dropTarget = elementUnderTouch?.closest('[data-droptarget]');
     if (dropTarget) {
@@ -469,12 +499,11 @@ const AppContent: React.FC = () => {
       handleDrop(touchTarget);
     }
     
-    // Cleanup
     document.body.removeChild(touchDragging.element);
     setTouchDragging(null);
     setTouchTarget(null);
     setDraggedValue(null);
-  }, [touchDragging, touchTarget]);
+  }, [touchDragging, touchTarget, handleDrop]);
 
   useEffect(() => {
     window.addEventListener('touchmove', handleTouchMove);
@@ -528,8 +557,7 @@ const AppContent: React.FC = () => {
     if (currentQuestionIndex < filteredQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
-      // End of challenges for this difficulty
-      setShowRocket(true); // Launch rocket at the end
+      setShowRocket(true);
     }
   };
 
@@ -602,10 +630,10 @@ const AppContent: React.FC = () => {
               />
             )}
             <div className="grid grid-cols-4 gap-2 sm:gap-4 w-full">
-              <PlaceValueColumn title="Thousands" category="thousands" blocks={columns.thousands} onDrop={handleDrop} onDragOver={handleDragOver} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('thousands', draggedValue)} isDragging={!!draggedValue} color="purple" isTouchTarget={touchTarget === 'thousands'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'thousands'} />
-              <PlaceValueColumn title="Hundreds" category="hundreds" blocks={columns.hundreds} onDrop={handleDrop} onDragOver={handleDragOver} isRegroupingDestination={columns.tens.length >= 10} isDropAllowed={isDropAllowedForValue('hundreds', draggedValue)} isDragging={!!draggedValue} color="yellow" isTouchTarget={touchTarget === 'hundreds'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'hundreds'}/>
-              <PlaceValueColumn title="Tens" category="tens" blocks={columns.tens} onDrop={handleDrop} onDragOver={handleDragOver} isRegroupingDestination={columns.ones.length >= 10} isDropAllowed={isDropAllowedForValue('tens', draggedValue)} isDragging={!!draggedValue} color="green" isTouchTarget={touchTarget === 'tens'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'tens'} />
-              <PlaceValueColumn title="Ones" category="ones" blocks={columns.ones} onDrop={handleDrop} onDragOver={handleDragOver} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('ones', draggedValue)} isDragging={!!draggedValue} color="blue" isTouchTarget={touchTarget === 'ones'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'ones'} />
+              <PlaceValueColumn title="Thousands" category="thousands" blocks={columns.thousands} onDrop={handleDrop} onDragOver={handleDragOver} onDragStart={handleDragStart} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('thousands', draggedValue)} isDragging={!!draggedValue} color="purple" isTouchTarget={touchTarget === 'thousands'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'thousands'} />
+              <PlaceValueColumn title="Hundreds" category="hundreds" blocks={columns.hundreds} onDrop={handleDrop} onDragOver={handleDragOver} onDragStart={handleDragStart} isRegroupingDestination={columns.tens.length >= 10} isDropAllowed={isDropAllowedForValue('hundreds', draggedValue)} isDragging={!!draggedValue} color="yellow" isTouchTarget={touchTarget === 'hundreds'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'hundreds'}/>
+              <PlaceValueColumn title="Tens" category="tens" blocks={columns.tens} onDrop={handleDrop} onDragOver={handleDragOver} onDragStart={handleDragStart} isRegroupingDestination={columns.ones.length >= 10} isDropAllowed={isDropAllowedForValue('tens', draggedValue)} isDragging={!!draggedValue} color="green" isTouchTarget={touchTarget === 'tens'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'tens'} />
+              <PlaceValueColumn title="Ones" category="ones" blocks={columns.ones} onDrop={handleDrop} onDragOver={handleDragOver} onDragStart={handleDragStart} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('ones', draggedValue)} isDragging={!!draggedValue} color="blue" isTouchTarget={touchTarget === 'ones'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'ones'} />
             </div>
             <div className="mt-4 sm:mt-8 flex flex-col sm:flex-row items-center justify-between w-full gap-4">
               <div className="flex-1">
@@ -628,7 +656,7 @@ const AppContent: React.FC = () => {
     <div className="min-h-screen flex flex-col font-sans">
         <BackgroundManager />
         <div className="relative z-10 p-2 sm:p-4 w-full max-w-8xl mx-auto flex flex-col flex-grow items-center">
-            <GameHeader total={total} appState={gameState} onBack={goBackToMenu} totalInWords={totalInWords}/>
+            <GameHeader total={total} appState={gameState} onBack={goBackToMenu} totalInWords={totalInWords} onHelpClick={() => setShowHelpModal(true)}/>
             <main className="flex-grow w-full flex items-center justify-center py-4">
                 {renderGameState()}
             </main>

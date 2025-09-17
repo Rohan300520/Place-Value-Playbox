@@ -3,7 +3,6 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { LanguageProvider } from './contexts/LanguageContext';
 import { AudioProvider } from './contexts/AudioContext';
 
 /**
@@ -20,11 +19,9 @@ if (!rootElement) {
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <ThemeProvider>
-      <LanguageProvider>
-        <AudioProvider>
-          <App />
-        </AudioProvider>
-      </LanguageProvider>
+      <AudioProvider>
+        <App />
+      </AudioProvider>
     </ThemeProvider>
   </React.StrictMode>
 );
