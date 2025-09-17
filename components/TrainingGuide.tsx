@@ -62,23 +62,28 @@ const colorMap = {
 };
 
 export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig, columnCounts, onComplete, feedback }) => {
+    
     const renderContent = () => {
         if (feedback) {
             return <FeedbackBox>{feedback}</FeedbackBox>
         }
-        
+
         if (!currentStepConfig) return null;
 
         switch (currentStepConfig.type) {
             case 'action':
-            case 'action_multi':
-                const column = currentStepConfig.column!;
+            case 'action_multi': {
+                const column = currentStepConfig.column;
+                // Defensively check for column to prevent crashes
+                if (!column) return null; 
+                
                 return (
                     <>
+                        {/* Conditionally render GhostBlock only if a source is defined for the step */}
                         {currentStepConfig.source && <GhostBlock value={currentStepConfig.source} />}
                         <GuideBox className="bottom-4 right-4 sm:bottom-6 sm:right-6 w-[80vw] max-w-xs text-left guide-box-arrow">
                             <p>{colorSpan(currentStepConfig.text)}</p>
-                            {currentStepConfig.type === 'action_multi' && (
+                            {currentStepConfig.type === 'action_multi' && currentStepConfig.count && (
                                 <div className={`mt-4 text-4xl font-black ${colorMap[column]} tabular-nums font-display`}>
                                     {columnCounts[column]} / {currentStepConfig.count}
                                 </div>
@@ -86,6 +91,7 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
                         </GuideBox>
                     </>
                 );
+            }
             case 'magic_feedback': {
                 let positionClass = 'top-[15vh]';
                 switch (currentStepConfig.targetColumn) {
@@ -122,6 +128,11 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
         }
     }
 
-    // The overlay div has been removed from here to allow interaction.
-    return renderContent();
+    return (
+       <>
+        {/* The overlay provides focus but is non-interactive to allow dragging blocks */}
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-10 pointer-events-none" />
+        {renderContent()}
+       </>
+    );
 };
