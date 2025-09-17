@@ -140,11 +140,11 @@ const GameHeader: React.FC<{
 const trainingPlan: TrainingStep[] = [
   // 1. Introduce all four blocks
   { step: 0, type: 'action', source: 1, column: 'ones', text: "First, let's learn the blocks. Drag a blue '1' block to the 'Ones' column." },
-  { step: 1, type: 'feedback', text: "Great! That's a 'One' block.", duration: 2000, clearBoardAfter: false },
+  { step: 1, type: 'feedback', text: "Great! That's a 'One' block.", duration: 3000, clearBoardAfter: false },
   { step: 2, type: 'action', source: 10, column: 'tens', text: "Now drag a green '10' block to the 'Tens' column." },
-  { step: 3, type: 'feedback', text: "Awesome! That's a 'Ten' block.", duration: 2000, clearBoardAfter: false },
+  { step: 3, type: 'feedback', text: "Awesome! That's a 'Ten' block.", duration: 3000, clearBoardAfter: false },
   { step: 4, type: 'action', source: 100, column: 'hundreds', text: "You're doing great! Drag a yellow '100' block to the 'Hundreds' column." },
-  { step: 5, type: 'feedback', text: "Perfect! That's a 'Hundred' block.", duration: 2000, clearBoardAfter: false },
+  { step: 5, type: 'feedback', text: "Perfect! That's a 'Hundred' block.", duration: 3000, clearBoardAfter: false },
   { step: 6, type: 'action', source: 1000, column: 'thousands', text: "Amazing! Finally, drag a purple '1000' block to the 'Thousands' column." },
   { step: 7, type: 'feedback', text: "Incredible! You've learned all the blocks. Now, let's see some magic! ✨", duration: 3000, clearBoardAfter: true },
 
@@ -611,6 +611,7 @@ const AppContent: React.FC = () => {
       setChallengeStatus('correct');
       setScore(prev => prev + 10);
       setShowRocket(true);
+      setShowConfetti(true);
     } else {
       playErrorSound();
       setChallengeStatus('incorrect');
@@ -737,15 +738,12 @@ const AppContent: React.FC = () => {
         
         {/* Modals and Overlays */}
         {showHelpModal && <HelpModal onClose={() => setShowHelpModal(false)} />}
-        {showRocket && <RocketAnimation onComplete={() => {
-            setShowRocket(false);
-            if (isFinalChallenge) {
-                setShowConfetti(true);
-            }
-        }} />}
+        {showRocket && <RocketAnimation onComplete={() => setShowRocket(false)} />}
         {showConfetti && <Confetti onComplete={() => {
             setShowConfetti(false);
-            goBackToMenu(); // Go back to menu after final celebration
+            if (isFinalChallenge) {
+                goBackToMenu();
+            }
         }} />}
         {showCandy && <CandyReward onComplete={() => setShowCandy(false)} />}
     </div>
