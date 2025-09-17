@@ -12,7 +12,6 @@ interface NumberBlockProps {
   // For dragging from a column
   id?: string;
   category?: PlaceValueCategory;
-  isDraggableFromColumn?: boolean;
 }
 
 const blockColorStyles = {
@@ -24,13 +23,12 @@ const blockColorStyles = {
 
 export const NumberBlock: React.FC<NumberBlockProps> = ({ 
   value, isDraggable, onDragStart, onTouchStart, isAnimating, isNewlyRegrouped,
-  id, category, isDraggableFromColumn
+  id, category
 }) => {
-  const isActuallyDraggable = isDraggable || isDraggableFromColumn;
-
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     if (onDragStart) {
-      const origin = (isDraggableFromColumn && category && id) ? { category, id } : undefined;
+      // If id and category are present, it's being dragged from a column.
+      const origin = (id && category) ? { category, id } : undefined;
       onDragStart(value, origin);
       e.dataTransfer.effectAllowed = "copyMove";
       e.dataTransfer.setData('text/plain', value.toString());
@@ -38,7 +36,8 @@ export const NumberBlock: React.FC<NumberBlockProps> = ({
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (onTouchStart && isDraggable) { // Only allow touch from source for now
+    // Only allow touch from source blocks for simplicity
+    if (onTouchStart && isDraggable && !category) { 
       onTouchStart(value, e);
     }
   };
@@ -85,13 +84,13 @@ export const NumberBlock: React.FC<NumberBlockProps> = ({
 
   const blockElement = (
     <div
-      draggable={isActuallyDraggable}
-      onDragStart={isActuallyDraggable ? handleDragStart : undefined}
+      draggable={isDraggable}
+      onDragStart={isDraggable ? handleDragStart : undefined}
       onTouchStart={isDraggable ? handleTouchStart : undefined}
       data-value={value}
       data-id={id}
       data-category={category}
-      className={`${blockBaseStyle} rounded-md transition-transform transform ${isActuallyDraggable ? 'hover:scale-110 cursor-grab active:cursor-grabbing' : 'cursor-default'} ${animationClass}`}
+      className={`${blockBaseStyle} rounded-md transition-transform transform ${isDraggable ? 'hover:scale-110 cursor-grab active:cursor-grabbing' : 'cursor-default'} ${animationClass}`}
       style={{ 
         background,
         border: `2px solid ${border}`,

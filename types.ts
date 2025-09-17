@@ -53,5 +53,5 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export type Theme = 'light' | 'dark';
 
-// Fix: Added the missing 'Language' type definition.
+// Fix: Added the missing 'Language' type to support the language switching feature.
 export type Language = 'en' | 'hi' | 'kn';

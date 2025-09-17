@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { Block, PlaceValueCategory } from '../types';
+import type { Block, PlaceValueCategory, BlockValue } from '../types';
 import { NumberBlock } from './NumberBlock';
 
 interface PlaceValueColumnProps {
@@ -8,6 +8,7 @@ interface PlaceValueColumnProps {
   blocks: Block[];
   onDrop: (category: PlaceValueCategory) => void;
   onDragOver: (event: React.DragEvent<HTMLDivElement>, category: PlaceValueCategory) => void;
+  onDragStart: (value: BlockValue, origin: { category: PlaceValueCategory, id: string }) => void;
   isRegroupingDestination: boolean;
   isDropAllowed: boolean;
   isDragging: boolean;
@@ -25,7 +26,7 @@ const colorVars = {
 };
 
 export const PlaceValueColumn: React.FC<PlaceValueColumnProps> = ({ 
-  title, category, blocks, onDrop, onDragOver, isRegroupingDestination, 
+  title, category, blocks, onDrop, onDragOver, onDragStart, isRegroupingDestination, 
   isDropAllowed, isDragging, color, isSpotlighted, isTouchTarget, appState
 }) => {
   const styles = colorVars[color];
@@ -84,8 +85,8 @@ export const PlaceValueColumn: React.FC<PlaceValueColumnProps> = ({
               id={block.id}
               category={category}
               value={block.value} 
-              isDraggable={false}
-              isDraggableFromColumn={appState === 'playground'}
+              isDraggable={appState === 'playground'}
+              onDragStart={onDragStart}
               isAnimating={block.isAnimating}
               isNewlyRegrouped={block.isNewlyRegrouped}
             />
