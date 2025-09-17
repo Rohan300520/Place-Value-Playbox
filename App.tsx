@@ -422,7 +422,11 @@ const AppContent: React.FC = () => {
         if (!nextStepConfig) return;
 
         setTrainingFeedback(nextStepConfig.text);
-        if (isSpeechEnabled) speak(nextStepConfig.text, 'en-US');
+        if (isSpeechEnabled) {
+          // Cancel previous speech before speaking new feedback
+          cancelSpeech();
+          speak(nextStepConfig.text, 'en-US');
+        }
 
         setTimeout(() => {
             setTrainingFeedback(null);
@@ -430,7 +434,7 @@ const AppContent: React.FC = () => {
             if (nextStepConfig.clearBoardAfter) {
                 resetBoard();
             }
-        }, nextStepConfig.duration || 2000);
+        }, nextStepConfig.duration || 3000);
     };
 
     if (currentStepConfig.type === 'action' && currentStepConfig.column === category) {
@@ -465,7 +469,7 @@ const AppContent: React.FC = () => {
 
   // This effect handles speaking the instructions for the current training step to prevent sync issues.
   useEffect(() => {
-    if (gameState === 'training' && isSpeechEnabled) {
+    if (gameState === 'training' && isSpeechEnabled && !trainingFeedback) {
       const currentStepConfig = trainingPlan.find(s => s.step === trainingStep);
       
       // Only speak for action steps to avoid re-speaking feedback messages.
@@ -474,7 +478,7 @@ const AppContent: React.FC = () => {
         speak(currentStepConfig.text, 'en-US');
       }
     }
-  }, [gameState, trainingStep, isSpeechEnabled]);
+  }, [gameState, trainingStep, isSpeechEnabled, trainingFeedback]);
 
   const isDropAllowedForValue = (category: PlaceValueCategory, value: BlockValue | null) => {
     if (!value) return false;
@@ -676,7 +680,9 @@ const AppContent: React.FC = () => {
   const renderGameState = () => {
     switch (gameState) {
       case 'welcome':
-        return <WelcomeScreen onStart={() => setGameState('mode_selection')} />;
+        return <WelcomeScreen onStart={() => setGameState('model_intro')} />;
+      case 'model_intro':
+        return <ModelIntroScreen onContinue={() => setGameState('mode_selection')} />;
       case 'mode_selection':
         return <ModeSelector onSelectMode={handleModeSelection} />;
       case 'challenge_difficulty_selection':
