@@ -364,48 +364,48 @@ const AppContent: React.FC = () => {
 
   const addBlock = useCallback((category: PlaceValueCategory, value: BlockValue) => {
     playDropSound();
-    
+
     const newBlock = { id: `block-${Date.now()}-${Math.random()}`, value };
-    
-    setColumns(prev => {
-      const newColumns = { ...prev, [category]: [...prev[category], newBlock] };
 
-      if (gameState === 'training') {
-        const currentStepConfig = trainingPlan[trainingStep];
-        const nextStepConfig = trainingPlan[trainingStep + 1];
+    // Perform training logic check *before* the async state update to ensure we have the latest state.
+    if (gameState === 'training') {
+      const currentStepConfig = trainingPlan[trainingStep];
+      const nextStepConfig = trainingPlan[trainingStep + 1];
 
-        if (currentStepConfig?.type === 'action' && currentStepConfig.column === category) {
+      if (currentStepConfig?.type === 'action' && currentStepConfig.column === category) {
+        setTrainingFeedback(nextStepConfig.text);
+        if (isSpeechEnabled) speak(nextStepConfig.text, 'en-US');
+        setTimeout(() => {
+          setTrainingFeedback(null);
+          setTrainingStep(prevStep => prevStep + 2);
+          if (nextStepConfig.clearBoardAfter) {
+            resetBoard();
+          }
+        }, nextStepConfig.duration || 2000);
+      } else if (currentStepConfig?.type === 'action_multi' && currentStepConfig.column === category) {
+        // Calculate the new count based on the current state + 1.
+        const newCount = columns[category].length + 1;
+        if (newCount === currentStepConfig.count) {
+          if (nextStepConfig.type !== 'magic_feedback') {
             setTrainingFeedback(nextStepConfig.text);
             if (isSpeechEnabled) speak(nextStepConfig.text, 'en-US');
             setTimeout(() => {
-                setTrainingFeedback(null);
-                setTrainingStep(prevStep => prevStep + 2);
-                if (nextStepConfig.clearBoardAfter) {
-                    resetBoard();
-                }
+              setTrainingFeedback(null);
+              setTrainingStep(prevStep => prevStep + 2);
+              if (nextStepConfig.clearBoardAfter) {
+                resetBoard();
+              }
             }, nextStepConfig.duration || 2000);
-        } else if (currentStepConfig?.type === 'action_multi' && currentStepConfig.column === category) {
-            const newCount = newColumns[category].length;
-            if (newCount === currentStepConfig.count) {
-                if (nextStepConfig.type === 'magic_feedback') {
-                    // Let regrouping handle feedback
-                } else {
-                    setTrainingFeedback(nextStepConfig.text);
-                    if (isSpeechEnabled) speak(nextStepConfig.text, 'en-US');
-                    setTimeout(() => {
-                        setTrainingFeedback(null);
-                        setTrainingStep(prevStep => prevStep + 2);
-                        if (nextStepConfig.clearBoardAfter) {
-                            resetBoard();
-                        }
-                    }, nextStepConfig.duration || 2000);
-                }
-            }
+          }
+          // If magic_feedback, let the regrouping handler manage the feedback.
         }
       }
-      return newColumns;
-    });
-  }, [playDropSound, gameState, trainingStep, isSpeechEnabled, resetBoard]);
+    }
+    
+    // Now, update the columns state.
+    setColumns(prev => ({ ...prev, [category]: [...prev[category], newBlock] }));
+
+  }, [playDropSound, gameState, trainingStep, isSpeechEnabled, resetBoard, columns]);
   
   const removeBlock = useCallback((category: PlaceValueCategory, id: string) => {
     playDropSound();
