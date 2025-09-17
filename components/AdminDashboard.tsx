@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { GeneratedKey, formatDuration } from '../utils/license';
 
 interface AdminDashboardProps {
@@ -10,9 +10,14 @@ interface AdminDashboardProps {
     validityHours: number;
     validityMinutes: number;
   }) => void;
+  onDeleteKey: (keyId: string) => void;
 }
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ generatedKeys, onGenerateKey }) => {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ 
+    generatedKeys, 
+    onGenerateKey, 
+    onDeleteKey,
+}) => {
     const [schoolName, setSchoolName] = useState('');
     const [usageLimit, setUsageLimit] = useState(1);
     const [validityDays, setValidityDays] = useState(15);
@@ -26,7 +31,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ generatedKeys, o
             return;
         }
         onGenerateKey({ schoolName, usageLimit, validityDays, validityHours, validityMinutes });
-        // Reset form
         setSchoolName('');
         setUsageLimit(1);
         setValidityDays(15);
@@ -34,11 +38,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ generatedKeys, o
         setValidityMinutes(0);
     };
 
-    const sortedKeys = [...generatedKeys].sort((a, b) => b.createdAt - a.createdAt);
+    const sortedKeys = [...generatedKeys].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     return (
         <div className="max-w-7xl mx-auto" style={{ color: 'var(--text-primary)' }}>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
                  <h1 className="text-4xl font-black font-display" style={{ color: 'var(--text-accent)' }}>
                     Key Management
                 </h1>
@@ -81,32 +85,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ generatedKeys, o
 
             {/* Generated Keys List */}
             <div className="p-6 rounded-2xl shadow-xl" style={{ backgroundColor: 'var(--backdrop-bg)', border: '1px solid var(--border-primary)'}}>
-                <h2 className="text-2xl font-bold mb-4 font-display">Generated Access Keys</h2>
+                <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+                    <h2 className="text-2xl font-bold font-display">Generated Access Keys</h2>
+                </div>
+
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead className="border-b-2" style={{ borderColor: 'var(--border-primary)'}}>
                             <tr>
                                 <th className="p-2">School Name</th>
                                 <th className="p-2">Access Key</th>
-                                <th className="p-2">Usage</th>
+                                <th className="p-2 text-center">Usage</th>
                                 <th className="p-2">Validity</th>
                                 <th className="p-2">Created On</th>
+                                <th className="p-2 text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {sortedKeys.length > 0 ? sortedKeys.map(k => (
                                 <tr key={k.id} className="border-b" style={{ borderColor: 'var(--border-primary)'}}>
-                                    <td className="p-3 font-semibold">{k.schoolName}</td>
+                                    <td className="p-3 font-semibold">{k.school_name}</td>
                                     <td className="p-3 font-mono">
-                                        <input type="text" readOnly value={k.key} className="bg-transparent w-full" onFocus={(e) => e.target.select()} />
+                                        <input type="text" readOnly value={k.key} className="bg-transparent w-full cursor-copy" onFocus={(e) => e.target.select()} title="Click to select key"/>
                                     </td>
-                                    <td className="p-3">{k.currentUsage} / {k.usageLimit}</td>
-                                    <td className="p-3">{formatDuration(k.validityInMs)}</td>
-                                    <td className="p-3">{new Date(k.createdAt).toLocaleDateString()}</td>
+                                    <td className="p-3 text-center">{k.current_usage} / {k.usage_limit}</td>
+                                    <td className="p-3">{formatDuration(k.validity_in_ms)}</td>
+                                    <td className="p-3">{new Date(k.created_at).toLocaleDateString()}</td>
+                                    <td className="p-3 text-center">
+                                        {k.current_usage >= k.usage_limit && (
+                                            <button 
+                                                onClick={() => onDeleteKey(k.id)}
+                                                className="bg-red-500 hover:bg-red-600 text-white text-sm font-bold py-1 px-3 rounded-md shadow-sm transform hover:scale-105 transition"
+                                                title="Delete this exhausted key"
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
+                                    </td>
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan={5} className="p-4 text-center" style={{ color: 'var(--text-secondary)'}}>No keys have been generated yet.</td>
+                                    <td colSpan={6} className="p-4 text-center" style={{ color: 'var(--text-secondary)'}}>No keys have been generated yet.</td>
                                 </tr>
                             )}
                         </tbody>

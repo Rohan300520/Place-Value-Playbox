@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AdminLogin } from './components/AdminLogin';
 import { AdminDashboard } from './components/AdminDashboard';
-import { getKeysFromStorage, saveKeysToStorage, GeneratedKey, STORAGE_KEY } from './utils/license';
+import { fetchKeys, createKeyInDB, deleteKeyFromDB, GeneratedKey } from './utils/license';
 import { BackgroundManager } from './components/Starfield';
+import { supabase } from './utils/supabaseClient';
 
 export const AdminPage: React.FC = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [generatedKeys, setGeneratedKeys] = useState<GeneratedKey[]>([]);
 
+    const loadKeys = useCallback(async () => {
+        const keys = await fetchKeys();
+        setGeneratedKeys(keys);
+    }, []);
+
     useEffect(() => {
-        // Check session storage for authentication status
         try {
             if (sessionStorage.getItem('isAdminAuthenticated') === 'true') {
                 setIsAuthenticated(true);
@@ -19,29 +24,40 @@ export const AdminPage: React.FC = () => {
             console.error("Could not access sessionStorage.", e);
         }
 
-        // Function to load keys from storage
-        const loadKeys = () => {
-            setGeneratedKeys(getKeysFromStorage());
-        };
+        loadKeys().finally(() => setIsLoading(false));
 
-        // Initial load
-        loadKeys();
-        setIsLoading(false);
-
-        // Listen for changes to the keys in other tabs/windows to keep the dashboard live
-        const handleStorageChange = (event: StorageEvent) => {
-            if (event.key === STORAGE_KEY) {
-                loadKeys();
+        // --- Supabase Realtime Subscription ---
+        const handleRealtimeUpdate = (payload: any) => {
+            console.log('Realtime update received!', payload);
+            const { eventType, new: newRecord, old: oldRecord } = payload;
+            
+            if (eventType === 'INSERT') {
+                setGeneratedKeys(currentKeys => [newRecord, ...currentKeys]);
+            } else if (eventType === 'UPDATE') {
+                setGeneratedKeys(currentKeys =>
+                    currentKeys.map(key => key.id === newRecord.id ? newRecord : key)
+                );
+            } else if (eventType === 'DELETE') {
+                // Supabase returns the primary key in `old` for DELETE events
+                setGeneratedKeys(currentKeys =>
+                    currentKeys.filter(key => key.id !== oldRecord.id)
+                );
             }
         };
-
-        window.addEventListener('storage', handleStorageChange);
-
-        // Cleanup listener on component unmount
+        
+        const channel = supabase.channel('keys-realtime-admin')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'keys' },
+                handleRealtimeUpdate
+            )
+            .subscribe();
+        
         return () => {
-            window.removeEventListener('storage', handleStorageChange);
+            supabase.removeChannel(channel);
         };
-    }, []); // Runs once on mount
+
+    }, [loadKeys]);
 
     const handleLogin = (user: string, pass: string): boolean => {
         if (user === 'admin' && pass === 'admin') {
@@ -56,28 +72,28 @@ export const AdminPage: React.FC = () => {
         return false;
     };
 
-    const generateRandomKey = useCallback((): string => {
+    const generateRandomKey = useCallback(async (): Promise<string> => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let key: string;
         let isUnique = false;
         
-        // Read the latest keys directly from storage to ensure uniqueness across tabs
-        const currentKeys = getKeysFromStorage();
-        
+        // This loop is a safeguard. With 36^8 possibilities, collisions are astronomically rare.
         while(!isUnique) {
             const part1 = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
             const part2 = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
             key = `SMARTC-${part1}-${part2}`;
-            if (!currentKeys.some(k => k.key === key)) {
+            
+            // Check for uniqueness against the database
+            const { data, error } = await supabase.from('keys').select('key').eq('key', key);
+            if (!error && data.length === 0) {
                 isUnique = true;
             }
         }
         
         return key!;
+    }, []);
 
-    }, []); // No dependency needed as it reads directly from storage
-
-    const handleGenerateKey = (details: {
+    const handleGenerateKey = async (details: {
         schoolName: string;
         usageLimit: number;
         validityDays: number;
@@ -91,32 +107,35 @@ export const AdminPage: React.FC = () => {
             (validityHours * 60 * 60 * 1000) +
             (validityMinutes * 60 * 1000);
 
-        const newKey: GeneratedKey = {
-            id: `key-${Date.now()}`,
+        const newKeyString = await generateRandomKey();
+
+        const newKey = await createKeyInDB({
             schoolName,
-            key: generateRandomKey(),
             usageLimit,
             validityInMs,
-            currentUsage: 0,
-            createdAt: Date.now(),
-        };
+            key: newKeyString,
+        });
         
-        // Read latest keys from storage before updating to prevent race conditions
-        const currentKeys = getKeysFromStorage();
-        const updatedKeys = [...currentKeys, newKey];
-        
-        // Optimistically update the UI for responsiveness
-        setGeneratedKeys(updatedKeys);
-
-        // Attempt to save to storage and handle potential failure
-        const isSaveSuccessful = saveKeysToStorage(updatedKeys);
-        if (!isSaveSuccessful) {
-            alert('Error: Could not save the new key. Your browser storage may be full. Please clear some space and try again.');
-            // Revert the UI state if the save fails
-            setGeneratedKeys(currentKeys);
+        if (!newKey) {
+            alert('Error: Could not save the new key to the database.');
         }
+        // State will be updated by the realtime subscription, no manual update needed.
     };
-    
+
+    const handleDeleteKey = async (keyId: string) => {
+        if (!window.confirm('Are you sure you want to permanently delete this key? This action cannot be undone.')) {
+            return;
+        }
+        
+        const success = await deleteKeyFromDB(keyId);
+
+        if (!success) {
+            alert('Error: Could not delete the key from the database.');
+        }
+        // State will be updated by the realtime subscription, no manual update needed.
+    };
+
+
     if (isLoading) {
         return <div className="w-full h-screen flex items-center justify-center">Loading...</div>;
     }
@@ -129,6 +148,7 @@ export const AdminPage: React.FC = () => {
                     <AdminDashboard
                         generatedKeys={generatedKeys}
                         onGenerateKey={handleGenerateKey}
+                        onDeleteKey={handleDeleteKey}
                     />
                 ) : (
                     <AdminLogin onLogin={handleLogin} />
