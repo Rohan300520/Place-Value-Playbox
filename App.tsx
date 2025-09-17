@@ -377,6 +377,10 @@ const AppContent: React.FC = () => {
 
                           setTimeout(() => {
                               setTrainingFeedback(null);
+                              const nextInstructionStep = trainingPlan.find(s => s.step === trainingStep + 2);
+                              if (isSpeechEnabled && nextInstructionStep && (nextInstructionStep.type === 'action' || nextInstructionStep.type === 'action_multi')) {
+                                  speak(nextInstructionStep.text, 'en-US');
+                              }
                               setTrainingStep(prev => prev + 2);
                               if (nextStepConfig.clearBoardAfter) {
                                   resetBoard();
@@ -417,6 +421,10 @@ const AppContent: React.FC = () => {
 
             setTimeout(() => {
                 setTrainingFeedback(null);
+                const nextInstructionStep = trainingPlan.find(s => s.step === trainingStep + 2);
+                if (isSpeechEnabled && nextInstructionStep && (nextInstructionStep.type === 'action' || nextInstructionStep.type === 'action_multi')) {
+                    speak(nextInstructionStep.text, 'en-US');
+                }
                 setTrainingStep(prev => prev + 2); // Jump over the feedback step
                 if (nextStepConfig.clearBoardAfter) {
                     resetBoard();
@@ -452,14 +460,17 @@ const AppContent: React.FC = () => {
     });
   }, [playDropSound]);
 
-  const currentStepConfig = gameState === 'training' ? trainingPlan[trainingStep] : null;
+  const currentStepConfig = gameState === 'training' ? trainingPlan.find(s => s.step === trainingStep) : null;
 
-  // This effect will speak the instruction for a new training step
+  // This effect will speak the instruction for the very first training step
   useEffect(() => {
-    if (isSpeechEnabled && currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi' || currentStepConfig.type === 'complete')) {
-      speak(currentStepConfig.text, 'en-US');
+    if (gameState === 'training' && trainingStep === 0 && isSpeechEnabled) {
+      const firstStep = trainingPlan[0];
+      if (firstStep) {
+        speak(firstStep.text, 'en-US');
+      }
     }
-  }, [currentStepConfig, isSpeechEnabled]);
+  }, [gameState, trainingStep, isSpeechEnabled]);
 
   const isDropAllowedForValue = (category: PlaceValueCategory, value: BlockValue | null) => {
     if (!value) return false;
@@ -496,11 +507,20 @@ const AppContent: React.FC = () => {
     setDraggedValue(value);
     setDraggedOrigin(origin || null);
   };
-
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+  
+  const handleGenericDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
   };
   
+  const handleDropOnBackground = () => {
+    // This allows removing blocks by dropping them outside the columns in playground mode.
+    if (gameState === 'playground' && draggedOrigin) {
+        removeBlock(draggedOrigin.category, draggedOrigin.id);
+    }
+    setDraggedValue(null);
+    setDraggedOrigin(null);
+  };
+
   // Touch Drag Handlers
   const handleTouchStart = (value: BlockValue, event: React.TouchEvent) => {
     if (touchDragging) return;
@@ -539,6 +559,9 @@ const AppContent: React.FC = () => {
     
     if (touchTarget) {
       handleDrop(touchTarget);
+    } else {
+        // Handle dropping outside for touch devices
+        handleDropOnBackground();
     }
     
     document.body.removeChild(touchDragging.element);
@@ -583,7 +606,7 @@ const AppContent: React.FC = () => {
       playSuccessSound();
       setChallengeStatus('correct');
       setScore(prev => prev + 10);
-      setShowCandy(true);
+      setShowRocket(true);
     } else {
       playErrorSound();
       setChallengeStatus('incorrect');
@@ -599,7 +622,11 @@ const AppContent: React.FC = () => {
     if (currentQuestionIndex < filteredQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
-      setShowRocket(true);
+      // This case is now handled by the rocket onComplete -> confetti flow
+      // for the final question. We just need to trigger the final celebration.
+      // The rocket animation would have already played from handleCheckAnswer.
+      // We will now trigger confetti directly from the rocket animation's onComplete.
+      goBackToMenu(); // Failsafe if confetti doesn't trigger
     }
   };
 
@@ -670,10 +697,10 @@ const AppContent: React.FC = () => {
               />
             )}
             <div className="grid grid-cols-4 gap-2 sm:gap-4 w-full">
-              <PlaceValueColumn title="Thousands" category="thousands" blocks={columns.thousands} onDrop={handleDrop} onDragOver={handleDragOver} onDragStart={handleDragStart} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('thousands', draggedValue)} isDragging={!!draggedValue} color="purple" isTouchTarget={touchTarget === 'thousands'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'thousands'} />
-              <PlaceValueColumn title="Hundreds" category="hundreds" blocks={columns.hundreds} onDrop={handleDrop} onDragOver={handleDragOver} onDragStart={handleDragStart} isRegroupingDestination={columns.tens.length >= 10} isDropAllowed={isDropAllowedForValue('hundreds', draggedValue)} isDragging={!!draggedValue} color="yellow" isTouchTarget={touchTarget === 'hundreds'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'hundreds'}/>
-              <PlaceValueColumn title="Tens" category="tens" blocks={columns.tens} onDrop={handleDrop} onDragOver={handleDragOver} onDragStart={handleDragStart} isRegroupingDestination={columns.ones.length >= 10} isDropAllowed={isDropAllowedForValue('tens', draggedValue)} isDragging={!!draggedValue} color="green" isTouchTarget={touchTarget === 'tens'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'tens'} />
-              <PlaceValueColumn title="Ones" category="ones" blocks={columns.ones} onDrop={handleDrop} onDragOver={handleDragOver} onDragStart={handleDragStart} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('ones', draggedValue)} isDragging={!!draggedValue} color="blue" isTouchTarget={touchTarget === 'ones'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'ones'} />
+              <PlaceValueColumn title="Thousands" category="thousands" blocks={columns.thousands} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('thousands', draggedValue)} isDragging={!!draggedValue} color="purple" isTouchTarget={touchTarget === 'thousands'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'thousands'} />
+              <PlaceValueColumn title="Hundreds" category="hundreds" blocks={columns.hundreds} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={columns.tens.length >= 10} isDropAllowed={isDropAllowedForValue('hundreds', draggedValue)} isDragging={!!draggedValue} color="yellow" isTouchTarget={touchTarget === 'hundreds'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'hundreds'}/>
+              <PlaceValueColumn title="Tens" category="tens" blocks={columns.tens} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={columns.ones.length >= 10} isDropAllowed={isDropAllowedForValue('tens', draggedValue)} isDragging={!!draggedValue} color="green" isTouchTarget={touchTarget === 'tens'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'tens'} />
+              <PlaceValueColumn title="Ones" category="ones" blocks={columns.ones} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('ones', draggedValue)} isDragging={!!draggedValue} color="blue" isTouchTarget={touchTarget === 'ones'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'ones'} />
             </div>
             <div className="mt-4 sm:mt-8 flex flex-col sm:flex-row items-center justify-between w-full gap-4">
               <div className="flex-1">
@@ -691,13 +718,15 @@ const AppContent: React.FC = () => {
         return <div>Unknown game state</div>;
     }
   };
+  
+  const isFinalChallenge = gameState === 'challenge' && currentQuestionIndex >= filteredQuestions.length - 1;
 
   return (
     <div className="min-h-screen flex flex-col font-sans">
         <BackgroundManager />
         <div className="relative z-10 p-2 sm:p-4 w-full max-w-8xl mx-auto flex flex-col flex-grow items-center">
             <GameHeader total={total} appState={gameState} onBack={goBackToMenu} totalInWords={totalInWords} onHelpClick={() => setShowHelpModal(true)}/>
-            <main className="flex-grow w-full flex items-center justify-center py-4">
+            <main className="flex-grow w-full flex items-center justify-center py-4" onDrop={handleDropOnBackground} onDragOver={handleGenericDragOver}>
                 {renderGameState()}
             </main>
         </div>
@@ -706,11 +735,13 @@ const AppContent: React.FC = () => {
         {showHelpModal && <HelpModal onClose={() => setShowHelpModal(false)} />}
         {showRocket && <RocketAnimation onComplete={() => {
             setShowRocket(false);
-            setShowConfetti(true);
+            if (isFinalChallenge) {
+                setShowConfetti(true);
+            }
         }} />}
         {showConfetti && <Confetti onComplete={() => {
             setShowConfetti(false);
-            goBackToMenu(); // Go back to menu after celebration
+            goBackToMenu(); // Go back to menu after final celebration
         }} />}
         {showCandy && <CandyReward onComplete={() => setShowCandy(false)} />}
     </div>
