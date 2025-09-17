@@ -213,7 +213,8 @@ const AppContent: React.FC = () => {
   // Training Mode State
   const [trainingStep, setTrainingStep] = useState(0);
   const [trainingFeedback, setTrainingFeedback] = useState<string | null>(null);
-  
+  const [lastSuccessfulDrop, setLastSuccessfulDrop] = useState<{category: PlaceValueCategory, value: BlockValue} | null>(null);
+
   // Touch Drag state
   const [touchDragging, setTouchDragging] = useState<{ value: BlockValue, element: HTMLDivElement } | null>(null);
   const [touchTarget, setTouchTarget] = useState<PlaceValueCategory | null>(null);
@@ -377,10 +378,6 @@ const AppContent: React.FC = () => {
 
                           setTimeout(() => {
                               setTrainingFeedback(null);
-                              const nextInstructionStep = trainingPlan.find(s => s.step === trainingStep + 2);
-                              if (isSpeechEnabled && nextInstructionStep && (nextInstructionStep.type === 'action' || nextInstructionStep.type === 'action_multi')) {
-                                  speak(nextInstructionStep.text, 'en-US');
-                              }
                               setTrainingStep(prev => prev + 2);
                               if (nextStepConfig.clearBoardAfter) {
                                   resetBoard();
@@ -404,51 +401,55 @@ const AppContent: React.FC = () => {
   const addBlock = useCallback((category: PlaceValueCategory, value: BlockValue) => {
     playDropSound();
     const newBlock = { id: `block-${Date.now()}-${Math.random()}`, value };
+    
+    setColumns(prevColumns => ({ ...prevColumns, [category]: [...prevColumns[category], newBlock] }));
+    
+    if (gameState === 'training') {
+      setLastSuccessfulDrop({ category, value });
+    }
+  }, [gameState, playDropSound]);
+  
+  // Effect to handle training step advancement, preventing stale state issues.
+  useEffect(() => {
+    if (gameState !== 'training' || !lastSuccessfulDrop) return;
 
-    setColumns(prevColumns => {
-      const updatedColumns = { ...prevColumns, [category]: [...prevColumns[category], newBlock] };
+    const { category } = lastSuccessfulDrop;
+    const currentStepConfig = trainingPlan.find(s => s.step === trainingStep);
+    if (!currentStepConfig) return;
 
-      if (gameState === 'training') {
-        const currentStepConfig = trainingPlan.find(s => s.step === trainingStep);
-        if (!currentStepConfig) return updatedColumns;
-
+    const advanceAndShowFeedback = () => {
         const nextStepConfig = trainingPlan.find(s => s.step === trainingStep + 1);
-        if (!nextStepConfig) return updatedColumns;
+        if (!nextStepConfig) return;
 
-        const advanceAndShowFeedback = () => {
-            setTrainingFeedback(nextStepConfig.text);
-            if (isSpeechEnabled) speak(nextStepConfig.text, 'en-US');
+        setTrainingFeedback(nextStepConfig.text);
+        if (isSpeechEnabled) speak(nextStepConfig.text, 'en-US');
 
-            setTimeout(() => {
-                setTrainingFeedback(null);
-                const nextInstructionStep = trainingPlan.find(s => s.step === trainingStep + 2);
-                if (isSpeechEnabled && nextInstructionStep && (nextInstructionStep.type === 'action' || nextInstructionStep.type === 'action_multi')) {
-                    speak(nextInstructionStep.text, 'en-US');
-                }
-                setTrainingStep(prev => prev + 2); // Jump over the feedback step
-                if (nextStepConfig.clearBoardAfter) {
-                    resetBoard();
-                }
-            }, nextStepConfig.duration || 2000);
-        };
-        
-        if (currentStepConfig.type === 'action' && currentStepConfig.column === category) {
-            advanceAndShowFeedback();
-        } else if (currentStepConfig.type === 'action_multi' && currentStepConfig.column === category) {
-          if (updatedColumns[category].length === currentStepConfig.count) {
-            // For multi-step actions, we wait for regrouping to advance the step
-            // so we only advance here if it's NOT a regrouping challenge.
-            if (nextStepConfig.type !== 'magic_feedback') {
+        setTimeout(() => {
+            setTrainingFeedback(null);
+            setTrainingStep(prev => prev + 2);
+            if (nextStepConfig.clearBoardAfter) {
+                resetBoard();
+            }
+        }, nextStepConfig.duration || 2000);
+    };
+
+    if (currentStepConfig.type === 'action' && currentStepConfig.column === category) {
+        advanceAndShowFeedback();
+    } else if (currentStepConfig.type === 'action_multi' && currentStepConfig.column === category) {
+        // This check runs after `columns` state has been updated.
+        if (columns[category].length === currentStepConfig.count) {
+            const nextStepConfig = trainingPlan.find(s => s.step === trainingStep + 1);
+            if (nextStepConfig && nextStepConfig.type !== 'magic_feedback') {
                 advanceAndShowFeedback();
             }
-          }
         }
-      }
+    }
 
-      return updatedColumns;
-    });
-  }, [gameState, trainingStep, playDropSound, isSpeechEnabled, resetBoard]);
-  
+    // Reset the drop trigger to prevent re-running this effect.
+    setLastSuccessfulDrop(null);
+
+  }, [lastSuccessfulDrop, gameState, trainingStep, columns, isSpeechEnabled, resetBoard]);
+
   const removeBlock = useCallback((category: PlaceValueCategory, id: string) => {
     playDropSound();
     setColumns(prev => {
@@ -462,12 +463,15 @@ const AppContent: React.FC = () => {
 
   const currentStepConfig = gameState === 'training' ? trainingPlan.find(s => s.step === trainingStep) : null;
 
-  // This effect will speak the instruction for the very first training step
+  // This effect handles speaking the instructions for the current training step to prevent sync issues.
   useEffect(() => {
-    if (gameState === 'training' && trainingStep === 0 && isSpeechEnabled) {
-      const firstStep = trainingPlan[0];
-      if (firstStep) {
-        speak(firstStep.text, 'en-US');
+    if (gameState === 'training' && isSpeechEnabled) {
+      const currentStepConfig = trainingPlan.find(s => s.step === trainingStep);
+      
+      // Only speak for action steps to avoid re-speaking feedback messages.
+      if (currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi')) {
+        // The speak utility cancels previous speech, ensuring instructions don't overlap.
+        speak(currentStepConfig.text, 'en-US');
       }
     }
   }, [gameState, trainingStep, isSpeechEnabled]);
@@ -568,7 +572,7 @@ const AppContent: React.FC = () => {
     setTouchDragging(null);
     setTouchTarget(null);
     setDraggedValue(null);
-  }, [touchDragging, touchTarget]);
+  }, [touchDragging, touchTarget, handleDrop, handleDropOnBackground]);
 
   useEffect(() => {
     window.addEventListener('touchmove', handleTouchMove);
