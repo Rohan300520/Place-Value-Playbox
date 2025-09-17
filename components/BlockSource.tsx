@@ -31,7 +31,7 @@ const BlockWrapper: React.FC<BlockWrapperProps> = React.memo(({ value, onDragSta
 
     return (
         <div 
-          className={`flex flex-col items-center p-2 rounded-lg transition-all duration-300 ${animationClass}`}
+          className={`flex flex-col items-center p-2 rounded-lg transition-all duration-300 ${animationClass} ${isSpotlighted ? 'relative z-20' : ''}`}
           style={{ animationDelay: isSpotlighted ? '0s' : animationDelay }}
         >
             <NumberBlock value={value} isDraggable={true} onDragStart={onDragStart} onTouchStart={onTouchStart} />
