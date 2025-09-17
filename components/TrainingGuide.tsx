@@ -130,8 +130,6 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
 
     return (
        <>
-        {/* The overlay provides focus but is non-interactive to allow dragging blocks */}
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-10 pointer-events-none" />
         {renderContent()}
        </>
     );
