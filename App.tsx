@@ -138,24 +138,32 @@ const GameHeader: React.FC<{
 
 // --- Place Value Playbox Application Logic ---
 const trainingPlan: TrainingStep[] = [
-  { step: 0, type: 'action', source: 1, column: 'ones', text: "Let's start! Drag a blue '1' block to the 'Ones' column." },
-  { step: 1, type: 'feedback', text: "Great Job! ✨", duration: 2000, clearBoardAfter: true },
-  { step: 2, type: 'action_multi', source: 1, column: 'ones', count: 3, text: "Good! Now, add 3 blue blocks to the 'Ones' column." },
-  { step: 3, type: 'feedback', text: "Perfect! You added 3. 🚀", duration: 2000, clearBoardAfter: true },
-  { step: 4, type: 'action', source: 10, column: 'tens', text: "Awesome! Now drag a green '10' block to the 'Tens' column." },
-  { step: 5, type: 'feedback', text: "You got it! 👍", duration: 2000, clearBoardAfter: true },
-  { step: 6, type: 'action', source: 100, column: 'hundreds', text: "You're a pro! Drag a yellow '100' block to the 'Hundreds' column." },
-  { step: 7, type: 'feedback', text: "Fantastic! 🌟", duration: 2000, clearBoardAfter: true },
-  { step: 8, type: 'action', source: 1000, column: 'thousands', text: "Incredible! Drag a purple '1000' block to the 'Thousands' column." },
-  { step: 9, type: 'feedback', text: "Amazing! You're reaching for the stars! 🚀", duration: 2000, clearBoardAfter: true },
-  { step: 10, type: 'action_multi', source: 1, column: 'ones', count: 10, text: "Time for some magic! ✨ Add 10 blue blocks to see what happens." },
-  { step: 11, type: 'magic_feedback', text: "Poof! 10 'Ones' became 1 'Ten'. That's regrouping!", duration: 4000, clearBoardAfter: true, targetColumn: 'tens' },
-  { step: 12, type: 'action_multi', source: 10, column: 'tens', count: 10, text: "Let's do it again! Add 10 green blocks to the 'Tens' column." },
-  { step: 13, type: 'magic_feedback', text: "Amazing! 🪄 10 'Tens' make 1 'Hundred' block!", duration: 4000, clearBoardAfter: true, targetColumn: 'hundreds' },
-  { step: 14, type: 'action_multi', source: 100, column: 'hundreds', count: 10, text: "One last magic trick! Add 10 yellow blocks to the 'Hundreds' column." },
-  { step: 15, type: 'magic_feedback', text: "Wow! 10 'Hundreds' make 1 'Thousand'. You're a place value wizard! 🧙‍♂️", duration: 4000, clearBoardAfter: true, targetColumn: 'thousands' },
-  { step: 16, type: 'complete', text: "Training Complete! You're ready for anything!" },
+  // 1. Introduce all four blocks
+  { step: 0, type: 'action', source: 1, column: 'ones', text: "First, let's learn the blocks. Drag a blue '1' block to the 'Ones' column." },
+  { step: 1, type: 'feedback', text: "Great! That's a 'One' block.", duration: 2000, clearBoardAfter: false },
+  { step: 2, type: 'action', source: 10, column: 'tens', text: "Now drag a green '10' block to the 'Tens' column." },
+  { step: 3, type: 'feedback', text: "Awesome! That's a 'Ten' block.", duration: 2000, clearBoardAfter: false },
+  { step: 4, type: 'action', source: 100, column: 'hundreds', text: "You're doing great! Drag a yellow '100' block to the 'Hundreds' column." },
+  { step: 5, type: 'feedback', text: "Perfect! That's a 'Hundred' block.", duration: 2000, clearBoardAfter: false },
+  { step: 6, type: 'action', source: 1000, column: 'thousands', text: "Amazing! Finally, drag a purple '1000' block to the 'Thousands' column." },
+  { step: 7, type: 'feedback', text: "Incredible! You've learned all the blocks. Now, let's see some magic! ✨", duration: 3000, clearBoardAfter: true },
+
+  // 2. Regrouping Ones to Tens
+  { step: 8, type: 'action_multi', source: 1, column: 'ones', count: 10, text: "Add 10 blue '1' blocks to the 'Ones' column to see what happens." },
+  { step: 9, type: 'magic_feedback', text: "Poof! 10 'Ones' became 1 'Ten'. That's regrouping!", duration: 4000, clearBoardAfter: true, targetColumn: 'tens' },
+
+  // 3. Regrouping Tens to Hundreds
+  { step: 10, type: 'action_multi', source: 10, column: 'tens', count: 10, text: "Let's do it again! Add 10 green '10' blocks to the 'Tens' column." },
+  { step: 11, type: 'magic_feedback', text: "Amazing! 🪄 10 'Tens' make 1 'Hundred' block!", duration: 4000, clearBoardAfter: true, targetColumn: 'hundreds' },
+
+  // 4. Regrouping Hundreds to Thousands
+  { step: 12, type: 'action_multi', source: 100, column: 'hundreds', count: 10, text: "One last magic trick! Add 10 yellow '100' blocks to the 'Hundreds' column." },
+  { step: 13, type: 'magic_feedback', text: "Wow! 10 'Hundreds' make 1 'Thousand'. You're a place value wizard! 🧙‍♂️", duration: 4000, clearBoardAfter: true, targetColumn: 'thousands' },
+  
+  // 5. Completion
+  { step: 14, type: 'complete', text: "Training Complete! You're ready for anything!" },
 ];
+
 
 const useSimpleSound = (freq: number, duration: number) => {
   return useCallback(() => {
@@ -310,6 +318,7 @@ const AppContent: React.FC = () => {
   const handleRegrouping = useCallback((currentColumns: PlaceValueColumns) => {
     let needsUpdate = false;
     let tempColumns = { ...currentColumns };
+    const currentStepConfig = trainingPlan[trainingStep];
 
     const regroup = (source: PlaceValueCategory, dest: PlaceValueCategory, value: BlockValue) => {
         if (tempColumns[source].length >= 10) {
@@ -328,17 +337,17 @@ const AppContent: React.FC = () => {
                 });
 
                 if (gameState === 'training') {
-                    const currentStepConfig = trainingPlan[trainingStep];
-                    if (currentStepConfig?.type === 'magic_feedback') {
-                        setTrainingFeedback(currentStepConfig.text);
-                        if (isSpeechEnabled) speak(currentStepConfig.text, 'en-US');
+                    const nextStepConfig = trainingPlan[trainingStep + 1];
+                    if (nextStepConfig?.type === 'magic_feedback') {
+                        setTrainingFeedback(nextStepConfig.text);
+                        if (isSpeechEnabled) speak(nextStepConfig.text, 'en-US');
                         setTimeout(() => {
                             setTrainingFeedback(null);
-                            setTrainingStep(prev => prev + 1);
-                            if (currentStepConfig.clearBoardAfter) {
+                            setTrainingStep(prev => prev + 2); // Advance past action and feedback
+                            if (nextStepConfig.clearBoardAfter) {
                                 resetBoard();
                             }
-                        }, currentStepConfig.duration || 3000);
+                        }, nextStepConfig.duration || 3000);
                     }
                 }
             }, 600); // Wait for animation
@@ -393,6 +402,8 @@ const AppContent: React.FC = () => {
             advanceAndShowFeedback();
         } else if (currentStepConfig.type === 'action_multi' && currentStepConfig.column === category) {
           if (updatedColumns[category].length === currentStepConfig.count) {
+            // For multi-step actions, we wait for regrouping to advance the step
+            // so we only advance here if it's NOT a regrouping challenge.
             if (nextStepConfig.type !== 'magic_feedback') {
                 advanceAndShowFeedback();
             }
@@ -415,11 +426,19 @@ const AppContent: React.FC = () => {
     });
   }, [playDropSound]);
 
+  const currentStepConfig = gameState === 'training' ? trainingPlan[trainingStep] : null;
+
+  // This effect will speak the instruction for a new training step
+  useEffect(() => {
+    if (isSpeechEnabled && currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi' || currentStepConfig.type === 'complete')) {
+      speak(currentStepConfig.text, 'en-US');
+    }
+  }, [currentStepConfig, isSpeechEnabled]);
+
   const isDropAllowedForValue = (category: PlaceValueCategory, value: BlockValue | null) => {
     if (!value) return false;
 
     if (gameState === 'training') {
-        const currentStepConfig = trainingPlan[trainingStep];
         if (currentStepConfig && currentStepConfig.type.startsWith('action')) {
             return currentStepConfig.source === value && currentStepConfig.column === category;
         }
@@ -578,8 +597,6 @@ const AppContent: React.FC = () => {
       resetBoard();
       setGameState('mode_selection');
   };
-
-  const currentStepConfig = gameState === 'training' ? trainingPlan[trainingStep] : null;
 
   if (licenseStatus !== 'valid') {
     return <LicenseScreen status={licenseStatus as 'locked' | 'expired' | 'tampered'} onVerify={handleKeyVerification} expiredDuration={expiredDuration} />;
