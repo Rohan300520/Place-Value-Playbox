@@ -21,6 +21,7 @@ export interface PlaceValueColumns {
 
 export type AppState =
   | 'welcome'
+  | 'model_intro'
   | 'mode_selection'
   | 'challenge_difficulty_selection'
   | 'training'
