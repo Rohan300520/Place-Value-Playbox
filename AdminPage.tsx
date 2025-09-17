@@ -126,13 +126,22 @@ export const AdminPage: React.FC = () => {
         if (!window.confirm('Are you sure you want to permanently delete this key? This action cannot be undone.')) {
             return;
         }
-        
+    
+        // --- Optimistic UI Update ---
+        // Keep a copy of the current state in case we need to revert.
+        const originalKeys = [...generatedKeys];
+        // Immediately remove the key from the UI.
+        setGeneratedKeys(currentKeys => currentKeys.filter(key => key.id !== keyId));
+    
+        // Call the database function to delete the key.
         const success = await deleteKeyFromDB(keyId);
-
+    
         if (!success) {
-            alert('Error: Could not delete the key from the database.');
+            // If the database deletion fails, show an error and revert the UI change.
+            alert('Error: Could not delete the key from the database. Reverting change.');
+            setGeneratedKeys(originalKeys);
         }
-        // State will be updated by the realtime subscription, no manual update needed.
+        // If successful, the UI is already correct. The realtime event will update other clients.
     };
 
 
