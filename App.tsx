@@ -221,6 +221,9 @@ const AppContent: React.FC = () => {
   // Licensing state
   const [licenseStatus, setLicenseStatus] = useState<'loading' | 'valid' | 'locked' | 'expired' | 'tampered'>('loading');
   const [expiredDuration, setExpiredDuration] = useState<number | null>(null);
+  
+  // Regrouping state flag
+  const isRegroupingRef = useRef(false);
 
   const { isSpeechEnabled } = useAudio();
   
@@ -315,61 +318,84 @@ const AppContent: React.FC = () => {
     setTotal(newTotal);
   }, [columns]);
   
-  const handleRegrouping = useCallback((currentColumns: PlaceValueColumns) => {
-    let needsUpdate = false;
-    let tempColumns = { ...currentColumns };
-    const currentStepConfig = trainingPlan[trainingStep];
-
-    const regroup = (source: PlaceValueCategory, dest: PlaceValueCategory, value: BlockValue) => {
-        if (tempColumns[source].length >= 10) {
-            needsUpdate = true;
-            playRegroupSound();
-            
-            // Mark old blocks for animation
-            tempColumns[source] = tempColumns[source].map((b, i) => i < 10 ? { ...b, isAnimating: true } : b);
-            
-            setTimeout(() => {
-                setColumns(prev => {
-                    const latestCols = { ...prev };
-                    latestCols[source] = latestCols[source].slice(10);
-                    latestCols[dest] = [...latestCols[dest], { id: `block-${Date.now()}`, value: value, isNewlyRegrouped: true }];
-                    return latestCols;
-                });
-
-                if (gameState === 'training') {
-                    const nextStepConfig = trainingPlan[trainingStep + 1];
-                    if (nextStepConfig?.type === 'magic_feedback') {
-                        setTrainingFeedback(nextStepConfig.text);
-                        if (isSpeechEnabled) speak(nextStepConfig.text, 'en-US');
-                        setTimeout(() => {
-                            setTrainingFeedback(null);
-                            setTrainingStep(prev => prev + 2); // Advance past action and feedback
-                            if (nextStepConfig.clearBoardAfter) {
-                                resetBoard();
-                            }
-                        }, nextStepConfig.duration || 3000);
-                    }
-                }
-            }, 600); // Wait for animation
-        }
-    };
-    
-    // Check for regrouping opportunities in order
-    if (tempColumns.ones.length >= 10) regroup('ones', 'tens', 10);
-    else if (tempColumns.tens.length >= 10) regroup('tens', 'hundreds', 100);
-    else if (tempColumns.hundreds.length >= 10) regroup('hundreds', 'thousands', 1000);
-
-    if(needsUpdate) {
-      setColumns(tempColumns);
-    }
-  }, [playRegroupSound, gameState, trainingStep, isSpeechEnabled, resetBoard]);
-
+  // Rewritten regrouping logic to be atomic and prevent race conditions.
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      handleRegrouping(columns);
-    }, 200);
-    return () => clearTimeout(timeout);
-  }, [columns, handleRegrouping]);
+      const needsRegrouping = (cols: PlaceValueColumns) =>
+          cols.ones.length >= 10 ||
+          cols.tens.length >= 10 ||
+          cols.hundreds.length >= 10;
+
+      if (needsRegrouping(columns) && !isRegroupingRef.current) {
+          isRegroupingRef.current = true;
+
+          let source: PlaceValueCategory;
+          let dest: PlaceValueCategory;
+          let value: BlockValue;
+
+          if (columns.ones.length >= 10) {
+              source = 'ones';
+              dest = 'tens';
+              value = 10;
+          } else if (columns.tens.length >= 10) {
+              source = 'tens';
+              dest = 'hundreds';
+              value = 100;
+          } else { // hundreds must be >= 10
+              source = 'hundreds';
+              dest = 'thousands';
+              value = 1000;
+          }
+          
+          playRegroupSound();
+
+          // Step 1: Trigger the animation on the source blocks
+          setColumns(prev => ({
+              ...prev,
+              [source]: prev[source].map((b, i) => (i < 10 ? { ...b, isAnimating: true } : b)),
+          }));
+
+          // Step 2: After animation, perform the actual state change for regrouping
+          setTimeout(() => {
+              setColumns(prev => {
+                  const newColumns = { ...prev };
+                  newColumns[source] = newColumns[source].slice(10);
+                  newColumns[dest] = [
+                      ...newColumns[dest],
+                      { id: `block-${Date.now()}`, value: value, isNewlyRegrouped: true },
+                  ];
+                  return newColumns;
+              });
+
+              // Step 3: Handle training mode advancement
+              if (gameState === 'training') {
+                  const currentStep = trainingPlan.find(s => s.step === trainingStep);
+                  if (currentStep?.type === 'action_multi' && currentStep.column === source) {
+                      const nextStepConfig = trainingPlan.find(s => s.step === trainingStep + 1);
+                      if (nextStepConfig?.type === 'magic_feedback') {
+                          setTrainingFeedback(nextStepConfig.text);
+                          if (isSpeechEnabled) speak(nextStepConfig.text, 'en-US');
+
+                          setTimeout(() => {
+                              setTrainingFeedback(null);
+                              setTrainingStep(prev => prev + 2);
+                              if (nextStepConfig.clearBoardAfter) {
+                                  resetBoard();
+                              }
+                              isRegroupingRef.current = false;
+                          }, nextStepConfig.duration || 3000);
+                      } else {
+                          isRegroupingRef.current = false;
+                      }
+                  } else {
+                      isRegroupingRef.current = false;
+                  }
+              } else {
+                  isRegroupingRef.current = false;
+              }
+          }, 600); // This delay should match the animation duration
+      }
+  }, [columns, gameState, trainingStep, isSpeechEnabled, resetBoard, playRegroupSound]);
+
 
   const addBlock = useCallback((category: PlaceValueCategory, value: BlockValue) => {
     playDropSound();
