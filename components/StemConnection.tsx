@@ -5,34 +5,51 @@ import React, { useState, useEffect, useCallback, useId } from 'react';
 const CellIcon: React.FC<{ isPulsing?: boolean }> = ({ isPulsing = true }) => (
     <svg viewBox="0 0 100 100" className={`w-12 h-12 ${isPulsing ? 'animate-cell-pulse' : ''}`}>
         <defs>
-            <radialGradient id="cellGrad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                <stop offset="0%" stopColor="#a5c9ff" />
-                <stop offset="100%" stopColor="#3b82f6" />
+            <radialGradient id="cellcyto" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#fde68a"/>
+                <stop offset="100%" stopColor="#f59e0b"/>
             </radialGradient>
-            <radialGradient id="nucleusGrad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                <stop offset="0%" stopColor="#c084fc" />
-                <stop offset="100%" stopColor="#9333ea" />
+            <radialGradient id="cellnucleus" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#c084fc"/>
+                <stop offset="100%" stopColor="#9333ea"/>
             </radialGradient>
         </defs>
-        <circle cx="50" cy="50" r="48" fill="url(#cellGrad)" stroke="#1e40af" strokeWidth="2" />
-        <circle cx="50" cy="50" r="15" fill="url(#nucleusGrad)" stroke="#581c87" strokeWidth="1" />
-        <ellipse cx="75" cy="40" rx="8" ry="4" fill="#f97316" transform="rotate(30 75 40)" />
-        <ellipse cx="30" cy="65" rx="8" ry="4" fill="#f97316" transform="rotate(-45 30 65)" />
+        <path d="M 95,50 C 95,74.8 74.8,95 50,95 C 25.2,95 5,74.8 5,50 C 5,25.2 25.2,5 50,5 C 74.8,5 95,25.2 95,50 Z" fill="url(#cellcyto)" stroke="#b45309" strokeWidth="2"/>
+        <path d="M 68,50 C 68,59.9 59.9,68 50,68 C 40.1,68 32,59.9 32,50 C 32,40.1 40.1,32 50,32 C 59.9,32 68,40.1 68,50 Z" fill="url(#cellnucleus)" stroke="#6b21a8" strokeWidth="1"/>
+        <circle cx="50" cy="50" r="5" fill="#581c87"/>
+        <ellipse cx="25" cy="35" rx="10" ry="5" fill="#f87171" transform="rotate(-30 25 35)" stroke="#b91c1c" strokeWidth="1"/>
+        <ellipse cx="75" cy="65" rx="12" ry="6" fill="#f87171" transform="rotate(20 75 65)" stroke="#b91c1c" strokeWidth="1"/>
+        <path d="M 20,60 C 25,70 35,75 40,70" fill="none" stroke="#65a30d" strokeWidth="3" strokeLinecap="round"/>
+        <path d="M 70,25 C 75,30 80,40 75,45" fill="none" stroke="#65a30d" strokeWidth="3" strokeLinecap="round"/>
     </svg>
 );
 
 const TissueIcon: React.FC = () => (
     <svg viewBox="0 0 100 100" className="w-20 h-20">
         <defs>
-            <radialGradient id="tissueCellGrad">
-                <stop offset="0%" stopColor="#6ee7b7" />
-                <stop offset="100%" stopColor="#059669" />
-            </radialGradient>
-            <pattern id="tissuePattern" patternUnits="userSpaceOnUse" width="40" height="40">
-                <polygon points="20,0 40,10 40,30 20,40 0,30 0,10" fill="url(#tissueCellGrad)" stroke="#065f46" strokeWidth="2"/>
-            </pattern>
+            <linearGradient id="tissuecell" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#fbbf24"/>
+                <stop offset="100%" stopColor="#f59e0b"/>
+            </linearGradient>
         </defs>
-        <rect width="100" height="100" fill="url(#tissuePattern)" />
+        <g stroke="#92400e" strokeWidth="1.5">
+            <path d="M 10 10 C 20 5, 30 5, 40 10 L 45 40 L 5 40 Z" fill="url(#tissuecell)"/>
+            <circle cx="25" cy="30" r="4" fill="#86198f"/>
+            <path d="M 40 10 C 50 5, 60 5, 70 10 L 75 40 L 45 40 Z" fill="url(#tissuecell)"/>
+            <circle cx="57" cy="30" r="4" fill="#86198f"/>
+            <path d="M 70 10 C 80 5, 90 5, 100 10 L 105 40 L 75 40 Z" fill="url(#tissuecell)"/>
+            <circle cx="87" cy="30" r="4" fill="#86198f"/>
+
+            <path d="M 5 40 L 45 40 L 50 70 L 10 70 Z" fill="url(#tissuecell)"/>
+            <circle cx="30" cy="60" r="4" fill="#86198f"/>
+            <path d="M 45 40 L 75 40 L 80 70 L 50 70 Z" fill="url(#tissuecell)"/>
+            <circle cx="62" cy="60" r="4" fill="#86198f"/>
+            
+            <path d="M 10 70 L 50 70 L 55 100 L 15 100 Z" fill="url(#tissuecell)"/>
+            <circle cx="35" cy="90" r="4" fill="#86198f"/>
+            <path d="M 50 70 L 80 70 L 85 100 L 55 100 Z" fill="url(#tissuecell)"/>
+            <circle cx="67" cy="90" r="4" fill="#86198f"/>
+        </g>
     </svg>
 );
 
@@ -43,30 +60,46 @@ const OrganIcon: React.FC = () => (
                 <stop offset="0%" stopColor="#fca5a5"/>
                 <stop offset="100%" stopColor="#dc2626"/>
             </linearGradient>
-            <linearGradient id="vesselGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#93c5fd"/>
-                <stop offset="100%" stopColor="#2563eb"/>
+            <linearGradient id="aortaGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#f87171" />
+                <stop offset="100%" stopColor="#b91c1c" />
+            </linearGradient>
+            <linearGradient id="veinGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#93c5fd" />
+                <stop offset="100%" stopColor="#2563eb" />
             </linearGradient>
         </defs>
-        <path d="M60,15 C60,0 75,0 75,15" stroke="url(#vesselGrad)" strokeWidth="8" fill="none" />
-        <path d="M40,15 C40,0 25,0 25,15" stroke="#ef4444" strokeWidth="8" fill="none" />
-        <path d="M50 25 C 20 25, 10 55, 50 90 C 90 55, 80 25, 50 25 Z" fill="url(#organGradHeart)" stroke="#991b1b" strokeWidth="4"/>
-        <path d="M50 40 C 60 50, 60 70, 50 80" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
+        <path d="M50 25 C 20 25, 10 55, 50 95 C 90 55, 80 25, 50 25 Z" fill="url(#organGradHeart)" stroke="#991b1b" strokeWidth="4"/>
+        <path d="M 48 25 C 40 10, 25 5, 25 15 C 25 25, 35 30, 40 35" fill="url(#veinGrad)" stroke="#1e3a8a" strokeWidth="2"/>
+        <path d="M 52 25 C 60 10, 75 5, 75 15 C 75 25, 65 30, 60 35" fill="url(#aortaGrad)" stroke="#7f1d1d" strokeWidth="2"/>
+        <path d="M 30 50 C 40 55, 45 65, 40 75" fill="none" stroke="#991b1b" strokeWidth="3" strokeLinecap="round"/>
+        <path d="M 70 50 C 60 55, 55 65, 60 75" fill="none" stroke="#991b1b" strokeWidth="3" strokeLinecap="round"/>
+        <path d="M 50 25 L 50 50" fill="none" stroke="#7f1d1d" strokeWidth="3"/>
     </svg>
 );
 
 const OrganSystemIcon: React.FC = () => (
     <svg viewBox="0 0 100 100" className="w-28 h-28">
         <defs>
-            <linearGradient id="systemGradPurple" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#d8b4fe"/>
-                <stop offset="100%" stopColor="#a855f7"/>
+            <linearGradient id="stomachGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#fb923c"/>
+                <stop offset="100%" stopColor="#ea580c"/>
+            </linearGradient>
+            <linearGradient id="intestineGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#f472b6"/>
+                <stop offset="100%" stopColor="#db2777"/>
             </linearGradient>
         </defs>
-        <path d="M50,0 V 20" stroke="#f472b6" strokeWidth="8" strokeLinecap="round" />
-        <path d="M50 20 C 30 20, 30 50, 50 50" fill="#fb923c" stroke="#c2410c" strokeWidth="3" />
-        <path d="M50,50 C 70,50 70,60 50,60 C 30,60 30,70 50,70 C 70,70 70,80 50,80 C 30,80 30,90 50,90" 
-              fill="none" stroke="#f472b6" strokeWidth="10" strokeLinecap="round" />
+        <g strokeLinecap="round" strokeLinejoin="round" strokeWidth="5" fill="none">
+            {/* Esophagus */}
+            <path d="M 50 5 V 25" stroke="#f472b6"/>
+            {/* Stomach */}
+            <path d="M 50 25 C 30 25, 25 50, 50 50" stroke="url(#stomachGrad)" strokeWidth="6"/>
+            {/* Small Intestine */}
+            <path d="M 50 50 C 70 50, 75 60, 50 60 C 25 60, 30 70, 50 70 C 70 70, 75 80, 50 80" stroke="url(#intestineGrad)"/>
+            {/* Large Intestine */}
+            <path d="M 30 85 C 30 65, 30 45, 50 45 C 70 45, 70 65, 70 85" stroke="#a855f7" strokeWidth="8"/>
+        </g>
     </svg>
 );
 
