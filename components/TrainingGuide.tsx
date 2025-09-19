@@ -81,7 +81,7 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
                     <>
                         {/* Conditionally render GhostBlock only if a source is defined for the step */}
                         {currentStepConfig.source && <GhostBlock value={currentStepConfig.source} />}
-                        <GuideBox className="bottom-44 left-1/2 -translate-x-1/2 max-w-xl text-center">
+                        <GuideBox className="bottom-28 left-1/2 -translate-x-1/2 max-w-xl text-center">
                             <p>{colorSpan(currentStepConfig.text)}</p>
                             {currentStepConfig.type === 'action_multi' && currentStepConfig.count && (
                                 <div className={`mt-4 text-4xl font-black ${colorMap[column]} tabular-nums font-display`}>
