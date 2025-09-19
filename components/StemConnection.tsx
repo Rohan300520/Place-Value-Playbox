@@ -3,58 +3,70 @@ import React, { useState, useEffect, useCallback, useId } from 'react';
 // --- SVG Icon Components ---
 
 const CellIcon: React.FC<{ isPulsing?: boolean }> = ({ isPulsing = true }) => (
-  <svg viewBox="0 0 100 100" className={`w-12 h-12 ${isPulsing ? 'animate-cell-pulse' : ''}`}>
-    <defs>
-      <radialGradient id="cellGrad">
-        <stop offset="0%" stopColor="#60a5fa" />
-        <stop offset="100%" stopColor="#3b82f6" />
-      </radialGradient>
-    </defs>
-    <circle cx="50" cy="50" r="45" fill="url(#cellGrad)" stroke="#2563eb" strokeWidth="4" />
-    <circle cx="50" cy="50" r="15" fill="#dbeafe" opacity="0.7" />
-  </svg>
+    <svg viewBox="0 0 100 100" className={`w-12 h-12 ${isPulsing ? 'animate-cell-pulse' : ''}`}>
+        <defs>
+            <radialGradient id="cellGrad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                <stop offset="0%" stopColor="#a5c9ff" />
+                <stop offset="100%" stopColor="#3b82f6" />
+            </radialGradient>
+            <radialGradient id="nucleusGrad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                <stop offset="0%" stopColor="#c084fc" />
+                <stop offset="100%" stopColor="#9333ea" />
+            </radialGradient>
+        </defs>
+        <circle cx="50" cy="50" r="48" fill="url(#cellGrad)" stroke="#1e40af" strokeWidth="2" />
+        <circle cx="50" cy="50" r="15" fill="url(#nucleusGrad)" stroke="#581c87" strokeWidth="1" />
+        <ellipse cx="75" cy="40" rx="8" ry="4" fill="#f97316" transform="rotate(30 75 40)" />
+        <ellipse cx="30" cy="65" rx="8" ry="4" fill="#f97316" transform="rotate(-45 30 65)" />
+    </svg>
 );
 
 const TissueIcon: React.FC = () => (
-  <svg viewBox="0 0 100 100" className="w-20 h-20">
-    <defs>
-      <radialGradient id="tissueGrad">
-        <stop offset="0%" stopColor="#4ade80" />
-        <stop offset="100%" stopColor="#16a34a" />
-      </radialGradient>
-    </defs>
-    <circle cx="35" cy="35" r="20" fill="url(#tissueGrad)" stroke="#15803d" strokeWidth="3" />
-    <circle cx="65" cy="35" r="20" fill="url(#tissueGrad)" stroke="#15803d" strokeWidth="3" />
-    <circle cx="35" cy="65" r="20" fill="url(#tissueGrad)" stroke="#15803d" strokeWidth="3" />
-    <circle cx="65" cy="65" r="20" fill="url(#tissueGrad)" stroke="#15803d" strokeWidth="3" />
-    <circle cx="50" cy="50" r="18" fill="url(#tissueGrad)" stroke="#15803d" strokeWidth="3" />
-  </svg>
+    <svg viewBox="0 0 100 100" className="w-20 h-20">
+        <defs>
+            <radialGradient id="tissueCellGrad">
+                <stop offset="0%" stopColor="#6ee7b7" />
+                <stop offset="100%" stopColor="#059669" />
+            </radialGradient>
+            <pattern id="tissuePattern" patternUnits="userSpaceOnUse" width="40" height="40">
+                <polygon points="20,0 40,10 40,30 20,40 0,30 0,10" fill="url(#tissueCellGrad)" stroke="#065f46" strokeWidth="2"/>
+            </pattern>
+        </defs>
+        <rect width="100" height="100" fill="url(#tissuePattern)" />
+    </svg>
 );
 
 const OrganIcon: React.FC = () => (
     <svg viewBox="0 0 100 100" className="w-24 h-24">
         <defs>
-            <radialGradient id="organGrad">
-                <stop offset="0%" stopColor="#facc15"/>
-                <stop offset="100%" stopColor="#f59e0b"/>
-            </radialGradient>
+            <linearGradient id="organGradHeart" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#fca5a5"/>
+                <stop offset="100%" stopColor="#dc2626"/>
+            </linearGradient>
+            <linearGradient id="vesselGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#93c5fd"/>
+                <stop offset="100%" stopColor="#2563eb"/>
+            </linearGradient>
         </defs>
-        <path d="M50 10 C 20 10, 10 40, 50 90 C 90 40, 80 10, 50 10 Z" fill="url(#organGrad)" stroke="#b45309" strokeWidth="4"/>
-        <path d="M50 20 C 35 20, 30 40, 50 70 C 70 40, 65 20, 50 20 Z" fill="none" stroke="#fef3c7" strokeWidth="3" strokeDasharray="5,5"/>
+        <path d="M60,15 C60,0 75,0 75,15" stroke="url(#vesselGrad)" strokeWidth="8" fill="none" />
+        <path d="M40,15 C40,0 25,0 25,15" stroke="#ef4444" strokeWidth="8" fill="none" />
+        <path d="M50 25 C 20 25, 10 55, 50 90 C 90 55, 80 25, 50 25 Z" fill="url(#organGradHeart)" stroke="#991b1b" strokeWidth="4"/>
+        <path d="M50 40 C 60 50, 60 70, 50 80" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
     </svg>
 );
 
 const OrganSystemIcon: React.FC = () => (
     <svg viewBox="0 0 100 100" className="w-28 h-28">
         <defs>
-            <radialGradient id="systemGrad">
-                <stop offset="0%" stopColor="#a78bfa"/>
-                <stop offset="100%" stopColor="#7c3aed"/>
-            </radialGradient>
+            <linearGradient id="systemGradPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#d8b4fe"/>
+                <stop offset="100%" stopColor="#a855f7"/>
+            </linearGradient>
         </defs>
-        <path d="M50,15 C20,15 20,40 35,55 S70,60 70,40 C70,15 80,15 50,15 Z" fill="url(#systemGrad)" stroke="#5b21b6" strokeWidth="4" />
-        <circle cx="50" cy="75" r="15" fill="url(#systemGrad)" stroke="#5b21b6" strokeWidth="4" />
-        <rect x="45" y="55" width="10" height="20" fill="#a78bfa" />
+        <path d="M50,0 V 20" stroke="#f472b6" strokeWidth="8" strokeLinecap="round" />
+        <path d="M50 20 C 30 20, 30 50, 50 50" fill="#fb923c" stroke="#c2410c" strokeWidth="3" />
+        <path d="M50,50 C 70,50 70,60 50,60 C 30,60 30,70 50,70 C 70,70 70,80 50,80 C 30,80 30,90 50,90" 
+              fill="none" stroke="#f472b6" strokeWidth="10" strokeLinecap="round" />
     </svg>
 );
 
