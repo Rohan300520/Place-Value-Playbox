@@ -2,17 +2,17 @@ import React, { useState, useEffect, useCallback, useId } from 'react';
 
 // --- Configuration for STEM Examples ---
 // NOTE: Please add the following images to the `public/assets/` directory:
-// - muscle-cell.jpg
-// - muscle-tissue.jpg
-// - muscle-organ.jpg (e.g., an image of the heart muscle)
+// - muscle-cell.png
+// - muscle-tissue.png
+// - biceps-organ.png
 const EXAMPLES = {
   epithelial: {
     title: 'Epithelial Example',
     description: "See how flat, protective epithelial cells group together to form tissue, which in turn lines organs like the stomach.",
     images: {
-      cell: '/assets/epithelial-cell.jpg',
-      tissue: '/assets/epithelial-tissue.jpg',
-      organ: '/assets/stomach-organ.jpg',
+      cell: '/assets/epithelial-cell.png',
+      tissue: '/assets/epithelial-tissue.png',
+      organ: '/assets/stomach-organ.png',
     },
     placeValueMap: {
       cell: { name: 'Ones', plural: 'Epithelial Cells', singular: 'Epithelial Cell' },
@@ -22,16 +22,16 @@ const EXAMPLES = {
   },
   muscle: {
     title: 'Muscle Example',
-    description: "Discover how long, powerful muscle cells bundle to create muscle tissue, forming essential organs like the heart.",
+    description: "Discover how long, powerful muscle cells bundle to create muscle tissue, forming essential organs like the bicep.",
     images: {
-      cell: '/assets/muscle-cell.jpg',
-      tissue: '/assets/muscle-tissue.jpg',
-      organ: '/assets/muscle-organ.jpg',
+      cell: '/assets/muscle-cell.png',
+      tissue: '/assets/muscle-tissue.png',
+      organ: '/assets/biceps-organ.png',
     },
     placeValueMap: {
       cell: { name: 'Ones', plural: 'Muscle Cells', singular: 'Muscle Cell' },
       tissue: { name: 'Tens', plural: 'Muscle Tissues', singular: 'Muscle Tissue' },
-      organ: { name: 'Hundreds', plural: 'Organs (Heart)', singular: 'Organ (Heart)' },
+      organ: { name: 'Hundreds', plural: 'Organs (Biceps)', singular: 'Organ (Bicep)' },
     }
   }
 };
@@ -169,6 +169,12 @@ export const StemConnection: React.FC = () => {
                     className="bg-sky-500 hover:bg-sky-600 text-white font-bold text-xl py-3 px-8 rounded-xl shadow-lg shadow-sky-500/40 transform hover:scale-105 transition-all border-b-4 border-sky-700 active:border-b-2 font-display wobble-on-hover"
                 >
                     + Add Cell
+                </button>
+                <button
+                    onClick={() => handleAddItem('tissue')}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xl py-3 px-8 rounded-xl shadow-lg shadow-emerald-500/40 transform hover:scale-105 transition-all border-b-4 border-emerald-700 active:border-b-2 font-display wobble-on-hover"
+                >
+                    + Add Tissue
                 </button>
                 <button
                   onClick={handleReset}
