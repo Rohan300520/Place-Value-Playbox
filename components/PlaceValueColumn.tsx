@@ -85,7 +85,7 @@ export const PlaceValueColumn: React.FC<PlaceValueColumnProps> = ({
                 key={block.id}
                 className="absolute left-1/2 -translate-x-1/2 transition-all duration-300"
                 style={{
-                  bottom: `${index * 12}px`,
+                  bottom: `${index * 8}px`,
                   zIndex: index,
                   transform: 'scale(0.8)',
                 }}

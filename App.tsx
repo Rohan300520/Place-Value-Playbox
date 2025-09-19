@@ -483,8 +483,8 @@ const AppContent: React.FC = () => {
   const isDropAllowedForValue = (category: PlaceValueCategory, value: BlockValue | null) => {
     if (!value) return false;
 
-    // Feature: Limit the thousands column to a maximum of 10 blocks.
-    if (category === 'thousands' && columns.thousands.length >= 10) {
+    // Feature: Limit the thousands column to a maximum of 20 blocks.
+    if (category === 'thousands' && columns.thousands.length >= 20) {
         return false;
     }
 
