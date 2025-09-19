@@ -79,14 +79,15 @@ export const PlaceValueColumn: React.FC<PlaceValueColumnProps> = ({
         className={`flex-grow min-h-[180px] sm:min-h-[300px] p-1 sm:p-2 md:p-4 transition-all duration-300 rounded-b-2xl border-4 border-dashed bg-black/5 ${borderStyle} ${isRegroupingDestination ? 'animate-pulse' : ''} ${isSpotlighted && !isBeingDraggedOver ? 'animate-guide-pulse' : ''} ${isPulsing ? 'animate-column-pulse' : ''}`}
       >
         { (category === 'hundreds' || category === 'thousands') && blocks.length > 4 ? (
-          <div className="relative w-full h-full flex items-center justify-center">
+          <div className="relative w-full h-full">
             {blocks.map((block, index) => (
               <div
                 key={block.id}
-                className="absolute transition-transform duration-300"
+                className="absolute left-1/2 -translate-x-1/2 transition-all duration-300"
                 style={{
-                  transform: `translate(${index * 2}px, ${-index * 2}px)`,
+                  bottom: `${index * 12}px`,
                   zIndex: index,
+                  transform: 'scale(0.8)',
                 }}
               >
                 <NumberBlock 
