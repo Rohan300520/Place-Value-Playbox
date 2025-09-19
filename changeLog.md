@@ -4,6 +4,7 @@
 - **New Feature:** Re-introduced the Model Introduction screen, which displays a photo of the physical model and its learning objectives before mode selection.
 - **Training Mode:** Increased the display duration for feedback messages to give users more time to read and process instructions.
 - **Challenge Mode:** Enhanced the reward for correct answers by adding a confetti celebration alongside the rocket launch animation, making success more exciting.
+- **Playground Mode:** Increased the limit for the 'Thousands' column to 20 blocks to allow for building larger numbers.
 
 ## Version 1.1.0 - Major Bug Fixes & Stability
 - **Training Mode Overhaul:**
