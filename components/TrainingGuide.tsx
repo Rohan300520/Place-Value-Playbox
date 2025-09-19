@@ -74,17 +74,25 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
             case 'action':
             case 'action_multi': {
                 const column = currentStepConfig.column;
-                // Defensively check for column to prevent crashes
                 if (!column) return null; 
+
+                let positionClass = 'bottom-40 '; // Position the box above the source blocks area.
+                switch (column) {
+                    case 'thousands': positionClass += 'left-[12.5%]'; break;
+                    case 'hundreds': positionClass += 'left-[37.5%]'; break;
+                    case 'tens': positionClass += 'left-[62.5%]'; break;
+                    case 'ones': positionClass += 'left-[87.5%]'; break;
+                    default: positionClass += 'left-1/2';
+                }
+                positionClass += ' -translate-x-1/2';
                 
                 return (
                     <>
-                        {/* Conditionally render GhostBlock only if a source is defined for the step */}
                         {currentStepConfig.source && <GhostBlock value={currentStepConfig.source} />}
-                        <GuideBox className="bottom-28 left-1/2 -translate-x-1/2 max-w-xl text-center">
+                        <GuideBox className={`${positionClass} guide-box-arrow max-w-xs text-center !text-lg sm:!text-xl !p-3 sm:!p-4`}>
                             <p>{colorSpan(currentStepConfig.text)}</p>
                             {currentStepConfig.type === 'action_multi' && currentStepConfig.count && (
-                                <div className={`mt-4 text-4xl font-black ${colorMap[column]} tabular-nums font-display`}>
+                                <div className={`mt-2 text-3xl font-black ${colorMap[column]} tabular-nums font-display`}>
                                     {columnCounts[column]} / {currentStepConfig.count}
                                 </div>
                             )}
