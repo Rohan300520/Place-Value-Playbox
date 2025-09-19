@@ -1,125 +1,18 @@
 import React, { useState, useEffect, useCallback, useId } from 'react';
 
-// --- SVG Icon Components ---
+// --- Real Images for Biological Hierarchy ---
+const images = {
+  cell: '/assets/epithelial-cell.jpg',
+  tissue: '/assets/epithelial-tissue.jpg',
+  organ: '/assets/stomach-organ.jpg',
+  organSystem: '/assets/digestive-system.jpg',
+};
 
-const CellIcon: React.FC<{ isPulsing?: boolean }> = ({ isPulsing = true }) => (
-    <svg viewBox="0 0 100 100" className={`w-12 h-12 ${isPulsing ? 'animate-cell-pulse' : ''}`}>
-        <defs>
-            <radialGradient id="cellcyto" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#fde68a"/>
-                <stop offset="100%" stopColor="#f59e0b"/>
-            </radialGradient>
-            <radialGradient id="cellnucleus" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#c084fc"/>
-                <stop offset="100%" stopColor="#9333ea"/>
-            </radialGradient>
-        </defs>
-        <path d="M 95,50 C 95,74.8 74.8,95 50,95 C 25.2,95 5,74.8 5,50 C 5,25.2 25.2,5 50,5 C 74.8,5 95,25.2 95,50 Z" fill="url(#cellcyto)" stroke="#b45309" strokeWidth="2"/>
-        <path d="M 68,50 C 68,59.9 59.9,68 50,68 C 40.1,68 32,59.9 32,50 C 32,40.1 40.1,32 50,32 C 59.9,32 68,40.1 68,50 Z" fill="url(#cellnucleus)" stroke="#6b21a8" strokeWidth="1"/>
-        <circle cx="50" cy="50" r="5" fill="#581c87"/>
-        <ellipse cx="25" cy="35" rx="10" ry="5" fill="#f87171" transform="rotate(-30 25 35)" stroke="#b91c1c" strokeWidth="1"/>
-        <ellipse cx="75" cy="65" rx="12" ry="6" fill="#f87171" transform="rotate(20 75 65)" stroke="#b91c1c" strokeWidth="1"/>
-        <path d="M 20,60 C 25,70 35,75 40,70" fill="none" stroke="#65a30d" strokeWidth="3" strokeLinecap="round"/>
-        <path d="M 70,25 C 75,30 80,40 75,45" fill="none" stroke="#65a30d" strokeWidth="3" strokeLinecap="round"/>
-    </svg>
-);
-
-const TissueIcon: React.FC = () => (
-    <svg viewBox="0 0 100 100" className="w-20 h-20">
-        <defs>
-            <linearGradient id="tissueGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#fca5a5"/>
-                <stop offset="100%" stopColor="#f87171"/>
-            </linearGradient>
-            <radialGradient id="tissueNucleus" cx="0.5" cy="0.5" r="0.5">
-                <stop offset="0%" stopColor="#9f1239"/>
-                <stop offset="100%" stopColor="#500724"/>
-            </radialGradient>
-        </defs>
-        <g stroke="#991b1b" strokeWidth="1">
-            <path d="M 50 10 L 20 25 L 20 55 L 50 70 L 80 55 L 80 25 Z" fill="url(#tissueGrad)"/>
-            <path d="M 50 10 L 35 17 L 35 40 L 50 48 Z" fill="#ef4444"/>
-            <circle cx="50" cy="42" r="6" fill="url(#tissueNucleus)"/>
-
-            <path d="M 20 25 L 0 35 L 0 65 L 20 55" fill="url(#tissueGrad)"/>
-            <circle cx="12" cy="45" r="5" fill="url(#tissueNucleus)"/>
-
-            <path d="M 80 25 L 100 35 L 100 65 L 80 55" fill="url(#tissueGrad)"/>
-            <circle cx="88" cy="45" r="5" fill="url(#tissueNucleus)"/>
-
-            <path d="M 50 70 L 20 85 L 20 95 L 50 80 Z" fill="url(#tissueGrad)"/>
-            <circle cx="35" cy="82" r="4" fill="url(#tissueNucleus)"/>
-            
-            <path d="M 50 70 L 80 85 L 80 95 L 50 80 Z" fill="url(#tissueGrad)"/>
-            <circle cx="65" cy="82" r="4" fill="url(#tissueNucleus)"/>
-        </g>
-    </svg>
-);
-
-const OrganIcon: React.FC = () => (
-    <svg viewBox="0 0 100 100" className="w-24 h-24">
-        <defs>
-            <linearGradient id="organGradHeart" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#fca5a5"/>
-                <stop offset="100%" stopColor="#dc2626"/>
-            </linearGradient>
-             <linearGradient id="aortaGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#b91c1c" />
-                <stop offset="100%" stopColor="#7f1d1d" />
-            </linearGradient>
-            <linearGradient id="veinGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#60a5fa" />
-                <stop offset="100%" stopColor="#2563eb" />
-            </linearGradient>
-        </defs>
-        <path d="M50 25 C 20 25, 10 55, 50 95 C 90 55, 80 25, 50 25 Z" fill="url(#organGradHeart)" stroke="#991b1b" strokeWidth="3"/>
-        {/* Superior Vena Cava (vein) */}
-        <path d="M 60 25 C 60 15, 65 10, 70 10 L 75 10 L 75 30 C 70 30, 65 30, 60 25" fill="url(#veinGrad)" stroke="#1e3a8a" strokeWidth="2" />
-        {/* Aorta (artery) */}
-        <path d="M 40 25 C 40 10, 20 10, 20 25 S 40 40, 50 30" fill="url(#aortaGrad)" stroke="#7f1d1d" strokeWidth="2" />
-        {/* Internal Details */}
-        <path d="M 50 40 V 85" stroke="#991b1b" strokeWidth="2" opacity="0.5"/>
-        <path d="M 35 60 C 45 50, 55 50, 65 60" fill="none" stroke="#991b1b" strokeWidth="2" opacity="0.6"/>
-    </svg>
-);
-
-const OrganSystemIcon: React.FC = () => (
-     <svg viewBox="0 0 100 100" className="w-28 h-28">
-        <defs>
-            <linearGradient id="stomachGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#fb923c"/>
-                <stop offset="100%" stopColor="#ea580c"/>
-            </linearGradient>
-            <linearGradient id="intestineGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#f472b6"/>
-                <stop offset="100%" stopColor="#db2777"/>
-            </linearGradient>
-            <linearGradient id="liverGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#7f1d1d"/>
-                <stop offset="100%" stopColor="#b91c1c"/>
-            </linearGradient>
-        </defs>
-        
-        {/* Liver */}
-        <path d="M 30 25 C 60 15, 80 25, 80 45 L 25 45 C 20 35, 25 25, 30 25" fill="url(#liverGrad)" stroke="#450a0a" strokeWidth="2"/>
-
-        {/* Esophagus */}
-        <path d="M 45 5 L 45 25" stroke="#f472b6" strokeWidth="6" strokeLinecap="round"/>
-
-        {/* Stomach */}
-        <path d="M 45 25 C 30 25, 20 50, 50 50 C 80 50, 75 30, 60 30" fill="url(#stomachGrad)" stroke="#9a3412" strokeWidth="2"/>
-        
-        {/* Small Intestine */}
-        <path d="M 40 55 C 60 55, 65 65, 45 65 C 25 65, 30 75, 50 75 C 70 75, 75 85, 55 85" stroke="url(#intestineGrad)" strokeWidth="5" strokeLinecap="round" fill="none"/>
-
-    </svg>
-);
-
-const icons = {
-  cell: CellIcon,
-  tissue: TissueIcon,
-  organ: OrganIcon,
-  organSystem: OrganSystemIcon,
+const imageStyles: Record<BioUnit, string> = {
+    cell: 'w-14 h-14 rounded-full object-cover border-2 border-purple-300/50 shadow-lg',
+    tissue: 'w-20 h-20 rounded-lg object-cover border-2 border-red-300/50 shadow-lg',
+    organ: 'w-24 h-24 rounded-xl object-cover border-2 border-yellow-300/50 shadow-lg',
+    organSystem: 'w-28 h-28 rounded-2xl object-cover border-2 border-pink-300/50 shadow-lg',
 };
 
 type BioUnit = 'cell' | 'tissue' | 'organ' | 'organSystem';
@@ -132,11 +25,11 @@ interface Item {
 }
 
 const HIERARCHY: BioUnit[] = ['cell', 'tissue', 'organ', 'organSystem'];
-const PLACE_VALUE_MAP: Record<BioUnit, { name: string; color: 'blue' | 'green' | 'yellow' | 'purple'; plural: string }> = {
-  cell: { name: 'Ones', color: 'blue', plural: 'Cells' },
-  tissue: { name: 'Tens', color: 'green', plural: 'Tissues' },
-  organ: { name: 'Hundreds', color: 'yellow', plural: 'Organs' },
-  organSystem: { name: 'Thousands', color: 'purple', plural: 'Organ Systems' },
+const PLACE_VALUE_MAP: Record<BioUnit, { name: string; color: 'blue' | 'green' | 'yellow' | 'purple'; plural: string, singular: string }> = {
+  cell: { name: 'Ones', color: 'blue', plural: 'Epithelial Cells', singular: 'Epithelial Cell' },
+  tissue: { name: 'Tens', color: 'green', plural: 'Epithelial Tissues', singular: 'Epithelial Tissue' },
+  organ: { name: 'Hundreds', color: 'yellow', plural: 'Organs (Stomach)', singular: 'Organ (Stomach)' },
+  organSystem: { name: 'Thousands', color: 'purple', plural: 'Organ Systems', singular: 'Organ System' },
 };
 
 
@@ -169,7 +62,7 @@ export const StemConnection: React.FC = () => {
       const sourceItems = items.filter(item => item.type === sourceType && item.state === 'visible');
       
       if (sourceItems.length >= 10) {
-        setRegroupingMessage(`10 ${PLACE_VALUE_MAP[sourceType].plural} become 1 ${PLACE_VALUE_MAP[targetType].plural.slice(0,-1)}!`);
+        setRegroupingMessage(`10 ${PLACE_VALUE_MAP[sourceType].plural} become 1 ${PLACE_VALUE_MAP[targetType].singular}!`);
         
         setItems(prev =>
           prev.map(item =>
@@ -214,7 +107,7 @@ export const StemConnection: React.FC = () => {
                 The Blueprints of Life
             </h1>
             <p className="mt-2 text-lg sm:text-xl max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)'}}>
-                Just like with numbers, amazing things are built by grouping smaller pieces into bigger ones. Let's build!
+                Just like with numbers, amazing things are built by grouping smaller pieces into bigger ones. Let's see how epithelial cells form tissues and organs!
             </p>
             <div className="mt-6 flex justify-center items-center gap-4 flex-wrap">
                 <button
@@ -255,7 +148,8 @@ export const StemConnection: React.FC = () => {
             {HIERARCHY.map(unitType => {
                 const config = PLACE_VALUE_MAP[unitType];
                 const unitItems = items.filter(item => item.type === unitType);
-                const IconComponent = icons[unitType];
+                const imageSrc = images[unitType];
+                const imageClassName = imageStyles[unitType];
                 return (
                     <div key={unitType} className={`flex flex-col rounded-2xl shadow-xl`} style={{ backgroundColor: `var(--col-${config.color}-bg)`}}>
                         <div className={`text-center p-3 border-b-4`} style={{ borderColor: `var(--col-${config.color}-border)`}}>
@@ -284,9 +178,13 @@ export const StemConnection: React.FC = () => {
                                 >
                                     <div className={
                                         item.state === 'regrouping' ? 'animate-regroup-to-center' :
-                                        item.state === 'forming' ? 'animate-form-from-center opacity-0' : ''
+                                        item.state === 'forming' ? 'animate-form-from-center opacity-0' : 'animate-bouncy-pop-in'
                                     }>
-                                        <IconComponent isPulsing={item.type === 'cell'} />
+                                        <img 
+                                            src={imageSrc} 
+                                            alt={config.singular} 
+                                            className={imageClassName} 
+                                        />
                                     </div>
                                 </div>
                             ))}
