@@ -27,28 +27,31 @@ const CellIcon: React.FC<{ isPulsing?: boolean }> = ({ isPulsing = true }) => (
 const TissueIcon: React.FC = () => (
     <svg viewBox="0 0 100 100" className="w-20 h-20">
         <defs>
-            <linearGradient id="tissuecell" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#fbbf24"/>
-                <stop offset="100%" stopColor="#f59e0b"/>
+            <linearGradient id="tissueGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#fca5a5"/>
+                <stop offset="100%" stopColor="#f87171"/>
             </linearGradient>
+            <radialGradient id="tissueNucleus" cx="0.5" cy="0.5" r="0.5">
+                <stop offset="0%" stopColor="#9f1239"/>
+                <stop offset="100%" stopColor="#500724"/>
+            </radialGradient>
         </defs>
-        <g stroke="#92400e" strokeWidth="1.5">
-            <path d="M 10 10 C 20 5, 30 5, 40 10 L 45 40 L 5 40 Z" fill="url(#tissuecell)"/>
-            <circle cx="25" cy="30" r="4" fill="#86198f"/>
-            <path d="M 40 10 C 50 5, 60 5, 70 10 L 75 40 L 45 40 Z" fill="url(#tissuecell)"/>
-            <circle cx="57" cy="30" r="4" fill="#86198f"/>
-            <path d="M 70 10 C 80 5, 90 5, 100 10 L 105 40 L 75 40 Z" fill="url(#tissuecell)"/>
-            <circle cx="87" cy="30" r="4" fill="#86198f"/>
+        <g stroke="#991b1b" strokeWidth="1">
+            <path d="M 50 10 L 20 25 L 20 55 L 50 70 L 80 55 L 80 25 Z" fill="url(#tissueGrad)"/>
+            <path d="M 50 10 L 35 17 L 35 40 L 50 48 Z" fill="#ef4444"/>
+            <circle cx="50" cy="42" r="6" fill="url(#tissueNucleus)"/>
 
-            <path d="M 5 40 L 45 40 L 50 70 L 10 70 Z" fill="url(#tissuecell)"/>
-            <circle cx="30" cy="60" r="4" fill="#86198f"/>
-            <path d="M 45 40 L 75 40 L 80 70 L 50 70 Z" fill="url(#tissuecell)"/>
-            <circle cx="62" cy="60" r="4" fill="#86198f"/>
+            <path d="M 20 25 L 0 35 L 0 65 L 20 55" fill="url(#tissueGrad)"/>
+            <circle cx="12" cy="45" r="5" fill="url(#tissueNucleus)"/>
+
+            <path d="M 80 25 L 100 35 L 100 65 L 80 55" fill="url(#tissueGrad)"/>
+            <circle cx="88" cy="45" r="5" fill="url(#tissueNucleus)"/>
+
+            <path d="M 50 70 L 20 85 L 20 95 L 50 80 Z" fill="url(#tissueGrad)"/>
+            <circle cx="35" cy="82" r="4" fill="url(#tissueNucleus)"/>
             
-            <path d="M 10 70 L 50 70 L 55 100 L 15 100 Z" fill="url(#tissuecell)"/>
-            <circle cx="35" cy="90" r="4" fill="#86198f"/>
-            <path d="M 50 70 L 80 70 L 85 100 L 55 100 Z" fill="url(#tissuecell)"/>
-            <circle cx="67" cy="90" r="4" fill="#86198f"/>
+            <path d="M 50 70 L 80 85 L 80 95 L 50 80 Z" fill="url(#tissueGrad)"/>
+            <circle cx="65" cy="82" r="4" fill="url(#tissueNucleus)"/>
         </g>
     </svg>
 );
@@ -60,26 +63,28 @@ const OrganIcon: React.FC = () => (
                 <stop offset="0%" stopColor="#fca5a5"/>
                 <stop offset="100%" stopColor="#dc2626"/>
             </linearGradient>
-            <linearGradient id="aortaGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#f87171" />
-                <stop offset="100%" stopColor="#b91c1c" />
+             <linearGradient id="aortaGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#b91c1c" />
+                <stop offset="100%" stopColor="#7f1d1d" />
             </linearGradient>
             <linearGradient id="veinGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#93c5fd" />
+                <stop offset="0%" stopColor="#60a5fa" />
                 <stop offset="100%" stopColor="#2563eb" />
             </linearGradient>
         </defs>
-        <path d="M50 25 C 20 25, 10 55, 50 95 C 90 55, 80 25, 50 25 Z" fill="url(#organGradHeart)" stroke="#991b1b" strokeWidth="4"/>
-        <path d="M 48 25 C 40 10, 25 5, 25 15 C 25 25, 35 30, 40 35" fill="url(#veinGrad)" stroke="#1e3a8a" strokeWidth="2"/>
-        <path d="M 52 25 C 60 10, 75 5, 75 15 C 75 25, 65 30, 60 35" fill="url(#aortaGrad)" stroke="#7f1d1d" strokeWidth="2"/>
-        <path d="M 30 50 C 40 55, 45 65, 40 75" fill="none" stroke="#991b1b" strokeWidth="3" strokeLinecap="round"/>
-        <path d="M 70 50 C 60 55, 55 65, 60 75" fill="none" stroke="#991b1b" strokeWidth="3" strokeLinecap="round"/>
-        <path d="M 50 25 L 50 50" fill="none" stroke="#7f1d1d" strokeWidth="3"/>
+        <path d="M50 25 C 20 25, 10 55, 50 95 C 90 55, 80 25, 50 25 Z" fill="url(#organGradHeart)" stroke="#991b1b" strokeWidth="3"/>
+        {/* Superior Vena Cava (vein) */}
+        <path d="M 60 25 C 60 15, 65 10, 70 10 L 75 10 L 75 30 C 70 30, 65 30, 60 25" fill="url(#veinGrad)" stroke="#1e3a8a" strokeWidth="2" />
+        {/* Aorta (artery) */}
+        <path d="M 40 25 C 40 10, 20 10, 20 25 S 40 40, 50 30" fill="url(#aortaGrad)" stroke="#7f1d1d" strokeWidth="2" />
+        {/* Internal Details */}
+        <path d="M 50 40 V 85" stroke="#991b1b" strokeWidth="2" opacity="0.5"/>
+        <path d="M 35 60 C 45 50, 55 50, 65 60" fill="none" stroke="#991b1b" strokeWidth="2" opacity="0.6"/>
     </svg>
 );
 
 const OrganSystemIcon: React.FC = () => (
-    <svg viewBox="0 0 100 100" className="w-28 h-28">
+     <svg viewBox="0 0 100 100" className="w-28 h-28">
         <defs>
             <linearGradient id="stomachGrad" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0%" stopColor="#fb923c"/>
@@ -89,17 +94,24 @@ const OrganSystemIcon: React.FC = () => (
                 <stop offset="0%" stopColor="#f472b6"/>
                 <stop offset="100%" stopColor="#db2777"/>
             </linearGradient>
+            <linearGradient id="liverGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#7f1d1d"/>
+                <stop offset="100%" stopColor="#b91c1c"/>
+            </linearGradient>
         </defs>
-        <g strokeLinecap="round" strokeLinejoin="round" strokeWidth="5" fill="none">
-            {/* Esophagus */}
-            <path d="M 50 5 V 25" stroke="#f472b6"/>
-            {/* Stomach */}
-            <path d="M 50 25 C 30 25, 25 50, 50 50" stroke="url(#stomachGrad)" strokeWidth="6"/>
-            {/* Small Intestine */}
-            <path d="M 50 50 C 70 50, 75 60, 50 60 C 25 60, 30 70, 50 70 C 70 70, 75 80, 50 80" stroke="url(#intestineGrad)"/>
-            {/* Large Intestine */}
-            <path d="M 30 85 C 30 65, 30 45, 50 45 C 70 45, 70 65, 70 85" stroke="#a855f7" strokeWidth="8"/>
-        </g>
+        
+        {/* Liver */}
+        <path d="M 30 25 C 60 15, 80 25, 80 45 L 25 45 C 20 35, 25 25, 30 25" fill="url(#liverGrad)" stroke="#450a0a" strokeWidth="2"/>
+
+        {/* Esophagus */}
+        <path d="M 45 5 L 45 25" stroke="#f472b6" strokeWidth="6" strokeLinecap="round"/>
+
+        {/* Stomach */}
+        <path d="M 45 25 C 30 25, 20 50, 50 50 C 80 50, 75 30, 60 30" fill="url(#stomachGrad)" stroke="#9a3412" strokeWidth="2"/>
+        
+        {/* Small Intestine */}
+        <path d="M 40 55 C 60 55, 65 65, 45 65 C 25 65, 30 75, 50 75 C 70 75, 75 85, 55 85" stroke="url(#intestineGrad)" strokeWidth="5" strokeLinecap="round" fill="none"/>
+
     </svg>
 );
 
