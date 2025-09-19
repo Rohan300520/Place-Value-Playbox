@@ -483,6 +483,11 @@ const AppContent: React.FC = () => {
   const isDropAllowedForValue = (category: PlaceValueCategory, value: BlockValue | null) => {
     if (!value) return false;
 
+    // Feature: Limit the thousands column to a maximum of 10 blocks.
+    if (category === 'thousands' && columns.thousands.length >= 10) {
+        return false;
+    }
+
     if (gameState === 'training') {
         if (currentStepConfig && currentStepConfig.type.startsWith('action')) {
             return currentStepConfig.source === value && currentStepConfig.column === category;
