@@ -140,7 +140,7 @@ export const StemConnection: React.FC = () => {
     <div className="flex-grow w-full flex flex-col items-center justify-start p-2 sm:p-4 text-center animate-pop-in">
         <div className="backdrop-blur-sm border p-4 sm:p-6 rounded-3xl shadow-xl w-full max-w-7xl" style={{ backgroundColor: 'var(--backdrop-bg)', borderColor: 'var(--border-primary)'}}>
             <h1 className="text-4xl md:text-6xl font-black text-indigo-700 tracking-tight font-display">
-                The Blueprints of Life
+                Organization of Life
             </h1>
             <p className="mt-2 text-lg sm:text-xl max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)'}}>
                 Just like with numbers, amazing things are built by grouping smaller pieces. Choose an example to see how this works in biology!
@@ -175,6 +175,12 @@ export const StemConnection: React.FC = () => {
                     className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xl py-3 px-8 rounded-xl shadow-lg shadow-emerald-500/40 transform hover:scale-105 transition-all border-b-4 border-emerald-700 active:border-b-2 font-display wobble-on-hover"
                 >
                     + Add Tissue
+                </button>
+                <button
+                    onClick={() => handleAddItem('organ')}
+                    className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xl py-3 px-8 rounded-xl shadow-lg shadow-amber-500/40 transform hover:scale-105 transition-all border-b-4 border-amber-700 active:border-b-2 font-display wobble-on-hover"
+                >
+                    + Add Organ
                 </button>
                 <button
                   onClick={handleReset}
