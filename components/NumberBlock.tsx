@@ -6,6 +6,7 @@ interface NumberBlockProps {
   isDraggable: boolean;
   onDragStart?: (value: BlockValue, origin?: { category: PlaceValueCategory, id: string }) => void;
   onTouchStart?: (value: BlockValue, event: React.TouchEvent) => void;
+  onClick?: () => void;
   isAnimating?: boolean;
   isNewlyRegrouped?: boolean;
   
@@ -23,7 +24,7 @@ const blockColorStyles = {
 
 export const NumberBlock: React.FC<NumberBlockProps> = ({ 
   value, isDraggable, onDragStart, onTouchStart, isAnimating, isNewlyRegrouped,
-  id, category
+  id, category, onClick
 }) => {
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     if (onDragStart) {
@@ -87,10 +88,11 @@ export const NumberBlock: React.FC<NumberBlockProps> = ({
       draggable={isDraggable}
       onDragStart={isDraggable ? handleDragStart : undefined}
       onTouchStart={isDraggable ? handleTouchStart : undefined}
+      onClick={onClick}
       data-value={value}
       data-id={id}
       data-category={category}
-      className={`${blockBaseStyle} rounded-md transition-transform transform ${isDraggable ? 'hover:scale-110 cursor-grab active:cursor-grabbing' : 'cursor-default'} ${animationClass}`}
+      className={`${blockBaseStyle} rounded-md transition-transform transform ${isDraggable ? 'hover:scale-110 cursor-pointer active:cursor-grabbing' : 'cursor-default'} ${animationClass}`}
       style={{ 
         background,
         border: `2px solid ${border}`,

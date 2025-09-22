@@ -5,6 +5,7 @@ import { NumberBlock } from './NumberBlock';
 interface BlockSourceProps {
   onDragStart: (value: BlockValue, origin?: { category: PlaceValueCategory, id: string }) => void;
   onTouchStart: (value: BlockValue, event: React.TouchEvent) => void;
+  onBlockClick: (value: BlockValue) => void;
   isTraining: boolean;
   spotlightOn?: BlockValue;
 }
@@ -20,12 +21,13 @@ interface BlockWrapperProps {
   value: BlockValue;
   onDragStart: (value: BlockValue, origin?: { category: PlaceValueCategory, id: string }) => void;
   onTouchStart: (value: BlockValue, event: React.TouchEvent) => void;
+  onBlockClick: (value: BlockValue) => void;
   isSpotlighted: boolean;
   label: string;
   colorVar: string;
 }
 
-const BlockWrapper: React.FC<BlockWrapperProps> = React.memo(({ value, onDragStart, onTouchStart, isSpotlighted, label, colorVar }) => {
+const BlockWrapper: React.FC<BlockWrapperProps> = React.memo(({ value, onDragStart, onTouchStart, onBlockClick, isSpotlighted, label, colorVar }) => {
     const animationDelay = useMemo(() => `${Math.random()}s`, []);
     const animationClass = isSpotlighted ? 'animate-guide-pulse' : 'animate-float';
 
@@ -34,14 +36,14 @@ const BlockWrapper: React.FC<BlockWrapperProps> = React.memo(({ value, onDragSta
           className={`flex flex-col items-center p-2 rounded-lg transition-all duration-300 ${animationClass} ${isSpotlighted ? 'relative z-20' : ''}`}
           style={{ animationDelay: isSpotlighted ? '0s' : animationDelay }}
         >
-            <NumberBlock value={value} isDraggable={true} onDragStart={onDragStart} onTouchStart={onTouchStart} />
+            <NumberBlock value={value} isDraggable={true} onDragStart={onDragStart} onTouchStart={onTouchStart} onClick={() => onBlockClick(value)} />
             <span className={`mt-2 font-bold text-lg`} style={{ color: colorVar }}>{label}</span>
         </div>
     );
 });
 
 
-export const BlockSource: React.FC<BlockSourceProps> = ({ onDragStart, onTouchStart, isTraining, spotlightOn }) => {
+export const BlockSource: React.FC<BlockSourceProps> = ({ onDragStart, onTouchStart, onBlockClick, isTraining, spotlightOn }) => {
   let blocksToRender = blockData;
 
   if (isTraining) {
@@ -56,6 +58,7 @@ export const BlockSource: React.FC<BlockSourceProps> = ({ onDragStart, onTouchSt
           value={block.value}
           onDragStart={onDragStart}
           onTouchStart={onTouchStart}
+          onBlockClick={onBlockClick}
           label={block.label}
           colorVar={block.colorVar}
           isSpotlighted={isTraining && spotlightOn === block.value}
