@@ -503,6 +503,22 @@ const AppContent: React.FC = () => {
     );
   };
   
+  const handleClickToAddBlock = (value: BlockValue) => {
+    const categoryMap: Record<BlockValue, PlaceValueCategory> = {
+      1: 'ones',
+      10: 'tens',
+      100: 'hundreds',
+      1000: 'thousands',
+    };
+    const category = categoryMap[value];
+
+    if (isDropAllowedForValue(category, value)) {
+      addBlock(category, value);
+    } else {
+      playErrorSound();
+    }
+  };
+
   const handleDrop = (category: PlaceValueCategory) => {
     if (isDropAllowedForValue(category, draggedValue)) {
       if (draggedOrigin) {
@@ -723,7 +739,7 @@ const AppContent: React.FC = () => {
                 <ResetButton onClick={resetBoard} />
               </div>
               <div className="flex-1">
-                <BlockSource onDragStart={handleDragStart} onTouchStart={handleTouchStart} isTraining={gameState === 'training'} spotlightOn={currentStepConfig?.source}/>
+                <BlockSource onDragStart={handleDragStart} onTouchStart={handleTouchStart} onBlockClick={handleClickToAddBlock} isTraining={gameState === 'training'} spotlightOn={currentStepConfig?.source}/>
               </div>
               <div className="flex-1"></div>
             </div>
