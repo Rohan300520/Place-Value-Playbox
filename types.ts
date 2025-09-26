@@ -107,3 +107,37 @@ export interface AnalyticsEvent {
   userInfo: UserInfo | null;
   payload: Record<string, any>;
 }
+
+// --- Analytics Dashboard Types ---
+
+export interface GlobalStats {
+  total_users: number;
+  total_sessions: number;
+  total_challenge_attempts: number;
+  avg_success_rate: number | null;
+}
+
+export interface SchoolSummary {
+  school_name: string;
+  user_count: number;
+  session_count: number;
+  last_active: string;
+}
+
+export interface SchoolUserDetails {
+  user_name: string;
+  session_count: number;
+  total_challenge_attempts: number;
+  correct_challenge_attempts: number;
+  last_active: string;
+}
+
+export interface UserChallengeHistory {
+  event_timestamp: string;
+  question: string;
+  level: string;
+  status: string;
+  duration: number;
+  user_answer: string;
+  correct_answer: string;
+}

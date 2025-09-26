@@ -447,11 +447,14 @@ const AppContent: React.FC = () => {
         if (!nextStepConfig) return;
         setTrainingFeedback(nextStepConfig.text);
         if (isSpeechEnabled) { cancelSpeech(); speak(nextStepConfig.text, 'en-US'); }
+        // Fix: Check if the next step is a feedback type before accessing its specific properties.
         setTimeout(() => {
             setTrainingFeedback(null);
             setTrainingStep(prev => prev + 2);
-            if (nextStepConfig.clearBoardAfter) resetBoard(false);
-        }, nextStepConfig.duration || 3000);
+            if ((nextStepConfig.type === 'feedback' || nextStepConfig.type === 'magic_feedback') && nextStepConfig.clearBoardAfter) {
+                resetBoard(false);
+            }
+        }, (nextStepConfig.type === 'feedback' || nextStepConfig.type === 'magic_feedback') ? nextStepConfig.duration : 3000);
     };
 
     if (currentStepConfig.type === 'action' && currentStepConfig.column === category) {
@@ -485,7 +488,8 @@ const AppContent: React.FC = () => {
     if (!value) return false;
     if (category === 'thousands' && columns.thousands.length >= 20) return false;
     if (gameState === 'training') {
-        if (currentStepConfig && currentStepConfig.type.startsWith('action')) {
+        // Fix: Changed `startsWith` to a more explicit type check to help TypeScript narrow the union type.
+        if (currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi')) {
             return currentStepConfig.source === value && currentStepConfig.column === category;
         }
         return false;
@@ -712,17 +716,19 @@ const AppContent: React.FC = () => {
               />
             )}
             <div className="grid grid-cols-4 gap-2 sm:gap-4 w-full">
-              <PlaceValueColumn title="Thousands" category="thousands" blocks={columns.thousands} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('thousands', draggedValue)} isDragging={!!draggedValue} color="purple" isTouchTarget={touchTarget === 'thousands'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'thousands'} />
-              <PlaceValueColumn title="Hundreds" category="hundreds" blocks={columns.hundreds} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={columns.tens.length >= 10} isDropAllowed={isDropAllowedForValue('hundreds', draggedValue)} isDragging={!!draggedValue} color="yellow" isTouchTarget={touchTarget === 'hundreds'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'hundreds'}/>
-              <PlaceValueColumn title="Tens" category="tens" blocks={columns.tens} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={columns.ones.length >= 10} isDropAllowed={isDropAllowedForValue('tens', draggedValue)} isDragging={!!draggedValue} color="green" isTouchTarget={touchTarget === 'tens'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'tens'} />
-              <PlaceValueColumn title="Ones" category="ones" blocks={columns.ones} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('ones', draggedValue)} isDragging={!!draggedValue} color="blue" isTouchTarget={touchTarget === 'ones'} appState={gameState} isSpotlighted={currentStepConfig?.column === 'ones'} />
+              {/* Fix: Check if the current step is an action type before accessing the 'column' property to determine spotlighting. */}
+              <PlaceValueColumn title="Thousands" category="thousands" blocks={columns.thousands} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('thousands', draggedValue)} isDragging={!!draggedValue} color="purple" isTouchTarget={touchTarget === 'thousands'} appState={gameState} isSpotlighted={currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi') && currentStepConfig.column === 'thousands'} />
+              <PlaceValueColumn title="Hundreds" category="hundreds" blocks={columns.hundreds} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={columns.tens.length >= 10} isDropAllowed={isDropAllowedForValue('hundreds', draggedValue)} isDragging={!!draggedValue} color="yellow" isTouchTarget={touchTarget === 'hundreds'} appState={gameState} isSpotlighted={currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi') && currentStepConfig.column === 'hundreds'}/>
+              <PlaceValueColumn title="Tens" category="tens" blocks={columns.tens} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={columns.ones.length >= 10} isDropAllowed={isDropAllowedForValue('tens', draggedValue)} isDragging={!!draggedValue} color="green" isTouchTarget={touchTarget === 'tens'} appState={gameState} isSpotlighted={currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi') && currentStepConfig.column === 'tens'} />
+              <PlaceValueColumn title="Ones" category="ones" blocks={columns.ones} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('ones', draggedValue)} isDragging={!!draggedValue} color="blue" isTouchTarget={touchTarget === 'ones'} appState={gameState} isSpotlighted={currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi') && currentStepConfig.column === 'ones'} />
             </div>
             <div className="mt-4 sm:mt-8 flex flex-col sm:flex-row items-center justify-between w-full gap-4">
               <div className="flex-1">
                 <ResetButton onClick={() => resetBoard(true)} />
               </div>
               <div className="flex-1">
-                <BlockSource onDragStart={handleDragStart} onTouchStart={handleTouchStart} onBlockClick={handleClickToAddBlock} isTraining={gameState === 'training'} spotlightOn={currentStepConfig?.source}/>
+                {/* Fix: Check if the current step is an action type before accessing the 'source' property. */}
+                <BlockSource onDragStart={handleDragStart} onTouchStart={handleTouchStart} onBlockClick={handleClickToAddBlock} isTraining={gameState === 'training'} spotlightOn={currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi') ? currentStepConfig.source : undefined}/>
               </div>
               <div className="flex-1"></div>
             </div>
