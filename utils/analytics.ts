@@ -1,42 +1,60 @@
 import { supabase } from './supabaseClient';
 import type { AnalyticsEvent, UserInfo, GlobalStats, SchoolSummary, SchoolUserDetails, UserChallengeHistory } from '../types';
 
-const ANALYTICS_STORAGE_KEY = 'app_analytics_events';
+const DB_NAME = 'SmartCAnalyticsDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'events';
 
-// Function to get the event queue from localStorage
-const getEventQueue = (): AnalyticsEvent[] => {
-    try {
-        const storedEvents = localStorage.getItem(ANALYTICS_STORAGE_KEY);
-        return storedEvents ? JSON.parse(storedEvents) : [];
-    } catch (e) {
-        console.error("Could not read analytics events from localStorage.", e);
-        localStorage.removeItem(ANALYTICS_STORAGE_KEY); // Clear corrupted data
-        return [];
-    }
-};
+let dbPromise: Promise<IDBDatabase> | null = null;
 
-// Function to save the event queue to localStorage
-const saveEventQueue = (queue: AnalyticsEvent[]): void => {
-    try {
-        localStorage.setItem(ANALYTICS_STORAGE_KEY, JSON.stringify(queue));
-    } catch (e) {
-        console.error("Could not save analytics events to localStorage. Error:", e);
+const getDb = (): Promise<IDBDatabase> => {
+    if (dbPromise) {
+        return dbPromise;
     }
+    dbPromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(new Error('Failed to open IndexedDB.'));
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+            const db = (event.target as IDBOpenDBRequest).result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            }
+        };
+    });
+    return dbPromise;
 };
 
 /**
- * Logs a new analytics event to a queue in localStorage.
+ * Initializes the analytics service, including setting up event listeners for smart syncing.
+ */
+export const initAnalytics = () => {
+    // Attempt to sync when the app comes back online
+    window.addEventListener('online', syncAnalyticsData);
+    
+    // Attempt a final sync when the user is leaving the page
+    // 'visibilitychange' is more reliable than 'beforeunload' on mobile
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            syncAnalyticsData();
+        }
+    });
+
+    console.log("Analytics service initialized.");
+};
+
+/**
+ * Logs a new analytics event to the IndexedDB queue.
  * @param eventName A string identifying the event (e.g., 'session_start').
  * @param userInfo The current user's information.
  * @param payload An optional object with additional event data.
  */
-export const logEvent = (
+export const logEvent = async (
     eventName: string, 
     userInfo: UserInfo | null, 
     payload: Record<string, any> = {}
-): void => {
+): Promise<void> => {
     if (!userInfo) {
-        // Do not log events if there is no user context
         return;
     }
     const event: AnalyticsEvent = {
@@ -47,70 +65,86 @@ export const logEvent = (
         payload,
     };
 
-    const queue = getEventQueue();
-    queue.push(event);
-    saveEventQueue(queue);
+    try {
+        const db = await getDb();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        store.add(event);
+        await new Promise<void>((resolve, reject) => {
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    } catch (error) {
+        console.error('Failed to log event to IndexedDB:', error);
+    }
 };
 
+let isSyncing = false;
 /**
  * Attempts to sync the locally stored analytics events with the Supabase backend.
- * This version is resilient to race conditions and queue-blocking failures.
+ * This is a singleton process, preventing concurrent syncs.
  */
 export const syncAnalyticsData = async (): Promise<void> => {
-    if (!navigator.onLine) {
+    if (!navigator.onLine || isSyncing) {
         return;
     }
+    isSyncing = true;
 
-    // 1. Atomically get and clear the current event queue to prevent race conditions.
-    const eventsToProcess = getEventQueue();
-    if (eventsToProcess.length === 0) {
-        return;
-    }
-    saveEventQueue([]); // Clear queue immediately.
-
-    // A simple regex to validate a UUID.
-    const isUUID = (str: string) => 
-        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(str);
-    
-    // Filter out any malformed events to ensure the batch is clean.
-    const validEvents = eventsToProcess.filter(event => event.id && isUUID(event.id) && event.userInfo);
-    
-    if (validEvents.length === 0) {
-        console.warn("Analytics sync: No valid events to process in this batch.");
-        return;
-    }
-
-    const eventsToInsert = validEvents.map(event => ({
-        client_id: event.id,
-        event_timestamp: new Date(event.timestamp).toISOString(),
-        event_type: event.eventName,
-        user_info: {
-            name: event.userInfo.name,
-            school: event.userInfo.school,
-        },
-        payload: event.payload,
-        key_id: event.userInfo.keyId,
-        model: 'place-value-playbox',
-    }));
-
-    // 2. Attempt to send the batch of events.
-    const { error } = await supabase.from('usage_logs').insert(eventsToInsert);
-
-    // 3. Log results. On failure, this batch is discarded, but the system is not blocked.
-    if (error) {
-        console.error('ANALYTICS SYNC FAILED. This batch of events was discarded. Error:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code,
+    try {
+        const db = await getDb();
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const eventsToProcess: AnalyticsEvent[] = await new Promise((resolve, reject) => {
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
         });
-    } else {
-        console.log(`Successfully synced ${validEvents.length} analytics events.`);
+
+        if (eventsToProcess.length === 0) {
+            isSyncing = false;
+            return;
+        }
+
+        console.log(`Attempting to sync ${eventsToProcess.length} events.`);
+
+        const eventsToInsert = eventsToProcess.map(event => ({
+            client_id: event.id,
+            event_timestamp: new Date(event.timestamp).toISOString(),
+            event_type: event.eventName,
+            user_info: {
+                name: event.userInfo.name,
+                school: event.userInfo.school,
+            },
+            payload: event.payload,
+            key_id: event.userInfo.keyId,
+            model: 'place-value-playbox',
+        }));
+
+        const { error } = await supabase.from('usage_logs').insert(eventsToInsert);
+
+        if (error) {
+            console.error('ANALYTICS SYNC FAILED. Data remains in local DB. Error:', error);
+        } else {
+            console.log(`Successfully synced ${eventsToProcess.length} analytics events.`);
+            // On success, clear the synced events from IndexedDB
+            const deleteTx = db.transaction(STORE_NAME, 'readwrite');
+            const deleteStore = deleteTx.objectStore(STORE_NAME);
+            for (const event of eventsToProcess) {
+                deleteStore.delete(event.id);
+            }
+            await new Promise<void>((resolve, reject) => {
+                deleteTx.oncomplete = () => resolve();
+                deleteTx.onerror = () => reject(deleteTx.error);
+            });
+        }
+    } catch (error) {
+        console.error('An error occurred during the sync process:', error);
+    } finally {
+        isSyncing = false;
     }
 };
 
-
-// --- Functions to fetch aggregated data for the dashboard ---
+// --- Functions to fetch aggregated data for the dashboard (unchanged) ---
 
 export const getGlobalStats = async (): Promise<GlobalStats | null> => {
     const { data, error } = await supabase.rpc('get_global_stats');

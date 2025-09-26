@@ -30,7 +30,7 @@ import { AdminPage } from './AdminPage';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { SpeechToggle } from './components/SpeechToggle';
 // Fix: Corrected import path for analytics
-import { logEvent, syncAnalyticsData } from './utils/analytics';
+import { initAnalytics, logEvent, syncAnalyticsData } from './utils/analytics';
 
 // --- Home Screen Component ---
 const HomeScreen: React.FC<{ onSelectModel: (modelId: string) => void; }> = ({ onSelectModel }) => {
@@ -324,15 +324,10 @@ const AppContent: React.FC = () => {
   // Analytics session start and sync setup
   useEffect(() => {
       if (licenseStatus === 'valid' && currentUser) {
-          logEvent('session_start', currentUser);
-          
-          // Initial sync attempt
-          syncAnalyticsData();
-
-          // Set up periodic sync every 5 minutes
-          const syncInterval = setInterval(syncAnalyticsData, 5 * 60 * 1000);
-          
-          return () => clearInterval(syncInterval);
+          initAnalytics(); // Initialize listeners for online/offline, etc.
+          logEvent('session_start', currentUser).then(() => {
+            syncAnalyticsData(); // Attempt sync after logging session start
+          });
       }
   }, [licenseStatus, currentUser]);
 
@@ -368,10 +363,10 @@ const AppContent: React.FC = () => {
     return numberToWords(total);
   }, [total]);
 
-  const resetBoard = useCallback((isUserInitiated: boolean = false) => {
+  const resetBoard = useCallback(async (isUserInitiated: boolean = false) => {
     setColumns({ ones: [], tens: [], hundreds: [], thousands: [] });
     if(isUserInitiated) {
-      logEvent('board_reset', currentUser, { gameState });
+      await logEvent('board_reset', currentUser, { gameState });
       syncAnalyticsData();
     }
   }, [currentUser, gameState]);
@@ -586,14 +581,14 @@ const AppContent: React.FC = () => {
   
   const handleSelectDifficulty = (difficulty: Difficulty) => startChallenge(difficulty);
 
-  const handleCheckAnswer = () => {
+  const handleCheckAnswer = async () => {
     const currentQuestion = filteredQuestions[currentQuestionIndex];
     if (!currentQuestion) return;
 
     const durationSeconds = challengeStartTimeRef.current ? (Date.now() - challengeStartTimeRef.current) / 1000 : 0;
     const isCorrect = total === currentQuestion.answer;
 
-    logEvent('challenge_attempt', currentUser, {
+    await logEvent('challenge_attempt', currentUser, {
         questionId: currentQuestion.id,
         questionText: currentQuestion.question,
         level: difficulty,
@@ -640,12 +635,12 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleTimeOut = () => {
+  const handleTimeOut = async () => {
       const currentQuestion = filteredQuestions[currentQuestionIndex];
       if (!currentQuestion) return;
       
       const durationSeconds = challengeStartTimeRef.current ? (Date.now() - challengeStartTimeRef.current) / 1000 : timeLimit;
-      logEvent('challenge_attempt', currentUser, {
+      await logEvent('challenge_attempt', currentUser, {
           questionId: currentQuestion.id,
           questionText: currentQuestion.question,
           level: difficulty,
@@ -661,10 +656,10 @@ const AppContent: React.FC = () => {
       setCorrectAnswer(currentQuestion.answer);
   }
 
-  const handleModeSelection = (mode: GameState) => {
+  const handleModeSelection = async (mode: GameState) => {
     resetBoard(false);
     setGameState(mode);
-    logEvent('mode_start', currentUser, { mode });
+    await logEvent('mode_start', currentUser, { mode });
     syncAnalyticsData();
     if (mode === 'challenge') setGameState('challenge_difficulty_selection');
     else if (mode === 'training') setTrainingStep(0);
