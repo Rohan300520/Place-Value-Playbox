@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import type { AnalyticsEvent, UserInfo, GlobalStats, SchoolSummary, SchoolUserDetails, UserChallengeHistory } from '../types';
+import type { AnalyticsEvent, UserInfo, GlobalStats, SchoolSummary, SchoolUserDetails, UserChallengeHistory, DailyActivity, SchoolChallengeStats } from '../types';
 
 const DB_NAME = 'SmartCAnalyticsDB';
 const DB_VERSION = 1;
@@ -144,7 +144,7 @@ export const syncAnalyticsData = async (): Promise<void> => {
     }
 };
 
-// --- Functions to fetch aggregated data for the dashboard (unchanged) ---
+// --- Functions to fetch aggregated data for the dashboard ---
 
 export const getGlobalStats = async (): Promise<GlobalStats | null> => {
     const { data, error } = await supabase.rpc('get_global_stats');
@@ -180,4 +180,22 @@ export const getUserChallengeHistory = async (schoolName: string, userName: stri
         return [];
     }
     return data || [];
+};
+
+export const getDailyActivity = async (): Promise<DailyActivity[]> => {
+    const { data, error } = await supabase.rpc('get_daily_activity');
+    if (error) {
+        console.error('Error fetching daily activity:', error);
+        return [];
+    }
+    return data || [];
+};
+
+export const getSchoolChallengeStats = async (schoolName: string): Promise<SchoolChallengeStats | null> => {
+    const { data, error } = await supabase.rpc('get_school_challenge_stats', { p_school_name: schoolName });
+    if (error) {
+        console.error('Error fetching school challenge stats:', error);
+        return null;
+    }
+    return data?.[0] || { correct_count: 0, incorrect_count: 0, timed_out_count: 0 };
 };

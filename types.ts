@@ -141,3 +141,15 @@ export interface UserChallengeHistory {
   user_answer: string;
   correct_answer: string;
 }
+
+export interface DailyActivity {
+    day: string; // Date string "YYYY-MM-DD"
+    session_count: number;
+    user_count: number;
+}
+
+export interface SchoolChallengeStats {
+    correct_count: number;
+    incorrect_count: number;
+    timed_out_count: number;
+}
