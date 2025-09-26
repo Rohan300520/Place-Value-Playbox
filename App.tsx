@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import type { PlaceValueColumns, BlockValue, PlaceValueCategory, Block, AppState as GameState, TrainingStep, ChallengeQuestion, Difficulty } from './types';
+// Fix: Corrected import path for types
+import type { PlaceValueColumns, BlockValue, PlaceValueCategory, Block, AppState as GameState, TrainingStep, ChallengeQuestion, Difficulty, UserInfo } from './types';
 import { PlaceValueColumn } from './components/PlaceValueColumn';
 import { BlockSource } from './components/BlockSource';
 import { ResetButton } from './components/ResetButton';
@@ -28,6 +29,8 @@ import { verifyKeyOnServer } from './utils/license';
 import { AdminPage } from './AdminPage';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { SpeechToggle } from './components/SpeechToggle';
+// Fix: Corrected import path for analytics
+import { logEvent, syncAnalyticsData } from './utils/analytics';
 
 // --- Home Screen Component ---
 const HomeScreen: React.FC<{ onSelectModel: (modelId: string) => void; }> = ({ onSelectModel }) => {
@@ -242,6 +245,7 @@ const AppContent: React.FC = () => {
   const [filteredQuestions, setFilteredQuestions] = useState<ChallengeQuestion[]>([]);
   const [correctAnswer, setCorrectAnswer] = useState<number | null>(null);
   const [timeLimit, setTimeLimit] = useState(45);
+  const challengeStartTimeRef = useRef<number | null>(null);
   
   // Training Mode State
   const [trainingStep, setTrainingStep] = useState(0);
@@ -252,9 +256,10 @@ const AppContent: React.FC = () => {
   const [touchDragging, setTouchDragging] = useState<{ value: BlockValue, element: HTMLDivElement } | null>(null);
   const [touchTarget, setTouchTarget] = useState<PlaceValueCategory | null>(null);
 
-  // Licensing state
+  // Licensing and User state
   const [licenseStatus, setLicenseStatus] = useState<'loading' | 'valid' | 'locked' | 'expired' | 'tampered'>('loading');
   const [expiredDuration, setExpiredDuration] = useState<number | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
   
   // Regrouping state flag
   const isRegroupingRef = useRef(false);
@@ -268,14 +273,15 @@ const AppContent: React.FC = () => {
   const playNextSound = useSimpleSound(659, 0.15); // E5
 
   useEffect(() => {
-    // Check license on initial load
+    // Check license and user info on initial load
     try {
       const licenseData = localStorage.getItem('app_license');
       const lastCheck = localStorage.getItem('app_last_check');
+      const userInfo = localStorage.getItem('app_user_info');
       const now = Date.now();
 
       if (lastCheck && now < parseInt(lastCheck, 10)) {
-        setLicenseStatus('tampered'); // Clock has been set back
+        setLicenseStatus('tampered');
         return;
       }
       
@@ -286,48 +292,71 @@ const AppContent: React.FC = () => {
         return;
       }
       
-      const { activationTime, expiryTime, duration } = JSON.parse(licenseData);
+      const { expiryTime, duration } = JSON.parse(licenseData);
       
       if (now >= expiryTime) {
         setLicenseStatus('expired');
         setExpiredDuration(duration);
+        localStorage.removeItem('app_user_info'); // Clear user info on expiry
         return;
       }
 
+      if(userInfo) {
+        setCurrentUser(JSON.parse(userInfo));
+      }
       setLicenseStatus('valid');
 
-      // Set a timer to lock the app when the license expires, even during an active session.
       const timeToExpire = expiryTime - now;
       if (timeToExpire > 0) {
         const timerId = setTimeout(() => {
           setLicenseStatus('expired');
           setExpiredDuration(duration);
         }, timeToExpire);
-        return () => clearTimeout(timerId); // Clean up the timer
+        return () => clearTimeout(timerId);
       }
 
     } catch (e) {
-      console.error("Could not access localStorage for license check.", e);
-      setLicenseStatus('locked'); // Fail-safe to locked state
+      console.error("Could not access localStorage.", e);
+      setLicenseStatus('locked');
     }
   }, []);
+  
+  // Analytics session start and sync setup
+  useEffect(() => {
+      if (licenseStatus === 'valid' && currentUser) {
+          logEvent('session_start', currentUser);
+          
+          // Initial sync attempt
+          syncAnalyticsData();
 
-  const handleKeyVerification = async (key: string) => {
+          // Set up periodic sync every 5 minutes
+          const syncInterval = setInterval(syncAnalyticsData, 5 * 60 * 1000);
+          
+          return () => clearInterval(syncInterval);
+      }
+  }, [licenseStatus, currentUser]);
+
+  const handleKeyVerification = async (key: string, name: string) => {
     const result = await verifyKeyOnServer(key);
-    if (result.success && result.validityInMs) {
+    if (result.success && result.validityInMs && result.school && result.keyId) {
       const now = Date.now();
       const license = {
         activationTime: now,
         expiryTime: now + result.validityInMs,
         duration: result.validityInMs,
       };
+      const userInfo: UserInfo = {
+        name,
+        school: result.school,
+        keyId: result.keyId,
+      };
       try {
         localStorage.setItem('app_license', JSON.stringify(license));
+        localStorage.setItem('app_user_info', JSON.stringify(userInfo));
         localStorage.setItem('app_last_check', now.toString());
-        // Reload the page to apply the new license state and clear game state.
         window.location.replace(window.location.href);
       } catch (e) {
-        console.error("Could not save license to localStorage.", e);
+        console.error("Could not save to localStorage.", e);
         return { success: false, message: "Could not save license. Storage may be full." };
       }
     }
@@ -339,9 +368,12 @@ const AppContent: React.FC = () => {
     return numberToWords(total);
   }, [total]);
 
-  const resetBoard = useCallback(() => {
+  const resetBoard = useCallback((isUserInitiated: boolean = false) => {
     setColumns({ ones: [], tens: [], hundreds: [], thousands: [] });
-  }, []);
+    if(isUserInitiated) {
+      logEvent('board_reset', currentUser, { gameState });
+    }
+  }, [currentUser, gameState]);
 
   useEffect(() => {
     const newTotal =
@@ -352,7 +384,6 @@ const AppContent: React.FC = () => {
     setTotal(newTotal);
   }, [columns]);
   
-  // Rewritten regrouping logic to be atomic and prevent race conditions.
   useEffect(() => {
       const needsRegrouping = (cols: PlaceValueColumns) =>
           cols.ones.length >= 10 ||
@@ -361,46 +392,23 @@ const AppContent: React.FC = () => {
 
       if (needsRegrouping(columns) && !isRegroupingRef.current) {
           isRegroupingRef.current = true;
+          let source: PlaceValueCategory, dest: PlaceValueCategory, value: BlockValue;
 
-          let source: PlaceValueCategory;
-          let dest: PlaceValueCategory;
-          let value: BlockValue;
-
-          if (columns.ones.length >= 10) {
-              source = 'ones';
-              dest = 'tens';
-              value = 10;
-          } else if (columns.tens.length >= 10) {
-              source = 'tens';
-              dest = 'hundreds';
-              value = 100;
-          } else { // hundreds must be >= 10
-              source = 'hundreds';
-              dest = 'thousands';
-              value = 1000;
-          }
+          if (columns.ones.length >= 10) { source = 'ones'; dest = 'tens'; value = 10; } 
+          else if (columns.tens.length >= 10) { source = 'tens'; dest = 'hundreds'; value = 100; } 
+          else { source = 'hundreds'; dest = 'thousands'; value = 1000; }
           
           playRegroupSound();
+          setColumns(prev => ({ ...prev, [source]: prev[source].map((b, i) => (i < 10 ? { ...b, isAnimating: true } : b)) }));
 
-          // Step 1: Trigger the animation on the source blocks
-          setColumns(prev => ({
-              ...prev,
-              [source]: prev[source].map((b, i) => (i < 10 ? { ...b, isAnimating: true } : b)),
-          }));
-
-          // Step 2: After animation, perform the actual state change for regrouping
           setTimeout(() => {
               setColumns(prev => {
                   const newColumns = { ...prev };
                   newColumns[source] = newColumns[source].slice(10);
-                  newColumns[dest] = [
-                      ...newColumns[dest],
-                      { id: `block-${Date.now()}`, value: value, isNewlyRegrouped: true },
-                  ];
+                  newColumns[dest] = [ ...newColumns[dest], { id: `block-${Date.now()}`, value: value, isNewlyRegrouped: true }];
                   return newColumns;
               });
 
-              // Step 3: Handle training mode advancement
               if (gameState === 'training') {
                   const currentStep = trainingPlan.find(s => s.step === trainingStep);
                   if (currentStep?.type === 'action_multi' && currentStep.column === source) {
@@ -408,44 +416,28 @@ const AppContent: React.FC = () => {
                       if (nextStepConfig?.type === 'magic_feedback') {
                           setTrainingFeedback(nextStepConfig.text);
                           if (isSpeechEnabled) speak(nextStepConfig.text, 'en-US');
-
                           setTimeout(() => {
                               setTrainingFeedback(null);
                               setTrainingStep(prev => prev + 2);
-                              if (nextStepConfig.clearBoardAfter) {
-                                  resetBoard();
-                              }
+                              if (nextStepConfig.clearBoardAfter) resetBoard(false);
                               isRegroupingRef.current = false;
                           }, nextStepConfig.duration || 3000);
-                      } else {
-                          isRegroupingRef.current = false;
-                      }
-                  } else {
-                      isRegroupingRef.current = false;
-                  }
-              } else {
-                  isRegroupingRef.current = false;
-              }
-          }, 600); // This delay should match the animation duration
+                      } else isRegroupingRef.current = false;
+                  } else isRegroupingRef.current = false;
+              } else isRegroupingRef.current = false;
+          }, 600);
       }
   }, [columns, gameState, trainingStep, isSpeechEnabled, resetBoard, playRegroupSound]);
-
 
   const addBlock = useCallback((category: PlaceValueCategory, value: BlockValue) => {
     playDropSound();
     const newBlock = { id: `block-${Date.now()}-${Math.random()}`, value };
-    
     setColumns(prevColumns => ({ ...prevColumns, [category]: [...prevColumns[category], newBlock] }));
-    
-    if (gameState === 'training') {
-      setLastSuccessfulDrop({ category, value });
-    }
+    if (gameState === 'training') setLastSuccessfulDrop({ category, value });
   }, [gameState, playDropSound]);
   
-  // Effect to handle training step advancement, preventing stale state issues.
   useEffect(() => {
     if (gameState !== 'training' || !lastSuccessfulDrop) return;
-
     const { category } = lastSuccessfulDrop;
     const currentStepConfig = trainingPlan.find(s => s.step === trainingStep);
     if (!currentStepConfig) return;
@@ -453,61 +445,37 @@ const AppContent: React.FC = () => {
     const advanceAndShowFeedback = () => {
         const nextStepConfig = trainingPlan.find(s => s.step === trainingStep + 1);
         if (!nextStepConfig) return;
-
         setTrainingFeedback(nextStepConfig.text);
-        if (isSpeechEnabled) {
-          // Cancel previous speech before speaking new feedback
-          cancelSpeech();
-          speak(nextStepConfig.text, 'en-US');
-        }
-
+        if (isSpeechEnabled) { cancelSpeech(); speak(nextStepConfig.text, 'en-US'); }
         setTimeout(() => {
             setTrainingFeedback(null);
             setTrainingStep(prev => prev + 2);
-            if (nextStepConfig.clearBoardAfter) {
-                resetBoard();
-            }
+            if (nextStepConfig.clearBoardAfter) resetBoard(false);
         }, nextStepConfig.duration || 3000);
     };
 
     if (currentStepConfig.type === 'action' && currentStepConfig.column === category) {
         advanceAndShowFeedback();
     } else if (currentStepConfig.type === 'action_multi' && currentStepConfig.column === category) {
-        // This check runs after `columns` state has been updated.
         if (columns[category].length === currentStepConfig.count) {
             const nextStepConfig = trainingPlan.find(s => s.step === trainingStep + 1);
-            if (nextStepConfig && nextStepConfig.type !== 'magic_feedback') {
-                advanceAndShowFeedback();
-            }
+            if (nextStepConfig && nextStepConfig.type !== 'magic_feedback') advanceAndShowFeedback();
         }
     }
-
-    // Reset the drop trigger to prevent re-running this effect.
     setLastSuccessfulDrop(null);
-
   }, [lastSuccessfulDrop, gameState, trainingStep, columns, isSpeechEnabled, resetBoard]);
 
   const removeBlock = useCallback((category: PlaceValueCategory, id: string) => {
     playDropSound();
-    setColumns(prev => {
-        const newCategoryBlocks = prev[category].filter(b => b.id !== id);
-        return {
-            ...prev,
-            [category]: newCategoryBlocks
-        };
-    });
+    setColumns(prev => ({ ...prev, [category]: prev[category].filter(b => b.id !== id) }));
   }, [playDropSound]);
 
   const currentStepConfig = gameState === 'training' ? trainingPlan.find(s => s.step === trainingStep) : null;
 
-  // This effect handles speaking the instructions for the current training step to prevent sync issues.
   useEffect(() => {
     if (gameState === 'training' && isSpeechEnabled && !trainingFeedback) {
       const currentStepConfig = trainingPlan.find(s => s.step === trainingStep);
-      
-      // Only speak for action steps to avoid re-speaking feedback messages.
       if (currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi')) {
-        // The speak utility cancels previous speech, ensuring instructions don't overlap.
         speak(currentStepConfig.text, 'en-US');
       }
     }
@@ -515,79 +483,48 @@ const AppContent: React.FC = () => {
 
   const isDropAllowedForValue = (category: PlaceValueCategory, value: BlockValue | null) => {
     if (!value) return false;
-
-    // Feature: Limit the thousands column to a maximum of 20 blocks.
-    if (category === 'thousands' && columns.thousands.length >= 20) {
-        return false;
-    }
-
+    if (category === 'thousands' && columns.thousands.length >= 20) return false;
     if (gameState === 'training') {
         if (currentStepConfig && currentStepConfig.type.startsWith('action')) {
             return currentStepConfig.source === value && currentStepConfig.column === category;
         }
         return false;
     }
-
     return (
-        (category === 'ones' && value === 1) ||
-        (category === 'tens' && value === 10) ||
-        (category === 'hundreds' && value === 100) ||
-        (category === 'thousands' && value === 1000)
+        (category === 'ones' && value === 1) || (category === 'tens' && value === 10) ||
+        (category === 'hundreds' && value === 100) || (category === 'thousands' && value === 1000)
     );
   };
   
   const handleClickToAddBlock = (value: BlockValue) => {
-    const categoryMap: Record<BlockValue, PlaceValueCategory> = {
-      1: 'ones',
-      10: 'tens',
-      100: 'hundreds',
-      1000: 'thousands',
-    };
+    const categoryMap: Record<BlockValue, PlaceValueCategory> = { 1: 'ones', 10: 'tens', 100: 'hundreds', 1000: 'thousands' };
     const category = categoryMap[value];
-
-    if (isDropAllowedForValue(category, value)) {
-      addBlock(category, value);
-    } else {
-      playErrorSound();
-    }
+    if (isDropAllowedForValue(category, value)) addBlock(category, value);
+    else playErrorSound();
   };
 
   const handleDrop = (category: PlaceValueCategory) => {
     if (isDropAllowedForValue(category, draggedValue)) {
-      if (draggedOrigin) {
-        removeBlock(draggedOrigin.category, draggedOrigin.id);
-      }
+      if (draggedOrigin) removeBlock(draggedOrigin.category, draggedOrigin.id);
       addBlock(category, draggedValue!);
-    } else {
-      playErrorSound();
-    }
-    setDraggedValue(null);
-    setDraggedOrigin(null);
+    } else playErrorSound();
+    setDraggedValue(null); setDraggedOrigin(null);
   };
 
   const handleDragStart = (value: BlockValue, origin?: { category: PlaceValueCategory, id: string }) => {
-    setDraggedValue(value);
-    setDraggedOrigin(origin || null);
+    setDraggedValue(value); setDraggedOrigin(origin || null);
   };
   
-  const handleGenericDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-  };
+  const handleGenericDragOver = (event: React.DragEvent<HTMLDivElement>) => event.preventDefault();
   
   const handleDropOnBackground = () => {
-    // This allows removing blocks by dropping them outside the columns in playground mode.
-    if (gameState === 'playground' && draggedOrigin) {
-        removeBlock(draggedOrigin.category, draggedOrigin.id);
-    }
-    setDraggedValue(null);
-    setDraggedOrigin(null);
+    if (gameState === 'playground' && draggedOrigin) removeBlock(draggedOrigin.category, draggedOrigin.id);
+    setDraggedValue(null); setDraggedOrigin(null);
   };
 
-  // Touch Drag Handlers
   const handleTouchStart = (value: BlockValue, event: React.TouchEvent) => {
     if (touchDragging) return;
     const touch = event.touches[0];
-    
     const ghost = document.createElement('div');
     ghost.style.position = 'fixed';
     ghost.style.left = `${touch.clientX - 25}px`;
@@ -596,7 +533,6 @@ const AppContent: React.FC = () => {
     ghost.style.pointerEvents = 'none';
     ghost.innerHTML = event.currentTarget.outerHTML;
     document.body.appendChild(ghost);
-    
     setTouchDragging({ value, element: ghost });
     setDraggedValue(value);
   };
@@ -606,30 +542,18 @@ const AppContent: React.FC = () => {
     const touch = event.touches[0];
     touchDragging.element.style.left = `${touch.clientX - 25}px`;
     touchDragging.element.style.top = `${touch.clientY - 25}px`;
-
     const elementUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
     const dropTarget = elementUnderTouch?.closest('[data-droptarget]');
-    if (dropTarget) {
-      setTouchTarget(dropTarget.getAttribute('data-droptarget') as PlaceValueCategory);
-    } else {
-      setTouchTarget(null);
-    }
+    if (dropTarget) setTouchTarget(dropTarget.getAttribute('data-droptarget') as PlaceValueCategory);
+    else setTouchTarget(null);
   }, [touchDragging]);
 
   const handleTouchEnd = useCallback(() => {
     if (!touchDragging) return;
-    
-    if (touchTarget) {
-      handleDrop(touchTarget);
-    } else {
-        // Handle dropping outside for touch devices
-        handleDropOnBackground();
-    }
-    
+    if (touchTarget) handleDrop(touchTarget);
+    else handleDropOnBackground();
     document.body.removeChild(touchDragging.element);
-    setTouchDragging(null);
-    setTouchTarget(null);
-    setDraggedValue(null);
+    setTouchDragging(null); setTouchTarget(null); setDraggedValue(null);
   }, [touchDragging, touchTarget, handleDrop, handleDropOnBackground]);
 
   useEffect(() => {
@@ -641,30 +565,40 @@ const AppContent: React.FC = () => {
     };
   }, [handleTouchMove, handleTouchEnd]);
 
-  // Game Mode Logic
   const startChallenge = useCallback((selectedDifficulty: Difficulty) => {
     const questions = challengeQuestions.filter(q => q.level === (selectedDifficulty === 'easy' ? 1 : selectedDifficulty === 'medium' ? 2 : 3));
     const shuffled = [...questions].sort(() => 0.5 - Math.random());
-    
     setDifficulty(selectedDifficulty);
     setFilteredQuestions(shuffled);
     setCurrentQuestionIndex(0);
     setScore(0);
-    resetBoard();
+    resetBoard(false);
     setChallengeStatus('playing');
     setGameState('challenge');
     setTimeLimit(DURATION_MAP[selectedDifficulty]);
+    challengeStartTimeRef.current = Date.now();
   }, [resetBoard]);
   
-  const handleSelectDifficulty = (difficulty: Difficulty) => {
-      startChallenge(difficulty);
-  }
+  const handleSelectDifficulty = (difficulty: Difficulty) => startChallenge(difficulty);
 
   const handleCheckAnswer = () => {
     const currentQuestion = filteredQuestions[currentQuestionIndex];
     if (!currentQuestion) return;
 
-    if (total === currentQuestion.answer) {
+    const durationSeconds = challengeStartTimeRef.current ? (Date.now() - challengeStartTimeRef.current) / 1000 : 0;
+    const isCorrect = total === currentQuestion.answer;
+
+    logEvent('challenge_attempt', currentUser, {
+        questionId: currentQuestion.id,
+        questionText: currentQuestion.question,
+        level: difficulty,
+        status: isCorrect ? 'correct' : 'incorrect',
+        durationSeconds,
+        userAnswer: total,
+        correctAnswer: currentQuestion.answer,
+    });
+    
+    if (isCorrect) {
       playSuccessSound();
       setChallengeStatus('correct');
       setScore(prev => prev + 10);
@@ -678,45 +612,54 @@ const AppContent: React.FC = () => {
   };
   
   const goBackToHome = useCallback(() => {
-    resetBoard();
+    resetBoard(false);
     setGameState('home');
   }, [resetBoard]);
 
   const goBackToMenu = useCallback(() => {
-      resetBoard();
+      resetBoard(false);
       setGameState('mode_selection');
   }, [resetBoard]);
 
   const handleNextChallenge = () => {
     playNextSound();
-    resetBoard();
+    resetBoard(false);
     setChallengeStatus('playing');
     setCorrectAnswer(null);
     if (currentQuestionIndex < filteredQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
+      challengeStartTimeRef.current = Date.now();
     } else {
-      // This case is now handled by the rocket onComplete -> confetti flow
-      // for the final question. We just need to trigger the final celebration.
-      // The rocket animation would have already played from handleCheckAnswer.
-      // We will now trigger confetti directly from the rocket animation's onComplete.
-      goBackToMenu(); // Failsafe if confetti doesn't trigger
+      goBackToMenu();
     }
   };
 
   const handleTimeOut = () => {
+      const currentQuestion = filteredQuestions[currentQuestionIndex];
+      if (!currentQuestion) return;
+      
+      const durationSeconds = challengeStartTimeRef.current ? (Date.now() - challengeStartTimeRef.current) / 1000 : timeLimit;
+      logEvent('challenge_attempt', currentUser, {
+          questionId: currentQuestion.id,
+          questionText: currentQuestion.question,
+          level: difficulty,
+          status: 'timed_out',
+          durationSeconds,
+          userAnswer: total,
+          correctAnswer: currentQuestion.answer,
+      });
+
       playErrorSound();
       setChallengeStatus('timed_out');
-      setCorrectAnswer(filteredQuestions[currentQuestionIndex].answer);
+      setCorrectAnswer(currentQuestion.answer);
   }
 
   const handleModeSelection = (mode: GameState) => {
-    resetBoard();
+    resetBoard(false);
     setGameState(mode);
-    if (mode === 'challenge') {
-        setGameState('challenge_difficulty_selection');
-    } else if (mode === 'training') {
-        setTrainingStep(0);
-    }
+    logEvent('mode_start', currentUser, { mode });
+    if (mode === 'challenge') setGameState('challenge_difficulty_selection');
+    else if (mode === 'training') setTrainingStep(0);
   };
 
   if (licenseStatus !== 'valid') {
@@ -776,7 +719,7 @@ const AppContent: React.FC = () => {
             </div>
             <div className="mt-4 sm:mt-8 flex flex-col sm:flex-row items-center justify-between w-full gap-4">
               <div className="flex-1">
-                <ResetButton onClick={resetBoard} />
+                <ResetButton onClick={() => resetBoard(true)} />
               </div>
               <div className="flex-1">
                 <BlockSource onDragStart={handleDragStart} onTouchStart={handleTouchStart} onBlockClick={handleClickToAddBlock} isTraining={gameState === 'training'} spotlightOn={currentStepConfig?.source}/>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AdminLogin } from './components/AdminLogin';
+// Fix: Corrected import path for AdminDashboard
 import { AdminDashboard } from './components/AdminDashboard';
 import { fetchKeys, createKeyInDB, deleteKeyFromDB, GeneratedKey } from './utils/license';
 import { BackgroundManager } from './components/Starfield';

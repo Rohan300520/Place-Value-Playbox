@@ -3,12 +3,13 @@ import { formatDuration } from '../utils/license';
 
 interface LicenseScreenProps {
   status: 'locked' | 'expired' | 'tampered';
-  onVerify: (key: string) => Promise<{ success: boolean; message: string }>;
+  onVerify: (key: string, name: string) => Promise<{ success: boolean; message: string }>;
   expiredDuration: number | null;
 }
 
 export const LicenseScreen: React.FC<LicenseScreenProps> = ({ status, onVerify, expiredDuration }) => {
   const [key, setKey] = useState('');
+  const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -28,12 +29,12 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({ status, onVerify, 
     switch (status) {
       case 'expired':
         const durationText = expiredDuration ? formatDuration(expiredDuration) : 'The previous';
-        return `Your ${durationText} access period has ended. Please enter a new key to continue.`;
+        return `Your ${durationText} access period has ended. Please enter your name and a new key to continue.`;
       case 'tampered':
         return 'An invalid system time has been detected. Please correct your device clock and restart the application.';
       case 'locked':
       default:
-        return 'This application is for authorized institutional use only. Please enter your provided access key.';
+        return 'This application is for authorized institutional use only. Please enter your name and provided access key.';
     }
   };
 
@@ -41,14 +42,15 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({ status, onVerify, 
     e.preventDefault();
     setError(null);
     const trimmedKey = key.trim();
-    if (!trimmedKey) {
-      setError('Please enter a key.');
+    const trimmedName = name.trim();
+    if (!trimmedKey || !trimmedName) {
+      setError('Please enter your name and a key.');
       return;
     }
     
     setIsLoading(true);
     try {
-      const result = await onVerify(trimmedKey);
+      const result = await onVerify(trimmedKey, trimmedName);
       if (!result.success) {
         setError(result.message);
       }
@@ -82,6 +84,21 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({ status, onVerify, 
         {status !== 'tampered' && (
           <form onSubmit={handleSubmit} className="space-y-4">
             <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your Name"
+              className="w-full p-4 text-xl text-center rounded-lg border-2 focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition disabled:opacity-50"
+              style={{
+                backgroundColor: 'var(--panel-bg)',
+                borderColor: 'var(--border-primary)',
+                color: 'var(--text-primary)',
+              }}
+              aria-label="Your Name Input"
+              autoComplete="name"
+              disabled={isLoading}
+            />
+             <input
               type="text"
               value={key}
               onChange={(e) => setKey(e.target.value.toUpperCase())}

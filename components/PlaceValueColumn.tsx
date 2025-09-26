@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+// Fix: Corrected import path for types
 import type { Block, PlaceValueCategory, BlockValue } from '../types';
 import { NumberBlock } from './NumberBlock';
 

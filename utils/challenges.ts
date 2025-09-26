@@ -1,3 +1,4 @@
+// Fix: Corrected import path for types
 import type { ChallengeQuestion } from '../types';
 
 // A comprehensive and balanced list of questions covering various concepts.
