@@ -54,32 +54,29 @@ export const logEvent = (
 
 /**
  * Attempts to sync the locally stored analytics events with the Supabase backend.
- * This version is designed for diagnostics: it will not discard data on failure and will log detailed errors.
+ * This version is resilient to race conditions and queue-blocking failures.
  */
 export const syncAnalyticsData = async (): Promise<void> => {
     if (!navigator.onLine) {
-        console.log("Analytics sync skipped: browser is offline.");
         return;
     }
 
+    // 1. Atomically get and clear the current event queue to prevent race conditions.
     const eventsToProcess = getEventQueue();
     if (eventsToProcess.length === 0) {
         return;
     }
+    saveEventQueue([]); // Clear queue immediately.
 
     // A simple regex to validate a UUID.
     const isUUID = (str: string) => 
         /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(str);
     
-    // Filter out any malformed events to ensure the batch is as clean as possible.
+    // Filter out any malformed events to ensure the batch is clean.
     const validEvents = eventsToProcess.filter(event => event.id && isUUID(event.id) && event.userInfo);
     
     if (validEvents.length === 0) {
-        // If all events are malformed, clear the queue to prevent an infinite loop.
-        if (eventsToProcess.length > 0) {
-            console.warn("Clearing analytics queue: all events were malformed (missing ID or userInfo).");
-            saveEventQueue([]);
-        }
+        console.warn("Analytics sync: No valid events to process in this batch.");
         return;
     }
 
@@ -88,30 +85,27 @@ export const syncAnalyticsData = async (): Promise<void> => {
         event_timestamp: new Date(event.timestamp).toISOString(),
         event_type: event.eventName,
         user_info: {
-            name: event.userInfo?.name || 'Unknown',
-            school: event.userInfo?.school || 'Unknown',
+            name: event.userInfo.name,
+            school: event.userInfo.school,
         },
         payload: event.payload,
-        key_id: event.userInfo?.keyId || null,
+        key_id: event.userInfo.keyId,
         model: 'place-value-playbox',
     }));
 
+    // 2. Attempt to send the batch of events.
     const { error } = await supabase.from('usage_logs').insert(eventsToInsert);
 
+    // 3. Log results. On failure, this batch is discarded, but the system is not blocked.
     if (error) {
-        // On failure, log a detailed error and KEEP the data in localStorage for the next attempt.
-        console.error('ANALYTICS SYNC FAILED. Data remains in local storage. Error details:', {
+        console.error('ANALYTICS SYNC FAILED. This batch of events was discarded. Error:', {
             message: error.message,
             details: error.details,
             hint: error.hint,
             code: error.code,
         });
-        // For deep debugging, log the actual data that was sent.
-        console.log('Failing data batch:', JSON.stringify(eventsToInsert, null, 2));
     } else {
-        // On success, clear the local queue.
-        console.log(`Successfully synced ${validEvents.length} analytics events. Clearing local queue.`);
-        saveEventQueue([]);
+        console.log(`Successfully synced ${validEvents.length} analytics events.`);
     }
 };
 
