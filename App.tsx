@@ -372,6 +372,7 @@ const AppContent: React.FC = () => {
     setColumns({ ones: [], tens: [], hundreds: [], thousands: [] });
     if(isUserInitiated) {
       logEvent('board_reset', currentUser, { gameState });
+      syncAnalyticsData();
     }
   }, [currentUser, gameState]);
 
@@ -601,6 +602,7 @@ const AppContent: React.FC = () => {
         userAnswer: total,
         correctAnswer: currentQuestion.answer,
     });
+    syncAnalyticsData();
     
     if (isCorrect) {
       playSuccessSound();
@@ -652,6 +654,7 @@ const AppContent: React.FC = () => {
           userAnswer: total,
           correctAnswer: currentQuestion.answer,
       });
+      syncAnalyticsData();
 
       playErrorSound();
       setChallengeStatus('timed_out');
@@ -662,6 +665,7 @@ const AppContent: React.FC = () => {
     resetBoard(false);
     setGameState(mode);
     logEvent('mode_start', currentUser, { mode });
+    syncAnalyticsData();
     if (mode === 'challenge') setGameState('challenge_difficulty_selection');
     else if (mode === 'training') setTrainingStep(0);
   };
