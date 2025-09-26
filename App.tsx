@@ -29,6 +29,33 @@ import { AdminPage } from './AdminPage';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { SpeechToggle } from './components/SpeechToggle';
 
+// --- Home Screen Component ---
+const HomeScreen: React.FC<{ onSelectModel: (modelId: string) => void; }> = ({ onSelectModel }) => {
+  return (
+    <div className="flex-grow flex flex-col items-center justify-center p-4 text-center animate-pop-in">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+        <button
+          onClick={() => onSelectModel('place-value-playbox')}
+          className="group bg-gradient-to-br from-sky-400 to-sky-600 text-white rounded-3xl shadow-lg shadow-sky-500/40 p-6 sm:p-8 w-full max-w-md transform hover:-translate-y-2 transition-transform duration-300 border-b-8 border-sky-800 active:border-b-4 text-left flex flex-col items-center"
+        >
+          <img src="/assets/place-value-box-model.png" alt="Place Value Playbox" className="rounded-2xl shadow-md w-full h-48 sm:h-56 object-cover mb-6 transition-transform duration-300 group-hover:scale-105" />
+          <h3 className="text-3xl sm:text-4xl font-black tracking-tight font-display">Place Value Playbox</h3>
+          <p className="mt-2 text-base sm:text-lg opacity-90 flex-grow">An interactive playground to learn about Ones, Tens, Hundreds, and Thousands.</p>
+        </button>
+        <div 
+          className="border-4 border-dashed rounded-3xl flex flex-col items-center justify-center p-6 sm:p-8 w-full max-w-md text-center"
+          style={{borderColor: 'var(--border-primary)'}}
+        >
+          <div className="text-6xl mb-4">🚀</div>
+          <h3 className="text-2xl sm:text-3xl font-bold font-display" style={{color: 'var(--text-accent)'}}>More Models Coming Soon!</h3>
+          <p className="mt-2 text-lg" style={{color: 'var(--text-secondary)'}}>Stay tuned for more interactive learning adventures.</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 // --- Game-specific Header (previously components/Header.tsx) ---
 const GameHeader: React.FC<{
   total: number;
@@ -49,10 +76,16 @@ const GameHeader: React.FC<{
     prevTotalRef.current = total;
   }, [total]);
 
-  const showBackButton = onBack && (appState === 'playground' || appState === 'challenge' || appState === 'training' || appState === 'stem_connection' || appState === 'challenge_difficulty_selection');
+  const showBackButton = onBack && (appState === 'playground' || appState === 'challenge' || appState === 'training' || appState === 'stem_connection' || appState === 'challenge_difficulty_selection' || appState === 'mode_selection');
+
+  const getTitle = () => {
+    if (appState === 'home') return 'SMART C Digital Labs';
+    return 'Place Value Playbox';
+  }
 
   const getSubTitle = () => {
     switch (appState) {
+      case 'home': return 'Select a Model to Begin';
       case 'training': return 'Training Mode';
       case 'challenge': return 'Challenge Mode';
       case 'playground': return 'Playground';
@@ -83,7 +116,7 @@ const GameHeader: React.FC<{
             }}
             onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--btn-help-hover)'}
             onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--btn-help-bg)'}
-            aria-label="Go back to mode selection"
+            aria-label="Go back"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -92,7 +125,7 @@ const GameHeader: React.FC<{
         )}
       </div>
       <div className="flex-1 flex flex-col items-center justify-center text-center">
-        <h1 className="text-2xl sm:text-4xl font-black tracking-tight font-display" style={{ color: 'var(--text-primary)' }}>Place Value Playbox</h1>
+        <h1 className="text-2xl sm:text-4xl font-black tracking-tight font-display" style={{ color: 'var(--text-primary)' }}>{getTitle()}</h1>
         {subTitle && (
             <h2 className="text-lg sm:text-2xl font-bold tracking-tight -mt-1 sm:-mt-2" style={{ color: 'var(--text-accent)'}}>
                 {subTitle}
@@ -193,7 +226,7 @@ const AppContent: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [draggedValue, setDraggedValue] = useState<BlockValue | null>(null);
   const [draggedOrigin, setDraggedOrigin] = useState<{ category: PlaceValueCategory, id: string } | null>(null);
-  const [gameState, setGameState] = useState<GameState>('welcome');
+  const [gameState, setGameState] = useState<GameState>('home');
   const [currentModel, setCurrentModel] = useState<string>('place-value-playbox');
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -643,6 +676,16 @@ const AppContent: React.FC = () => {
       setCorrectAnswer(currentQuestion.answer);
     }
   };
+  
+  const goBackToHome = useCallback(() => {
+    resetBoard();
+    setGameState('home');
+  }, [resetBoard]);
+
+  const goBackToMenu = useCallback(() => {
+      resetBoard();
+      setGameState('mode_selection');
+  }, [resetBoard]);
 
   const handleNextChallenge = () => {
     playNextSound();
@@ -675,11 +718,6 @@ const AppContent: React.FC = () => {
         setTrainingStep(0);
     }
   };
-  
-  const goBackToMenu = () => {
-      resetBoard();
-      setGameState('mode_selection');
-  };
 
   if (licenseStatus !== 'valid') {
     return <LicenseScreen status={licenseStatus as 'locked' | 'expired' | 'tampered'} onVerify={handleKeyVerification} expiredDuration={expiredDuration} />;
@@ -700,6 +738,8 @@ const AppContent: React.FC = () => {
   
   const renderGameState = () => {
     switch (gameState) {
+      case 'home':
+        return <HomeScreen onSelectModel={() => setGameState('welcome')} />;
       case 'welcome':
         return <WelcomeScreen onStart={() => setGameState('model_intro')} />;
       case 'model_intro':
@@ -757,7 +797,13 @@ const AppContent: React.FC = () => {
     <div className="min-h-screen flex flex-col font-sans">
         <BackgroundManager />
         <div className="relative z-10 p-2 sm:p-4 w-full max-w-8xl mx-auto flex flex-col flex-grow items-center">
-            <GameHeader total={total} appState={gameState} onBack={goBackToMenu} totalInWords={totalInWords} onHelpClick={() => setShowHelpModal(true)}/>
+            <GameHeader 
+              total={total} 
+              appState={gameState} 
+              onBack={gameState === 'mode_selection' ? goBackToHome : goBackToMenu} 
+              totalInWords={totalInWords} 
+              onHelpClick={() => setShowHelpModal(true)}
+            />
             <main className="flex-grow w-full flex items-center justify-center py-4" onDrop={handleDropOnBackground} onDragOver={handleGenericDragOver}>
                 {renderGameState()}
             </main>
