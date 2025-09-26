@@ -20,6 +20,7 @@ export interface PlaceValueColumns {
 }
 
 export type AppState =
+  | 'home'
   | 'welcome'
   | 'model_intro'
   | 'mode_selection'
