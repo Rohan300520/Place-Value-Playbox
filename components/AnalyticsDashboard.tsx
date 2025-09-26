@@ -124,6 +124,7 @@ export const AnalyticsDashboard: React.FC = () => {
     const [path, setPath] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
     const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
     const [schoolSummary, setSchoolSummary] = useState<SchoolSummary[]>([]);
@@ -151,6 +152,7 @@ export const AnalyticsDashboard: React.FC = () => {
             setError(e.message || 'An unexpected error occurred.');
         } finally {
             setIsLoading(false);
+            setLastRefreshed(new Date());
         }
     }, []);
 
@@ -176,7 +178,21 @@ export const AnalyticsDashboard: React.FC = () => {
 
     return (
         <div className="p-6 rounded-2xl shadow-lg border" style={{ backgroundColor: 'var(--backdrop-bg)', borderColor: 'var(--border-primary)' }}>
-            <h2 className="text-2xl font-bold font-display mb-2" style={{ color: 'var(--text-accent)' }}>Usage Analytics</h2>
+            <div className="flex justify-between items-center mb-2">
+                 <h2 className="text-2xl font-bold font-display" style={{ color: 'var(--text-accent)' }}>Usage Analytics</h2>
+                 <button 
+                    onClick={() => fetchData(path)} 
+                    disabled={isLoading}
+                    className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-400 text-white font-bold py-2 px-4 rounded-lg shadow-md transform hover:scale-105 transition-all duration-200 border-b-4 border-indigo-700 active:border-b-2"
+                 >
+                     <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M20 20v-5h-5M4 4l1.5 1.5A9 9 0 0120.5 11M20 20l-1.5-1.5A9 9 0 003.5 13" />
+                    </svg>
+                    <span>{isLoading ? 'Refreshing...' : 'Refresh'}</span>
+                 </button>
+            </div>
+            <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)'}}>Last updated: {lastRefreshed.toLocaleTimeString()}</p>
+
             <Breadcrumbs path={path} setPath={setPath} />
             <div className="mt-4">
                 {renderContent()}
