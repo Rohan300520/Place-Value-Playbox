@@ -20,7 +20,7 @@ const saveEventQueue = (queue: AnalyticsEvent[]): void => {
     try {
         localStorage.setItem(ANALYTICS_STORAGE_KEY, JSON.stringify(queue));
     } catch (e) {
-        console.error("Could not save analytics events to localStorage.", e);
+        console.error("Could not save analytics events to localStorage. Error:", e);
     }
 };
 
@@ -40,7 +40,7 @@ export const logEvent = (
         return;
     }
     const event: AnalyticsEvent = {
-        id: crypto.randomUUID(), // Fix: Generate a valid UUID for the event ID.
+        id: crypto.randomUUID(),
         timestamp: Date.now(),
         eventName,
         userInfo,
@@ -54,7 +54,7 @@ export const logEvent = (
 
 /**
  * Attempts to sync the locally stored analytics events with the Supabase backend.
- * Clears the local queue on successful sync.
+ * This function is designed to be resilient and will discard a failing batch to prevent the queue from getting stuck.
  */
 export const syncAnalyticsData = async (): Promise<void> => {
     if (!navigator.onLine) {
@@ -62,24 +62,27 @@ export const syncAnalyticsData = async (): Promise<void> => {
         return;
     }
 
-    const queue = getEventQueue();
-    if (queue.length === 0) {
+    // Immediately grab the current queue and clear storage. This prevents a "stuck" queue.
+    // If the sync fails, this batch of events will be discarded, but subsequent events will still be processed.
+    const eventsToProcess = getEventQueue();
+    if (eventsToProcess.length === 0) {
         return;
     }
-    
+    saveEventQueue([]); // Clear the queue optimistically.
+
     // A simple regex to validate a UUID.
     const isUUID = (str: string) => 
         /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(str);
 
     // Self-healing: Filter out any old, malformed events that don't have a valid UUID.
-    const validEvents = queue.filter(event => event.id && isUUID(event.id));
+    const validEvents = eventsToProcess.filter(event => event.id && isUUID(event.id));
     
-    if (validEvents.length !== queue.length) {
-        console.warn(`Removed ${queue.length - validEvents.length} malformed events from the analytics queue.`);
-        saveEventQueue(validEvents); // Save the cleaned queue back to storage.
+    if (validEvents.length !== eventsToProcess.length) {
+        console.warn(`Discarded ${eventsToProcess.length - validEvents.length} malformed events from the analytics batch.`);
     }
     
     if (validEvents.length === 0) {
+        console.log("No valid events in the batch to sync.");
         return;
     }
 
@@ -99,11 +102,16 @@ export const syncAnalyticsData = async (): Promise<void> => {
     const { error } = await supabase.from('usage_logs').insert(eventsToInsert);
 
     if (error) {
-        console.error('Error syncing analytics data:', error.message);
+        console.error('CRITICAL: Error syncing analytics data. This batch of events has been discarded to prevent a blockage.', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code,
+            count: eventsToInsert.length,
+        });
+        // Note: We do not requeue the events to avoid a permanent failure loop.
     } else {
         console.log(`Successfully synced ${validEvents.length} analytics events.`);
-        // On success, clear the entire local queue.
-        saveEventQueue([]);
     }
 };
 
