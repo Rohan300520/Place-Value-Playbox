@@ -54,7 +54,7 @@ export const logEvent = (
 
 /**
  * Attempts to sync the locally stored analytics events with the Supabase backend.
- * This function is designed to be resilient and will discard a failing batch to prevent the queue from getting stuck.
+ * This version is designed for diagnostics: it will not discard data on failure and will log detailed errors.
  */
 export const syncAnalyticsData = async (): Promise<void> => {
     if (!navigator.onLine) {
@@ -62,27 +62,24 @@ export const syncAnalyticsData = async (): Promise<void> => {
         return;
     }
 
-    // Immediately grab the current queue and clear storage. This prevents a "stuck" queue.
-    // If the sync fails, this batch of events will be discarded, but subsequent events will still be processed.
     const eventsToProcess = getEventQueue();
     if (eventsToProcess.length === 0) {
         return;
     }
-    saveEventQueue([]); // Clear the queue optimistically.
 
     // A simple regex to validate a UUID.
     const isUUID = (str: string) => 
         /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(str);
-
-    // Self-healing: Filter out any old, malformed events that don't have a valid UUID.
-    const validEvents = eventsToProcess.filter(event => event.id && isUUID(event.id));
     
-    if (validEvents.length !== eventsToProcess.length) {
-        console.warn(`Discarded ${eventsToProcess.length - validEvents.length} malformed events from the analytics batch.`);
-    }
+    // Filter out any malformed events to ensure the batch is as clean as possible.
+    const validEvents = eventsToProcess.filter(event => event.id && isUUID(event.id) && event.userInfo);
     
     if (validEvents.length === 0) {
-        console.log("No valid events in the batch to sync.");
+        // If all events are malformed, clear the queue to prevent an infinite loop.
+        if (eventsToProcess.length > 0) {
+            console.warn("Clearing analytics queue: all events were malformed (missing ID or userInfo).");
+            saveEventQueue([]);
+        }
         return;
     }
 
@@ -96,22 +93,25 @@ export const syncAnalyticsData = async (): Promise<void> => {
         },
         payload: event.payload,
         key_id: event.userInfo?.keyId || null,
-        model: 'place-value-playbox', // Hardcoded for now
+        model: 'place-value-playbox',
     }));
 
     const { error } = await supabase.from('usage_logs').insert(eventsToInsert);
 
     if (error) {
-        console.error('CRITICAL: Error syncing analytics data. This batch of events has been discarded to prevent a blockage.', {
+        // On failure, log a detailed error and KEEP the data in localStorage for the next attempt.
+        console.error('ANALYTICS SYNC FAILED. Data remains in local storage. Error details:', {
             message: error.message,
             details: error.details,
             hint: error.hint,
             code: error.code,
-            count: eventsToInsert.length,
         });
-        // Note: We do not requeue the events to avoid a permanent failure loop.
+        // For deep debugging, log the actual data that was sent.
+        console.log('Failing data batch:', JSON.stringify(eventsToInsert, null, 2));
     } else {
-        console.log(`Successfully synced ${validEvents.length} analytics events.`);
+        // On success, clear the local queue.
+        console.log(`Successfully synced ${validEvents.length} analytics events. Clearing local queue.`);
+        saveEventQueue([]);
     }
 };
 
@@ -124,7 +124,7 @@ export const getGlobalStats = async (): Promise<GlobalStats | null> => {
         console.error('Error fetching global stats:', error);
         return null;
     }
-    return data?.[0] || null;
+    return data?.[0] || { total_users: 0, total_sessions: 0, total_challenge_attempts: 0, avg_success_rate: 0 };
 };
 
 export const getSchoolSummary = async (): Promise<SchoolSummary[]> => {
