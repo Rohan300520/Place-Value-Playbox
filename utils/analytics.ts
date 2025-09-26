@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import type { AnalyticsEvent, UserInfo } from '../types';
+import type { AnalyticsEvent, UserInfo, GlobalStats, SchoolSummary, SchoolUserDetails, UserChallengeHistory } from '../types';
 
 const ANALYTICS_STORAGE_KEY = 'app_analytics_events';
 
@@ -52,7 +52,6 @@ export const logEvent = (
  * Clears the local queue on successful sync.
  */
 export const syncAnalyticsData = async (): Promise<void> => {
-    // Prevent syncing if the browser is offline
     if (!navigator.onLine) {
         console.log("Analytics sync skipped: browser is offline.");
         return;
@@ -60,28 +59,67 @@ export const syncAnalyticsData = async (): Promise<void> => {
 
     const queue = getEventQueue();
     if (queue.length === 0) {
-        return; // Nothing to sync
+        return;
     }
 
-    // Transform the event structure to match the expected database schema
     const eventsToInsert = queue.map(event => ({
-        event_id: event.id,
-        timestamp: new Date(event.timestamp).toISOString(),
-        event_name: event.eventName,
-        user_name: event.userInfo?.name || 'N/A',
-        school_name: event.userInfo?.school || 'N/A',
-        key_id: event.userInfo?.keyId || 'N/A',
+        client_id: event.id,
+        event_timestamp: new Date(event.timestamp).toISOString(),
+        event_type: event.eventName,
+        user_info: {
+            name: event.userInfo?.name || 'Unknown',
+            school: event.userInfo?.school || 'Unknown',
+        },
         payload: event.payload,
+        key_id: event.userInfo?.keyId || null,
+        model: 'place-value-playbox', // Hardcoded for now
     }));
 
-    const { error } = await supabase.from('analytics').insert(eventsToInsert);
+    const { error } = await supabase.from('usage_logs').insert(eventsToInsert);
 
     if (error) {
         console.error('Error syncing analytics data:', error.message);
-        // We don't clear the queue if the sync fails, so we can retry later.
     } else {
         console.log(`Successfully synced ${queue.length} analytics events.`);
-        // Clear the queue after successful sync
         saveEventQueue([]);
     }
+};
+
+
+// --- Functions to fetch aggregated data for the dashboard ---
+
+export const getGlobalStats = async (): Promise<GlobalStats | null> => {
+    const { data, error } = await supabase.rpc('get_global_stats');
+    if (error) {
+        console.error('Error fetching global stats:', error);
+        return null;
+    }
+    return data[0] || null;
+};
+
+export const getSchoolSummary = async (): Promise<SchoolSummary[]> => {
+    const { data, error } = await supabase.rpc('get_school_summary');
+    if (error) {
+        console.error('Error fetching school summary:', error);
+        return [];
+    }
+    return data || [];
+};
+
+export const getSchoolDetails = async (schoolName: string): Promise<SchoolUserDetails[]> => {
+    const { data, error } = await supabase.rpc('get_school_details', { p_school_name: schoolName });
+    if (error) {
+        console.error('Error fetching school details:', error);
+        return [];
+    }
+    return data || [];
+};
+
+export const getUserChallengeHistory = async (schoolName: string, userName: string): Promise<UserChallengeHistory[]> => {
+    const { data, error } = await supabase.rpc('get_user_challenge_history', { p_school_name: schoolName, p_user_name: userName });
+    if (error) {
+        console.error('Error fetching user challenge history:', error);
+        return [];
+    }
+    return data || [];
 };
