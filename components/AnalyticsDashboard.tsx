@@ -1,7 +1,56 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { getGlobalStats, getSchoolSummary, getSchoolDetails, getUserChallengeHistory } from '../utils/analytics';
-import type { GlobalStats, SchoolSummary, SchoolUserDetails, UserChallengeHistory } from '../types';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { 
+    getGlobalStats, 
+    getSchoolSummary, 
+    getSchoolDetails, 
+    getUserChallengeHistory,
+    getDailyActivity,
+    getSchoolChallengeStats
+} from '../utils/analytics';
+import type { 
+    GlobalStats, 
+    SchoolSummary, 
+    SchoolUserDetails, 
+    UserChallengeHistory,
+    DailyActivity,
+    SchoolChallengeStats
+} from '../types';
+import type { Chart as ChartJS, ChartConfiguration } from 'chart.js';
 
+// --- Reusable Chart Component ---
+const Chart: React.FC<{ config: ChartConfiguration, title: string }> = ({ config, title }) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const chartRef = useRef<ChartJS | null>(null);
+
+    useEffect(() => {
+        if (canvasRef.current) {
+            // Destroy previous chart instance if it exists
+            if (chartRef.current) {
+                chartRef.current.destroy();
+            }
+            // Create new chart instance
+            chartRef.current = new (window as any).Chart(canvasRef.current, config);
+        }
+        
+        // Cleanup function to destroy chart on component unmount
+        return () => {
+            if (chartRef.current) {
+                chartRef.current.destroy();
+            }
+        };
+    }, [config]);
+
+    return (
+        <div className="p-4 rounded-lg shadow-md border h-full flex flex-col" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)' }}>
+            <h3 className="text-xl font-bold mb-2 text-center" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+            <div className="relative flex-grow">
+                <canvas ref={canvasRef}></canvas>
+            </div>
+        </div>
+    );
+};
+
+// --- UI Components ---
 const StatCard: React.FC<{ title: string; value: string | number; }> = ({ title, value }) => (
     <div className="p-4 rounded-lg shadow-md border" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)' }}>
         <h3 className="text-lg font-bold" style={{ color: 'var(--text-secondary)' }}>{title}</h3>
@@ -29,16 +78,67 @@ const Breadcrumbs: React.FC<{ path: string[], setPath: (path: string[]) => void 
 );
 
 const NoDataMessage: React.FC<{ message: string }> = ({ message }) => (
-    <div className="text-center py-10">
+    <div className="text-center py-10 col-span-full">
         <p className="text-xl font-semibold" style={{ color: 'var(--text-secondary)' }}>{message}</p>
         <p style={{ color: 'var(--text-secondary)' }}>Data will appear here once users start interacting with the app.</p>
     </div>
 );
 
-const GlobalView: React.FC<{ stats: GlobalStats; schools: SchoolSummary[]; onSelectSchool: (school: string) => void; }> = ({ stats, schools, onSelectSchool }) => {
+
+// --- Dashboard Views ---
+const GlobalView: React.FC<{ 
+    stats: GlobalStats; 
+    schools: SchoolSummary[]; 
+    dailyActivity: DailyActivity[];
+    onSelectSchool: (school: string) => void; 
+}> = ({ stats, schools, dailyActivity, onSelectSchool }) => {
+
+    const activityChartConfig: ChartConfiguration = {
+        type: 'line',
+        data: {
+            labels: dailyActivity.map(d => new Date(d.day).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })),
+            datasets: [
+                {
+                    label: 'Sessions',
+                    data: dailyActivity.map(d => d.session_count),
+                    borderColor: 'rgba(59, 130, 246, 0.8)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    fill: true,
+                    tension: 0.4,
+                },
+                {
+                    label: 'Unique Users',
+                    data: dailyActivity.map(d => d.user_count),
+                    borderColor: 'rgba(249, 115, 22, 0.8)',
+                    backgroundColor: 'rgba(249, 115, 22, 0.2)',
+                    fill: true,
+                    tension: 0.4,
+                }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    };
+    
+    const topSchools = [...schools].sort((a,b) => b.session_count - a.session_count).slice(0, 5);
+    const topSchoolsChartConfig: ChartConfiguration = {
+        type: 'bar',
+        data: {
+            labels: topSchools.map(s => s.school_name),
+            datasets: [{
+                label: 'Total Sessions',
+                data: topSchools.map(s => s.session_count),
+                backgroundColor: 'rgba(22, 163, 74, 0.7)',
+                borderColor: 'rgba(22, 163, 74, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false }
+    }
+
     if (schools.length === 0) {
         return <NoDataMessage message="No school data has been recorded yet." />;
     }
+    
     return (
         <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -47,11 +147,18 @@ const GlobalView: React.FC<{ stats: GlobalStats; schools: SchoolSummary[]; onSel
                 <StatCard title="Challenge Attempts" value={stats.total_challenge_attempts} />
                 <StatCard title="Avg. Success" value={`${(stats.avg_success_rate || 0).toFixed(1)}%`} />
             </div>
-            <div className="overflow-x-auto">
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 min-h-[300px]">
+                 <Chart config={activityChartConfig} title="Activity Last 30 Days" />
+                 <Chart config={topSchoolsChartConfig} title="Top 5 Schools by Sessions" />
+            </div>
+
+            <div className="overflow-x-auto p-4 rounded-lg shadow-md border" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)' }}>
+                <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>All Schools</h3>
                 <table className="w-full text-left">
-                    <thead>
+                    <thead className="sticky top-0" style={{ backgroundColor: 'var(--panel-bg)'}}>
                         <tr className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
-                            <th className="p-2">School</th>
+                            <th className="p-2">School Name</th>
                             <th className="p-2">Users</th>
                             <th className="p-2">Sessions</th>
                             <th className="p-2">Last Active</th>
@@ -63,7 +170,7 @@ const GlobalView: React.FC<{ stats: GlobalStats; schools: SchoolSummary[]; onSel
                                 <td className="p-2 font-semibold">{school.school_name}</td>
                                 <td className="p-2">{school.user_count}</td>
                                 <td className="p-2">{school.session_count}</td>
-                                <td className="p-2">{new Date(school.last_active).toLocaleString()}</td>
+                                <td className="p-2">{new Date(school.last_active).toLocaleDateString()}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -73,99 +180,158 @@ const GlobalView: React.FC<{ stats: GlobalStats; schools: SchoolSummary[]; onSel
     );
 };
 
-const SchoolView: React.FC<{ users: SchoolUserDetails[]; onSelectUser: (user: string) => void; }> = ({ users, onSelectUser }) => {
+const SchoolView: React.FC<{ 
+    users: SchoolUserDetails[]; 
+    challengeStats: SchoolChallengeStats;
+    onSelectUser: (user: string) => void; 
+}> = ({ users, challengeStats, onSelectUser }) => {
+    
+    const challengeChartConfig: ChartConfiguration = {
+        type: 'doughnut',
+        data: {
+            labels: ['Correct', 'Incorrect', 'Timed Out'],
+            datasets: [{
+                data: [challengeStats.correct_count, challengeStats.incorrect_count, challengeStats.timed_out_count],
+                backgroundColor: ['rgba(34, 197, 94, 0.8)', 'rgba(239, 68, 68, 0.8)', 'rgba(245, 158, 11, 0.8)'],
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    };
+    
     if (users.length === 0) {
         return <NoDataMessage message="No user data has been recorded for this school yet." />;
     }
+    
     return (
-        <div className="overflow-x-auto">
-            <table className="w-full text-left">
-                <thead>
-                    <tr className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
-                        <th className="p-2">User Name</th>
-                        <th className="p-2">Sessions</th>
-                        <th className="p-2">Challenge Attempts</th>
-                        <th className="p-2">Success Rate</th>
-                        <th className="p-2">Last Active</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {users.map(user => {
-                        const successRate = user.total_challenge_attempts > 0
-                            ? (user.correct_challenge_attempts / user.total_challenge_attempts) * 100
-                            : 0;
-                        return (
-                            <tr key={user.user_name} className="border-b hover:bg-white/5 cursor-pointer" style={{ borderColor: 'var(--border-primary)' }} onClick={() => onSelectUser(user.user_name)}>
-                                <td className="p-2 font-semibold">{user.user_name}</td>
-                                <td className="p-2">{user.session_count}</td>
-                                <td className="p-2">{user.total_challenge_attempts}</td>
-                                <td className="p-2">{successRate.toFixed(1)}%</td>
-                                <td className="p-2">{new Date(user.last_active).toLocaleString()}</td>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 min-h-[300px]">
+                <Chart config={challengeChartConfig} title="Challenge Performance" />
+            </div>
+            <div className="lg:col-span-2 p-4 rounded-lg shadow-md border" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)' }}>
+                <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>User Details</h3>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="sticky top-0" style={{ backgroundColor: 'var(--panel-bg)' }}>
+                            <tr className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
+                                <th className="p-2">User Name</th>
+                                <th className="p-2">Sessions</th>
+                                <th className="p-2">Challenges</th>
+                                <th className="p-2">Success Rate</th>
+                                <th className="p-2">Last Active</th>
                             </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+                        </thead>
+                        <tbody>
+                            {users.map(user => {
+                                const successRate = user.total_challenge_attempts > 0 ? (user.correct_challenge_attempts / user.total_challenge_attempts) * 100 : 0;
+                                return (
+                                    <tr key={user.user_name} className="border-b hover:bg-white/5 cursor-pointer" style={{ borderColor: 'var(--border-primary)' }} onClick={() => onSelectUser(user.user_name)}>
+                                        <td className="p-2 font-semibold">{user.user_name}</td>
+                                        <td className="p-2">{user.session_count}</td>
+                                        <td className="p-2">{user.total_challenge_attempts}</td>
+                                        <td className="p-2">{successRate.toFixed(1)}%</td>
+                                        <td className="p-2">{new Date(user.last_active).toLocaleDateString()}</td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     );
 };
 
 const UserView: React.FC<{ history: UserChallengeHistory[] }> = ({ history }) => {
+    // Fix: Implemented the UserView component to display user challenge history, resolving the return type error.
     if (history.length === 0) {
         return <NoDataMessage message="This user has not attempted any challenges yet." />;
     }
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'correct': return 'bg-green-500/20 text-green-300';
+            case 'incorrect': return 'bg-red-500/20 text-red-300';
+            case 'timed_out': return 'bg-yellow-500/20 text-yellow-300';
+            default: return 'bg-gray-500/20 text-gray-300';
+        }
+    };
+
     return (
-         <div className="overflow-x-auto max-h-[60vh]">
-            <table className="w-full text-left">
-                <thead>
-                    <tr className="border-b sticky top-0" style={{ borderColor: 'var(--border-primary)', backgroundColor: 'var(--backdrop-bg)' }}>
-                        <th className="p-2">Timestamp</th>
-                        <th className="p-2">Question</th>
-                        <th className="p-2">Level</th>
-                        <th className="p-2">Status</th>
-                        <th className="p-2">Duration (s)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {history.map(item => (
-                        <tr key={item.event_timestamp} className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
-                            <td className="p-2">{new Date(item.event_timestamp).toLocaleString()}</td>
-                            <td className="p-2">{item.question}</td>
-                            <td className="p-2 capitalize">{item.level}</td>
-                            <td className={`p-2 font-bold ${item.status === 'correct' ? 'text-green-500' : 'text-red-500'}`}>{item.status}</td>
-                            <td className="p-2">{item.duration.toFixed(2)}</td>
+        <div className="p-4 rounded-lg shadow-md border" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)' }}>
+            <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>User Challenge History</h3>
+            <div className="overflow-x-auto max-h-[60vh]">
+                <table className="w-full text-left">
+                    <thead className="sticky top-0" style={{ backgroundColor: 'var(--panel-bg)'}}>
+                        <tr className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
+                            <th className="p-2">Timestamp</th>
+                            <th className="p-2">Question</th>
+                            <th className="p-2">Level</th>
+                            <th className="p-2">Status</th>
+                            <th className="p-2">Duration (s)</th>
+                            <th className="p-2">User Answer</th>
+                            <th className="p-2">Correct Answer</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {history.map((item, index) => (
+                            <tr key={index} className="border-b hover:bg-white/5" style={{ borderColor: 'var(--border-primary)' }}>
+                                <td className="p-2">{new Date(item.event_timestamp).toLocaleString()}</td>
+                                <td className="p-2">{item.question}</td>
+                                <td className="p-2 capitalize">{item.level}</td>
+                                <td className="p-2">
+                                    <span className={`px-2 py-1 rounded-full text-sm font-semibold capitalize ${getStatusColor(item.status)}`}>
+                                        {item.status.replace('_', ' ')}
+                                    </span>
+                                </td>
+                                <td className="p-2">{item.duration.toFixed(2)}</td>
+                                <td className="p-2">{item.user_answer}</td>
+                                <td className="p-2">{item.correct_answer}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 };
 
+// --- Main Dashboard Component ---
 export const AnalyticsDashboard: React.FC = () => {
     const [path, setPath] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
+    // State for all data
     const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
     const [schoolSummary, setSchoolSummary] = useState<SchoolSummary[]>([]);
+    const [dailyActivity, setDailyActivity] = useState<DailyActivity[]>([]);
     const [schoolDetails, setSchoolDetails] = useState<SchoolUserDetails[]>([]);
+    const [schoolChallengeStats, setSchoolChallengeStats] = useState<SchoolChallengeStats | null>(null);
     const [userHistory, setUserHistory] = useState<UserChallengeHistory[]>([]);
 
     const fetchData = useCallback(async (currentPath: string[]) => {
         setIsLoading(true);
         setError(null);
         try {
-            if (currentPath.length === 0) { // Global View
-                const [stats, schools] = await Promise.all([getGlobalStats(), getSchoolSummary()]);
+            if (currentPath.length === 0) {
+                const [stats, schools, activity] = await Promise.all([
+                    getGlobalStats(), 
+                    getSchoolSummary(),
+                    getDailyActivity()
+                ]);
                 setGlobalStats(stats);
                 setSchoolSummary(schools);
-            } else if (currentPath.length === 1) { // School View
+                setDailyActivity(activity);
+            } else if (currentPath.length === 1) {
                 const schoolName = currentPath[0];
-                const details = await getSchoolDetails(schoolName);
+                const [details, challengeStats] = await Promise.all([
+                    getSchoolDetails(schoolName),
+                    getSchoolChallengeStats(schoolName)
+                ]);
                 setSchoolDetails(details);
-            } else if (currentPath.length === 2) { // User View
+                setSchoolChallengeStats(challengeStats);
+            } else if (currentPath.length === 2) {
                 const [schoolName, userName] = currentPath;
                 const history = await getUserChallengeHistory(schoolName, userName);
                 setUserHistory(history);
@@ -187,10 +353,10 @@ export const AnalyticsDashboard: React.FC = () => {
         if (error) return <div className="text-red-500 text-center py-10">Error: {error}</div>;
 
         if (path.length === 0) {
-            return globalStats ? <GlobalView stats={globalStats} schools={schoolSummary} onSelectSchool={(school) => setPath([school])} /> : <NoDataMessage message="No global stats available." />;
+            return globalStats ? <GlobalView stats={globalStats} schools={schoolSummary} dailyActivity={dailyActivity} onSelectSchool={(school) => setPath([school])} /> : <NoDataMessage message="No global stats available." />;
         }
         if (path.length === 1) {
-            return <SchoolView users={schoolDetails} onSelectUser={(user) => setPath([path[0], user])} />;
+            return schoolChallengeStats ? <SchoolView users={schoolDetails} challengeStats={schoolChallengeStats} onSelectUser={(user) => setPath([path[0], user])} /> : <NoDataMessage message="No data for this school."/>;
         }
         if (path.length === 2) {
             return <UserView history={userHistory} />;
