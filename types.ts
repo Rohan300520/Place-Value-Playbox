@@ -1,8 +1,5 @@
-// Fix: Replaced incorrect content with proper type definitions for the entire application.
-// This resolves all type-related errors across components and utilities.
-
+// Define the basic types for blocks and columns
 export type BlockValue = 1 | 10 | 100 | 1000;
-
 export type PlaceValueCategory = 'ones' | 'tens' | 'hundreds' | 'thousands';
 
 export interface Block {
@@ -12,48 +9,101 @@ export interface Block {
   isNewlyRegrouped?: boolean;
 }
 
-export interface PlaceValueColumns {
-  ones: Block[];
-  tens: Block[];
-  hundreds: Block[];
-  thousands: Block[];
-}
+export type PlaceValueColumns = {
+  [key in PlaceValueCategory]: Block[];
+};
 
-export type AppState =
+// Define the state of the application
+export type AppState = 
   | 'home'
   | 'welcome'
   | 'model_intro'
   | 'mode_selection'
-  | 'challenge_difficulty_selection'
-  | 'training'
   | 'playground'
+  | 'training'
   | 'challenge'
-  | 'stem_connection';
+  | 'stem_connection'
+  | 'challenge_difficulty_selection';
 
-export interface TrainingStep {
+// Define the structure for training steps
+type TrainingActionStep = {
   step: number;
-  type: 'action' | 'feedback' | 'action_multi' | 'magic_feedback' | 'complete';
+  type: 'action';
+  source: BlockValue;
+  column: PlaceValueCategory;
   text: string;
-  source?: BlockValue;
-  column?: PlaceValueCategory;
-  count?: number;
-  duration?: number;
-  clearBoardAfter?: boolean;
-  targetColumn?: PlaceValueCategory;
-}
+};
 
+type TrainingFeedbackStep = {
+  step: number;
+  type: 'feedback';
+  text: string;
+  duration: number;
+  clearBoardAfter: boolean;
+};
+
+type TrainingActionMultiStep = {
+  step: number;
+  type: 'action_multi';
+  source: BlockValue;
+  column: PlaceValueCategory;
+  count: number;
+  text: string;
+};
+
+type TrainingMagicFeedbackStep = {
+  step: number;
+  type: 'magic_feedback';
+  text: string;
+  duration: number;
+  clearBoardAfter: boolean;
+  targetColumn: PlaceValueCategory;
+};
+
+type TrainingCompleteStep = {
+  step: number;
+  type: 'complete';
+  text: string;
+};
+
+export type TrainingStep = 
+  | TrainingActionStep 
+  | TrainingFeedbackStep 
+  | TrainingActionMultiStep
+  | TrainingMagicFeedbackStep
+  | TrainingCompleteStep;
+
+// Define the structure for challenge questions
 export interface ChallengeQuestion {
   id: number;
   level: number;
   question: string;
   answer: number;
   type: 'build' | 'interpret';
-  concept: 'place_value' | 'number_word' | 'addition' | 'subtraction';
+  concept: string;
 }
 
+// Define difficulty levels for challenge mode
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
+// User information for licensing and analytics
+export interface UserInfo {
+    name: string;
+    school: string;
+    keyId: string;
+}
+
+// Theme for the application UI
 export type Theme = 'light' | 'dark';
 
-// Fix: Added the missing 'Language' type definition. This type is used by the LanguageContext and LanguageSwitcher components.
+// Language for localization
 export type Language = 'en' | 'hi' | 'kn';
+
+// Analytics event structure
+export interface AnalyticsEvent {
+  id: string; // Unique ID for the event
+  timestamp: number;
+  eventName: string;
+  userInfo: UserInfo | null;
+  payload: Record<string, any>;
+}

@@ -110,7 +110,7 @@ export const formatDuration = (ms: number): string => {
  */
 export const verifyKeyOnServer = (
   key: string
-): Promise<{ success: boolean; message: string; validityInMs?: number }> => {
+): Promise<{ success: boolean; message: string; validityInMs?: number; school?: string; keyId?: string; }> => {
   return new Promise(async (resolve) => {
     // Simulate network latency of 0.5 to 1.5 seconds for UX
     const delay = 500 + Math.random() * 1000;
@@ -161,7 +161,9 @@ export const verifyKeyOnServer = (
       resolve({ 
         success: true, 
         message: 'Key successfully validated.', 
-        validityInMs: keyDetails.validity_in_ms 
+        validityInMs: keyDetails.validity_in_ms,
+        school: keyDetails.school_name,
+        keyId: keyDetails.id
       });
     }, delay);
   });

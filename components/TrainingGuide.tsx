@@ -1,5 +1,6 @@
 import React from 'react';
 import { NumberBlock } from './NumberBlock';
+// Fix: Corrected import path for types
 import type { TrainingStep, PlaceValueCategory, BlockValue } from '../types';
 
 

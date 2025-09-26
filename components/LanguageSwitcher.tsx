@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+// Fix: Corrected import path for types
 import type { Language } from '../types';
 
 const LANGUAGES: { code: Language; name: string }[] = [

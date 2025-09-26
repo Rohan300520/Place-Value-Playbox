@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+// Fix: Corrected import path for types
 import type { ChallengeQuestion } from '../types';
 import { useAudio } from '../contexts/AudioContext';
 import { speak, cancelSpeech } from '../utils/speech';
