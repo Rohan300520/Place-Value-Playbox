@@ -10,6 +10,7 @@ const getEventQueue = (): AnalyticsEvent[] => {
         return storedEvents ? JSON.parse(storedEvents) : [];
     } catch (e) {
         console.error("Could not read analytics events from localStorage.", e);
+        localStorage.removeItem(ANALYTICS_STORAGE_KEY); // Clear corrupted data
         return [];
     }
 };
@@ -34,8 +35,12 @@ export const logEvent = (
     userInfo: UserInfo | null, 
     payload: Record<string, any> = {}
 ): void => {
+    if (!userInfo) {
+        // Do not log events if there is no user context
+        return;
+    }
     const event: AnalyticsEvent = {
-        id: `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: crypto.randomUUID(), // Fix: Generate a valid UUID for the event ID.
         timestamp: Date.now(),
         eventName,
         userInfo,
@@ -61,8 +66,24 @@ export const syncAnalyticsData = async (): Promise<void> => {
     if (queue.length === 0) {
         return;
     }
+    
+    // A simple regex to validate a UUID.
+    const isUUID = (str: string) => 
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(str);
 
-    const eventsToInsert = queue.map(event => ({
+    // Self-healing: Filter out any old, malformed events that don't have a valid UUID.
+    const validEvents = queue.filter(event => event.id && isUUID(event.id));
+    
+    if (validEvents.length !== queue.length) {
+        console.warn(`Removed ${queue.length - validEvents.length} malformed events from the analytics queue.`);
+        saveEventQueue(validEvents); // Save the cleaned queue back to storage.
+    }
+    
+    if (validEvents.length === 0) {
+        return;
+    }
+
+    const eventsToInsert = validEvents.map(event => ({
         client_id: event.id,
         event_timestamp: new Date(event.timestamp).toISOString(),
         event_type: event.eventName,
@@ -80,7 +101,8 @@ export const syncAnalyticsData = async (): Promise<void> => {
     if (error) {
         console.error('Error syncing analytics data:', error.message);
     } else {
-        console.log(`Successfully synced ${queue.length} analytics events.`);
+        console.log(`Successfully synced ${validEvents.length} analytics events.`);
+        // On success, clear the entire local queue.
         saveEventQueue([]);
     }
 };
@@ -94,7 +116,7 @@ export const getGlobalStats = async (): Promise<GlobalStats | null> => {
         console.error('Error fetching global stats:', error);
         return null;
     }
-    return data[0] || null;
+    return data?.[0] || null;
 };
 
 export const getSchoolSummary = async (): Promise<SchoolSummary[]> => {
