@@ -8,15 +8,25 @@ const TISSUE_BUILD_REQUIREMENT = 10;
 
 // --- Helper Components for Visuals ---
 
-const EndothelialCell: React.FC = () => (
-    <div className="relative w-10 h-10 flex items-center justify-center" style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}>
+const EndothelialCell: React.FC<{ draggable?: boolean; onDragStart?: (type: TissueType) => void; }> = ({ draggable, onDragStart }) => (
+    <div
+      draggable={draggable}
+      onDragStart={() => onDragStart?.('endothelium')}
+      className={`relative w-10 h-10 flex items-center justify-center ${draggable ? 'cursor-grab' : ''}`}
+      style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+    >
         <div className="w-full h-full bg-pink-300 border-2 border-pink-500" />
         <div className="absolute w-3 h-3 bg-purple-400 rounded-full" />
     </div>
 );
 
-const MuscleCell: React.FC = () => (
-    <div className="relative w-16 h-4 flex items-center justify-center bg-red-400 border-2 border-red-600" style={{ borderRadius: '50%' }}>
+const MuscleCell: React.FC<{ draggable?: boolean; onDragStart?: (type: TissueType) => void; }> = ({ draggable, onDragStart }) => (
+    <div
+      draggable={draggable}
+      onDragStart={() => onDragStart?.('muscle')}
+      className={`relative w-16 h-4 flex items-center justify-center bg-red-400 border-2 border-red-600 ${draggable ? 'cursor-grab' : ''}`}
+      style={{ borderRadius: '50%' }}
+    >
          <div className="absolute w-5 h-1.5 bg-purple-500/80 rounded-full" />
     </div>
 );
@@ -71,18 +81,20 @@ export const StemConnection: React.FC = () => {
   const [endothelialCells, setEndothelialCells] = useState<Cell[]>([]);
   const [muscleCells, setMuscleCells] = useState<Cell[]>([]);
   const [builtTissues, setBuiltTissues] = useState({ endothelium: false, muscle: false });
+  const [draggedCell, setDraggedCell] = useState<TissueType | null>(null);
 
   // Assemble Stage State
   const [placedTissues, setPlacedTissues] = useState({ endothelium: false, muscle: false });
   const [draggedTissue, setDraggedTissue] = useState<TissueType | null>(null);
   const [dropFeedback, setDropFeedback] = useState<{ type: 'success' | 'error'; tissue: TissueType } | null>(null);
 
-  const addCell = (type: TissueType) => {
+  const addCell = (type: TissueType, targetElement: HTMLElement) => {
+    const rect = targetElement.getBoundingClientRect();
     const newCell: Cell = {
       id: `${baseId}-${type}-${Date.now()}`,
       state: 'forming',
-      top: `${Math.random() * 70 + 15}%`,
-      left: `${Math.random() * 70 + 15}%`,
+      top: `${Math.random() * (rect.height - 40)}px`,
+      left: `${Math.random() * (rect.width - 64)}px`,
     };
     if (type === 'endothelium') {
       setEndothelialCells(prev => [...prev, newCell]);
@@ -90,6 +102,26 @@ export const StemConnection: React.FC = () => {
       setMuscleCells(prev => [...prev, newCell]);
     }
   };
+
+  const handleCellDragStart = (type: TissueType) => {
+    setDraggedCell(type);
+  };
+
+  const handleDropOnBuildArea = (e: React.DragEvent<HTMLDivElement>, targetType: TissueType) => {
+    e.preventDefault();
+    const currentCellList = targetType === 'endothelium' ? endothelialCells : muscleCells;
+    const visibleCells = currentCellList.filter(c => c.state !== 'regrouping');
+
+    if (draggedCell === targetType && visibleCells.length < TISSUE_BUILD_REQUIREMENT) {
+      addCell(targetType, e.currentTarget);
+    }
+    setDraggedCell(null);
+  };
+
+  const handleDragOverBuildArea = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
 
   const checkAndRegroup = useCallback((type: TissueType) => {
     const cellList = type === 'endothelium' ? endothelialCells : muscleCells;
@@ -160,22 +192,28 @@ export const StemConnection: React.FC = () => {
                 Build an Artery!
             </h1>
             <p className="mt-2 text-lg sm:text-xl max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)'}}>
-                {stage === 'build' && "First, build the tissues. Add 10 cells of each type to form a tissue layer."}
+                {stage === 'build' && "First, build the tissues. Drag and drop 10 cells of each type into the correct build area."}
                 {stage === 'assemble' && "Great job! Now drag your completed tissues to the correct layers on the artery diagram."}
                 {stage === 'complete' && "Excellent! You've built a functional artery. Watch the blood cells flow through."}
             </p>
         </div>
 
         {stage === 'build' && (
+            <>
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-7xl">
                 {(['endothelium', 'muscle'] as TissueType[]).map(type => {
                     const cells = type === 'endothelium' ? endothelialCells : muscleCells;
                     const isBuilt = builtTissues[type];
+                    const isDraggingOver = draggedCell === type;
                     return (
-                        <div key={type} className={`flex flex-col rounded-2xl shadow-xl`} style={{ backgroundColor: `var(--col-${type === 'endothelium' ? 'blue' : 'green'}-bg)` }}>
+                        <div 
+                            key={type}
+                            onDrop={(e) => handleDropOnBuildArea(e, type)}
+                            onDragOver={handleDragOverBuildArea}
+                            className={`flex flex-col rounded-2xl shadow-xl transition-all duration-300 ${isDraggingOver ? 'ring-4 ring-orange-400 scale-105' : 'ring-0'}`} 
+                            style={{ backgroundColor: `var(--col-${type === 'endothelium' ? 'blue' : 'green'}-bg)` }}>
                             <div className="p-3 border-b-4 text-center" style={{ borderColor: `var(--col-${type === 'endothelium' ? 'blue' : 'green'}-border)` }}>
-                                <h2 className="font-display text-2xl font-black capitalize" style={{ color: `var(--col-${type === 'endothelium' ? 'blue' : 'green'}-text)` }}>{type}</h2>
-                                {!isBuilt && <button onClick={() => addCell(type)} className="mt-2 bg-white/50 hover:bg-white/80 font-bold py-1 px-4 rounded-lg border-b-2 border-slate-400">Add Cell</button>}
+                                <h2 className="font-display text-2xl font-black capitalize" style={{ color: `var(--col-${type === 'endothelium' ? 'blue' : 'green'}-text)` }}>{type} Build Area</h2>
                             </div>
                             <div className="flex-grow min-h-[250px] p-2 relative">
                                 <div className="absolute -top-2 right-2 text-white text-3xl font-black rounded-full h-14 w-14 flex items-center justify-center border-4 border-white/80 shadow-lg font-display" style={{ backgroundColor: `var(--col-${type === 'endothelium' ? 'blue' : 'green'}-border)` }}>
@@ -186,7 +224,8 @@ export const StemConnection: React.FC = () => {
                                         <p className="text-3xl font-bold font-display" style={{ color: `var(--col-${type === 'endothelium' ? 'blue' : 'green'}-text)` }}>Tissue Built!</p>
                                     </div>
                                 ) : cells.map(cell => (
-                                    <div key={cell.id} className="absolute" style={{ top: cell.top, left: cell.left, '--target-top': cell.top, '--target-left': cell.left }}>
+                                    // Fix: Cast the style object to React.CSSProperties to allow CSS custom properties.
+                                    <div key={cell.id} className="absolute pointer-events-none" style={{ top: cell.top, left: cell.left, '--target-top': cell.top, '--target-left': cell.left } as React.CSSProperties}>
                                         <div className={cell.state === 'regrouping' ? 'animate-regroup-to-center' : cell.state === 'forming' ? 'animate-form-from-center opacity-0' : 'animate-bouncy-pop-in'}>
                                             {type === 'endothelium' ? <EndothelialCell /> : <MuscleCell />}
                                         </div>
@@ -197,11 +236,30 @@ export const StemConnection: React.FC = () => {
                     );
                 })}
             </div>
-        )}
-        {builtTissues.endothelium && builtTissues.muscle && stage === 'build' && (
-             <button onClick={() => setStage('assemble')} className="mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold text-2xl py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 transition-all border-b-4 border-orange-700 active:border-b-2 animate-guide-pulse">
-                Proceed to Assembly
-            </button>
+
+            {(!builtTissues.endothelium || !builtTissues.muscle) ? (
+                <div className="mt-6 flex justify-center items-end gap-12 p-4 rounded-2xl w-full max-w-lg" style={{ backgroundColor: 'var(--panel-bg)'}}>
+                    {!builtTissues.endothelium && (
+                        <div className="flex flex-col items-center">
+                            <EndothelialCell draggable onDragStart={handleCellDragStart} />
+                            <p className="font-bold mt-1 text-sm" style={{color: 'var(--text-secondary)'}}>Drag to Build</p>
+                        </div>
+                    )}
+                    {!builtTissues.muscle && (
+                        <div className="flex flex-col items-center">
+                            <MuscleCell draggable onDragStart={handleCellDragStart} />
+                            <p className="font-bold mt-1 text-sm" style={{color: 'var(--text-secondary)'}}>Drag to Build</p>
+                        </div>
+                    )}
+                </div>
+            ) : null}
+
+            {builtTissues.endothelium && builtTissues.muscle && (
+                 <button onClick={() => setStage('assemble')} className="mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold text-2xl py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 transition-all border-b-4 border-orange-700 active:border-b-2 animate-guide-pulse">
+                    Proceed to Assembly
+                </button>
+            )}
+            </>
         )}
 
         {stage === 'assemble' && (
