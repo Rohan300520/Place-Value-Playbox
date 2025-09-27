@@ -9,26 +9,23 @@ const TISSUE_BUILD_REQUIREMENT = 10;
 // --- Helper Components for Visuals ---
 
 const EndothelialCell: React.FC<{ draggable?: boolean; onDragStart?: (type: TissueType) => void; }> = ({ draggable, onDragStart }) => (
-    <div
+    <img
+      src="/assets/endothelial-cell.png"
+      alt="Endothelial Cell"
       draggable={draggable}
       onDragStart={() => onDragStart?.('endothelium')}
-      className={`relative w-10 h-10 flex items-center justify-center ${draggable ? 'cursor-grab' : ''}`}
-      style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
-    >
-        <div className="w-full h-full bg-pink-300 border-2 border-pink-500" />
-        <div className="absolute w-3 h-3 bg-purple-400 rounded-full" />
-    </div>
+      className={`w-12 h-12 object-contain ${draggable ? 'cursor-grab' : ''}`}
+    />
 );
 
 const MuscleCell: React.FC<{ draggable?: boolean; onDragStart?: (type: TissueType) => void; }> = ({ draggable, onDragStart }) => (
-    <div
+    <img
+      src="/assets/muscle-cell.png"
+      alt="Muscle Cell"
       draggable={draggable}
       onDragStart={() => onDragStart?.('muscle')}
-      className={`relative w-16 h-4 flex items-center justify-center bg-red-400 border-2 border-red-600 ${draggable ? 'cursor-grab' : ''}`}
-      style={{ borderRadius: '50%' }}
-    >
-         <div className="absolute w-5 h-1.5 bg-purple-500/80 rounded-full" />
-    </div>
+      className={`w-16 h-8 object-contain ${draggable ? 'cursor-grab' : ''}`}
+    />
 );
 
 const BloodCell: React.FC<{ style: React.CSSProperties }> = ({ style }) => (
@@ -93,8 +90,8 @@ export const StemConnection: React.FC = () => {
     const newCell: Cell = {
       id: `${baseId}-${type}-${Date.now()}`,
       state: 'forming',
-      top: `${Math.random() * (rect.height - 40)}px`,
-      left: `${Math.random() * (rect.width - 64)}px`,
+      top: `${Math.random() * (rect.height - 48)}px`, // 48px is h-12 for endothelial cell
+      left: `${Math.random() * (rect.width - 64)}px`, // 64px is w-16 for muscle cell
     };
     if (type === 'endothelium') {
       setEndothelialCells(prev => [...prev, newCell]);
@@ -226,7 +223,7 @@ export const StemConnection: React.FC = () => {
                                 ) : cells.map(cell => (
                                     // Fix: Cast the style object to React.CSSProperties to allow CSS custom properties.
                                     <div key={cell.id} className="absolute pointer-events-none" style={{ top: cell.top, left: cell.left, '--target-top': cell.top, '--target-left': cell.left } as React.CSSProperties}>
-                                        <div className={cell.state === 'regrouping' ? 'animate-regroup-to-center' : cell.state === 'forming' ? 'animate-form-from-center opacity-0' : 'animate-bouncy-pop-in'}>
+                                        <div className={cell.state === 'regrouping' ? 'animate-regroup-to-center' : cell.state === 'forming' ? 'animate-form-from-center opacity-0' : 'animate-bouncy-pop-in animate-cell-pulse'}>
                                             {type === 'endothelium' ? <EndothelialCell /> : <MuscleCell />}
                                         </div>
                                     </div>
