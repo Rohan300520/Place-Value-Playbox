@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useId } from 'react';
+import React, { useState, useEffect, useCallback, useId, useMemo } from 'react';
 
 type Stage = 'build' | 'assemble' | 'complete';
 type TissueType = 'endothelium' | 'muscle';
@@ -9,18 +9,27 @@ const TISSUE_BUILD_REQUIREMENT = 10;
 // --- Helper Components for Visuals ---
 
 const EndothelialCell: React.FC = () => (
-  <div className="w-10 h-8 bg-pink-300 border-2 border-pink-500 rounded-md transform -skew-x-12" />
+    <div className="relative w-10 h-10 flex items-center justify-center" style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}>
+        <div className="w-full h-full bg-pink-300 border-2 border-pink-500" />
+        <div className="absolute w-3 h-3 bg-purple-400 rounded-full" />
+    </div>
 );
 
 const MuscleCell: React.FC = () => (
-  <div className="w-16 h-4 bg-red-400 border-2 border-red-600 rounded-full" />
+    <div className="relative w-16 h-4 flex items-center justify-center bg-red-400 border-2 border-red-600" style={{ borderRadius: '50%' }}>
+         <div className="absolute w-5 h-1.5 bg-purple-500/80 rounded-full" />
+    </div>
 );
 
 const BloodCell: React.FC<{ style: React.CSSProperties }> = ({ style }) => (
-    <div className="absolute w-8 h-8 bg-red-500 rounded-full border-2 border-red-800 shadow-inner" style={style}>
-        <div className="w-4 h-4 bg-red-400 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+    <div className="absolute w-8 h-8 rounded-full shadow-lg" style={{
+        ...style,
+        background: 'radial-gradient(circle at 30% 30%, #ff8a8a, #d32f2f)',
+        border: '1px solid #b71c1c'
+    }}>
     </div>
 );
+
 
 const TissueBlock: React.FC<{ type: TissueType; isDraggable: boolean; onDragStart: (type: TissueType) => void; }> = ({ type, isDraggable, onDragStart }) => {
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
@@ -38,7 +47,13 @@ const TissueBlock: React.FC<{ type: TissueType; isDraggable: boolean; onDragStar
   } else {
     return (
       <div draggable={isDraggable} onDragStart={isDraggable ? handleDragStart : undefined} className={`p-2 rounded-lg bg-white/30 cursor-grab flex flex-col items-center gap-1 ${isDraggable ? '' : 'cursor-not-allowed'}`}>
-        {Array.from({ length: 4 }).map((_, i) => <MuscleCell key={i} />)}
+        <div className="relative w-24 h-16">
+            {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="absolute" style={{ top: `${i * 12}px`, left: `${(i % 2) * 10}px` }}>
+                    <MuscleCell />
+                </div>
+            ))}
+        </div>
         <p className="font-bold text-center text-white mt-1">Smooth Muscle</p>
       </div>
     );
@@ -123,7 +138,7 @@ export const StemConnection: React.FC = () => {
     setTimeout(() => setDropFeedback(null), 1000);
   };
   
-  const bloodCells = React.useMemo(() => Array.from({ length: 20 }).map((_, i) => ({
+  const bloodCells = useMemo(() => Array.from({ length: 20 }).map((_, i) => ({
       id: i,
       style: {
           top: `${Math.random() * 80 + 10}%`,
@@ -197,16 +212,39 @@ export const StemConnection: React.FC = () => {
                     {!placedTissues.muscle && <TissueBlock type="muscle" isDraggable={true} onDragStart={setDraggedTissue} />}
                 </div>
                 <div className="md:col-span-2 relative w-full aspect-square max-w-xl mx-auto flex items-center justify-center">
-                    <div className="absolute inset-0 bg-gray-600 rounded-full border-8 border-gray-700" />
-                    <div onDrop={(e) => handleDrop(e, 'muscle')} onDragOver={(e) => e.preventDefault()} className={`absolute inset-[10%] rounded-full transition-all duration-300 ${placedTissues.muscle ? 'bg-red-400/80 border-red-600' : 'bg-red-300/30 border-red-500'} border-4 border-dashed ${draggedTissue === 'muscle' ? 'scale-105' : ''}`}>
-                         {dropFeedback?.tissue === 'muscle' && <div className={`absolute inset-0 rounded-full animate-ping ${dropFeedback.type === 'success' ? 'bg-green-400' : 'bg-red-500'}`} />}
+                    {/* Layer 1: Outer Coat (Tunica Adventitia) - The outermost layer */}
+                    <div className="absolute inset-0 bg-amber-100 rounded-full border-8 border-amber-200 shadow-inner" />
+                    
+                    {/* Layer 2: Smooth Muscle (Tunica Media) - The middle layer and drop zone */}
+                    <div onDrop={(e) => handleDrop(e, 'muscle')} onDragOver={(e) => e.preventDefault()} 
+                         className={`absolute inset-[15%] rounded-full transition-all duration-300 border-4 border-dashed 
+                                    ${draggedTissue === 'muscle' ? 'scale-105 bg-red-300/50' : 'bg-transparent'}
+                                    ${placedTissues.muscle ? 'border-red-600' : 'border-red-500'}`}>
+                        {/* This div shows the placed muscle tissue */}
+                        <div className={`absolute inset-0 rounded-full bg-red-500 transition-opacity duration-500 ${placedTissues.muscle ? 'opacity-100' : 'opacity-0'}`} 
+                             style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(185, 28, 28, 0.5) 10px, rgba(185, 28, 28, 0.5) 20px)'}} />
+                        {dropFeedback?.tissue === 'muscle' && <div className={`absolute inset-0 rounded-full animate-ping ${dropFeedback.type === 'success' ? 'bg-green-400' : 'bg-red-500'}`} />}
                     </div>
-                    <div onDrop={(e) => handleDrop(e, 'endothelium')} onDragOver={(e) => e.preventDefault()} className={`absolute inset-[35%] rounded-full transition-all duration-300 ${placedTissues.endothelium ? 'bg-pink-300/80 border-pink-500' : 'bg-pink-300/30 border-pink-500'} border-4 border-dashed ${draggedTissue === 'endothelium' ? 'scale-105' : ''}`}>
-                         {dropFeedback?.tissue === 'endothelium' && <div className={`absolute inset-0 rounded-full animate-ping ${dropFeedback.type === 'success' ? 'bg-green-400' : 'bg-red-500'}`} />}
+
+                    {/* Layer 3: Endothelium (Tunica Intima) - The innermost layer and drop zone */}
+                    <div onDrop={(e) => handleDrop(e, 'endothelium')} onDragOver={(e) => e.preventDefault()} 
+                         className={`absolute inset-[40%] rounded-full transition-all duration-300 border-4 border-dashed overflow-hidden
+                                    ${draggedTissue === 'endothelium' ? 'scale-105 bg-pink-300/50' : 'bg-transparent'}
+                                    ${placedTissues.endothelium ? 'border-pink-600' : 'border-pink-500'}`}>
+                        {/* This image shows the placed endothelium tissue */}
+                         {placedTissues.endothelium && 
+                            <img src="/assets/epithelial-tissue.png" className={`w-full h-full object-cover rounded-full transition-opacity duration-500`} alt="Endothelium layer" />
+                         }
+                        {dropFeedback?.tissue === 'endothelium' && <div className={`absolute inset-0 rounded-full animate-ping ${dropFeedback.type === 'success' ? 'bg-green-400' : 'bg-red-500'}`} />}
                     </div>
-                    <div className="absolute text-center">
-                        {!placedTissues.muscle && <p className="font-bold text-white text-xl -translate-y-16">Smooth Muscle Layer</p>}
-                        {!placedTissues.endothelium && <p className="font-bold text-white text-xl translate-y-8">Endothelium Layer</p>}
+
+                    {/* Center: Lumen (the central cavity) */}
+                    <div className="absolute inset-[48%] rounded-full bg-red-900 shadow-inner" />
+
+                    {/* Labels to guide the user */}
+                    <div className="absolute text-center pointer-events-none">
+                        {!placedTissues.muscle && <p className="font-bold text-white text-xl -translate-y-24 bg-black/50 rounded p-1">Drop Smooth Muscle Here</p>}
+                        {!placedTissues.endothelium && <p className="font-bold text-white text-xl translate-y-2 bg-black/50 rounded p-1">Drop Endothelium Here</p>}
                     </div>
                 </div>
             </div>
@@ -214,9 +252,25 @@ export const StemConnection: React.FC = () => {
 
         {stage === 'complete' && (
             <div className="mt-4 relative w-full aspect-square max-w-xl mx-auto flex items-center justify-center animate-pop-in">
-                <img src="/assets/artery-cross-section.png" alt="Completed Artery" className="w-full h-full object-contain" />
-                <div className="absolute inset-[48%] rounded-full overflow-hidden">
+                {/* Layer 1: Outer Coat */}
+                <div className="absolute inset-0 bg-amber-100 rounded-full border-8 border-amber-200 shadow-inner" />
+                {/* Layer 2: Smooth Muscle */}
+                <div className="absolute inset-[15%] rounded-full bg-red-500" 
+                     style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(185, 28, 28, 0.5) 10px, rgba(185, 28, 28, 0.5) 20px)'}} />
+                {/* Layer 3: Endothelium */}
+                <div className="absolute inset-[40%] rounded-full">
+                    <img src="/assets/epithelial-tissue.png" className="w-full h-full object-cover rounded-full" alt="Endothelium layer" />
+                </div>
+                {/* Lumen with flowing blood cells */}
+                <div className="absolute inset-[48%] rounded-full bg-red-900 shadow-inner overflow-hidden">
                     {bloodCells.map(cell => <BloodCell key={cell.id} style={cell.style} />)}
+                </div>
+                {/* Labels for the completed view */}
+                <div className="absolute inset-0 pointer-events-none text-white font-bold text-sm">
+                    <div className="absolute top-[5%] left-1/2 -translate-x-1/2 p-1 bg-black/50 rounded">Outer Coat</div>
+                    <div className="absolute top-1/2 left-[5%] -translate-y-1/2 p-1 bg-black/50 rounded">Smooth Muscle</div>
+                    <div className="absolute top-[60%] left-[30%] p-1 bg-black/50 rounded">Endothelium</div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-1 bg-black/50 rounded">Lumen</div>
                 </div>
             </div>
         )}
