@@ -20,7 +20,7 @@ const EndothelialCell: React.FC<{ draggable?: boolean; onDragStart?: (type: Tiss
 
 const MuscleCell: React.FC<{ draggable?: boolean; onDragStart?: (type: TissueType) => void; }> = ({ draggable, onDragStart }) => (
     <img
-      src="/assets/muscle-cell.png"
+      src="/assets/muscle-cell.jpeg"
       alt="Muscle Cell"
       draggable={draggable}
       onDragStart={() => onDragStart?.('muscle')}
@@ -47,21 +47,15 @@ const TissueBlock: React.FC<{ type: TissueType; isDraggable: boolean; onDragStar
   if (type === 'endothelium') {
     return (
       <div draggable={isDraggable} onDragStart={isDraggable ? handleDragStart : undefined} className={`p-2 rounded-lg bg-white/30 cursor-grab ${isDraggable ? '' : 'cursor-not-allowed'}`}>
-        <img src="/assets/epithelial-tissue.png" alt="Endothelium Tissue" className="w-32 h-auto rounded" />
+        <img src="/assets/epithelial-tissue.jpeg" alt="Endothelium Tissue" className="w-32 h-auto rounded" />
         <p className="font-bold text-center text-white mt-1">Endothelium</p>
       </div>
     );
   } else {
     return (
-      <div draggable={isDraggable} onDragStart={isDraggable ? handleDragStart : undefined} className={`p-2 rounded-lg bg-white/30 cursor-grab flex flex-col items-center gap-1 ${isDraggable ? '' : 'cursor-not-allowed'}`}>
-        <div className="relative w-24 h-16">
-            {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="absolute" style={{ top: `${i * 12}px`, left: `${(i % 2) * 10}px` }}>
-                    <MuscleCell />
-                </div>
-            ))}
-        </div>
-        <p className="font-bold text-center text-white mt-1">Smooth Muscle</p>
+      <div draggable={isDraggable} onDragStart={isDraggable ? handleDragStart : undefined} className={`p-2 rounded-lg bg-white/30 cursor-grab ${isDraggable ? '' : 'cursor-not-allowed'}`}>
+        <img src="/assets/muscle-tissue.jpeg" alt="Muscle Tissue" className="w-32 h-auto rounded" />
+        <p className="font-bold text-center text-white mt-1">Muscle</p>
       </div>
     );
   }
@@ -182,6 +176,21 @@ export const StemConnection: React.FC = () => {
             @keyframes flow {
                 0% { left: -10%; }
                 100% { left: 110%; }
+            }
+            .artery-label-line {
+                position: absolute;
+                height: 2px;
+                background-color: white;
+                transform-origin: left center;
+            }
+            .artery-label-text {
+                position: absolute;
+                background-color: rgba(0,0,0,0.7);
+                color: white;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-weight: bold;
+                white-space: nowrap;
             }
         `}</style>
         <div className="backdrop-blur-sm border p-4 sm:p-6 rounded-3xl shadow-xl w-full max-w-7xl" style={{ backgroundColor: 'var(--backdrop-bg)', borderColor: 'var(--border-primary)'}}>
@@ -307,25 +316,45 @@ export const StemConnection: React.FC = () => {
 
         {stage === 'complete' && (
             <div className="mt-4 relative w-full aspect-square max-w-xl mx-auto flex items-center justify-center animate-pop-in">
-                {/* Layer 1: Outer Coat */}
-                <div className="absolute inset-0 bg-amber-100 rounded-full border-8 border-amber-200 shadow-inner" />
-                {/* Layer 2: Smooth Muscle */}
-                <div className="absolute inset-[15%] rounded-full bg-red-500" 
-                     style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(185, 28, 28, 0.5) 10px, rgba(185, 28, 28, 0.5) 20px)'}} />
-                {/* Layer 3: Endothelium */}
-                <div className="absolute inset-[40%] rounded-full">
-                    <img src="/assets/epithelial-tissue.png" className="w-full h-full object-cover rounded-full" alt="Endothelium layer" />
-                </div>
+                {/* Layer 1: Outer Coat (Tunica Adventitia) */}
+                <div className="absolute inset-0 rounded-full shadow-inner" style={{ background: 'radial-gradient(circle, #fdf4d8, #f8e6b1)', border: '2px solid #e7d5a0' }} />
+                
+                {/* Layer 2: Smooth Muscle (Tunica Media) */}
+                <div className="absolute inset-[15%] rounded-full" style={{
+                    background: '#d97d8c',
+                    boxShadow: 'inset 0 0 20px rgba(0,0,0,0.3)',
+                    backgroundImage: 'repeating-conic-gradient(from 0deg, #d97d8c 0deg 5deg, #c4717f 5deg 10deg)'
+                }} />
+
+                {/* Layer 3: Endothelium (Tunica Intima) */}
+                <div className="absolute inset-[40%] rounded-full" style={{
+                    background: '#f8d7da',
+                    border: '4px solid #f2b6bc',
+                    boxShadow: 'inset 0 0 10px rgba(0,0,0,0.2)'
+                }}/>
+                
                 {/* Lumen with flowing blood cells */}
-                <div className="absolute inset-[48%] rounded-full bg-red-900 shadow-inner overflow-hidden">
+                <div className="absolute inset-[48%] rounded-full bg-black shadow-inner overflow-hidden" style={{ background: 'radial-gradient(circle, #5c0000, #3d0000)' }}>
                     {bloodCells.map(cell => <BloodCell key={cell.id} style={cell.style} />)}
                 </div>
+
                 {/* Labels for the completed view */}
-                <div className="absolute inset-0 pointer-events-none text-white font-bold text-sm">
-                    <div className="absolute top-[5%] left-1/2 -translate-x-1/2 p-1 bg-black/50 rounded">Outer Coat</div>
-                    <div className="absolute top-1/2 left-[5%] -translate-y-1/2 p-1 bg-black/50 rounded">Smooth Muscle</div>
-                    <div className="absolute top-[60%] left-[30%] p-1 bg-black/50 rounded">Endothelium</div>
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-1 bg-black/50 rounded">Lumen</div>
+                <div className="absolute inset-0 pointer-events-none">
+                    {/* Outer Coat Label */}
+                    <div className="artery-label-line" style={{ top: '10%', left: '50%', width: '150px', transform: 'translateX(-50%) rotate(90deg) translateX(-75px)' }}/>
+                    <div className="artery-label-text" style={{ top: '10%', left: '50%', transform: 'translate(-50%, -150%)' }}>Outer Coat</div>
+
+                    {/* Smooth Muscle Label */}
+                    <div className="artery-label-line" style={{ top: '50%', left: '10%', width: '100px', transform: 'translateY(-50%)' }}/>
+                    <div className="artery-label-text" style={{ top: '50%', left: '10%', transform: 'translate(-110%, -50%)' }}>Smooth Muscle</div>
+                    
+                    {/* Endothelium Label */}
+                    <div className="artery-label-line" style={{ top: '75%', left: '50%', width: '40px', transform: 'rotate(-45deg) ' }}/>
+                    <div className="artery-label-text" style={{ top: '75%', left: 'calc(50% + 28px)', transform: 'translate(10px, -10px)' }}>Endothelium</div>
+
+                    {/* Lumen Label */}
+                    <div className="artery-label-line" style={{ bottom: '30%', left: '50%', width: '50px', transform: 'rotate(45deg)' }}/>
+                    <div className="artery-label-text" style={{ bottom: '30%', left: 'calc(50% + 35px)', transform: 'translate(10px, 10px)' }}>Lumen</div>
                 </div>
             </div>
         )}
