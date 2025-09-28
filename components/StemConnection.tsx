@@ -1,5 +1,8 @@
 
+
 import React, { useState, useEffect, useCallback, useId, useMemo, useRef } from 'react';
+import { useAudio } from '../contexts/AudioContext';
+import { speak } from '../utils/speech';
 
 // --- TYPES ---
 type Stage = 'intro' | 'build_epithelial' | 'build_blood' | 'build_muscle' | 'assemble_artery' | 'final_simulation';
@@ -22,10 +25,10 @@ const ASSETS = {
   'rbc': '/assets/rbc.png',
   'wbc': '/assets/wbc.png',
   'platelet': '/assets/platelet.png',
-  'muscle': '/assets/muscle-cell.jpeg',
+  'muscle': '/assets/muscle-cell.png',
   // Using more realistic textures for the assembler
-  'epithelial-tissue': '/assets/epithelial-tissue-glossy.jpg',
-  'muscle-tissue': '/assets/muscle-tissue-fibrous.jpg',
+  'epithelial-tissue': '/assets/epithelial-tissue-glossy.png',
+  'muscle-tissue': '/assets/muscle-tissue-fibrous.jpeg',
   'blood-tissue': '/assets/blood-tissue-animated.png',
 };
 
@@ -103,12 +106,12 @@ const TissueBuilder: React.FC<{
     cellTypes: CellType[];
     onComplete: () => void;
 }> = ({ title, cellTypes, onComplete }) => {
+    const { isSpeechEnabled } = useAudio();
     const [cells, setCells] = useState<Cell[]>([]);
     const [draggedCell, setDraggedCell] = useState<CellType | null>(null);
     const [isRegrouping, setIsRegrouping] = useState(false);
     const [feedbackMessage, setFeedbackMessage] = useState<{ title: string; description: string } | null>(null);
     const baseId = useId();
-    // Fix: Corrected logic to get the tissue type from the second word of the title (e.g., "Epithelial") instead of the first ("Build").
     const tissueType = title.split(' ')[1].toLowerCase() as TissueType;
     const dishRef = useRef<HTMLDivElement>(null);
 
@@ -152,7 +155,6 @@ const TissueBuilder: React.FC<{
 
           const centerX = rect.width / 2;
           const centerY = rect.height / 2;
-          // Radius is responsive to container width, ensuring circle fits
           const radius = Math.min(rect.width, rect.height) / 3; 
           const angle = (cells.length / CELL_BUILD_REQUIREMENT) * 2 * Math.PI;
 
@@ -182,6 +184,10 @@ const TissueBuilder: React.FC<{
             }
             setFeedbackMessage({ title, description });
             
+            if (isSpeechEnabled) {
+                speak(`${title} ${description}`, 'en-US');
+            }
+            
             setTimeout(() => setCells(prev => prev.map(c => ({...c, state: 'regrouping'}))), 500);
             
             setTimeout(() => {
@@ -189,7 +195,7 @@ const TissueBuilder: React.FC<{
                 setFeedbackMessage(null);
             }, 4000);
         }
-    }, [cells, onComplete, isRegrouping, tissueType]);
+    }, [cells, onComplete, isRegrouping, tissueType, isSpeechEnabled]);
 
 
     return (
@@ -217,7 +223,7 @@ const TissueBuilder: React.FC<{
                         ))
                     )}
                      {feedbackMessage && (
-                        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-pop-in z-10 rounded-2xl">
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-4 animate-pop-in z-10 rounded-2xl">
                             <div className="bg-white text-slate-800 p-6 rounded-2xl shadow-xl max-w-md text-center">
                                 <h4 className="text-2xl font-bold font-display text-green-600 mb-2">{feedbackMessage.title}</h4>
                                 <p className="text-lg">{feedbackMessage.description}</p>
@@ -272,7 +278,7 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[], onComplete: () => 
     
     useEffect(() => {
         if (placedTissues.includes('blood') && placedTissues.includes('epithelial') && placedTissues.includes('muscle')) {
-            setTimeout(onComplete, 1500);
+            setTimeout(onComplete, 4000);
         }
     }, [placedTissues, onComplete]);
 
