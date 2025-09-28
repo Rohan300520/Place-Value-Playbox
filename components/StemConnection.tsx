@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect, useCallback, useId, useMemo } from 'react';
 
 // --- TYPES ---
 type Stage = 'intro' | 'build_epithelial' | 'build_blood' | 'build_muscle' | 'assemble_artery' | 'final_simulation';
 type CellType = 'epithelial' | 'rbc' | 'wbc' | 'platelet' | 'muscle';
 type TissueType = 'epithelial' | 'blood' | 'muscle';
-type DroppableArea = 'epithelial' | 'muscle' | 'lumen';
+type DroppableArea = 'epithelial' | 'muscle' | 'blood';
 
 interface Cell {
   id: string;
@@ -94,11 +95,14 @@ const TissueBuilder: React.FC<{
     const [cells, setCells] = useState<Cell[]>([]);
     const [draggedCell, setDraggedCell] = useState<CellType | null>(null);
     const [isRegrouping, setIsRegrouping] = useState(false);
+    const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
     const baseId = useId();
+    const tissueType = title.split(' ')[0].toLowerCase() as TissueType;
 
     useEffect(() => {
         setCells([]);
         setIsRegrouping(false);
+        setFeedbackMessage(null);
     }, [title]);
 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -128,12 +132,26 @@ const TissueBuilder: React.FC<{
     useEffect(() => {
         if (cells.length >= CELL_BUILD_REQUIREMENT && !isRegrouping) {
             setIsRegrouping(true);
-            setTimeout(() => setCells(prev => prev.map(c => ({...c, state: 'regrouping'}))), 500);
-            setTimeout(onComplete, 1500);
-        }
-    }, [cells, onComplete, isRegrouping]);
 
-    const tissueType = title.split(' ')[0].toLowerCase() as TissueType;
+            let message = '';
+            if (tissueType === 'epithelial') {
+                message = "Great job! You've made Epithelial Tissue. These cells create linings for organs, just like the inside of our artery!";
+            } else if (tissueType === 'blood') {
+                message = "Awesome! This is Blood Tissue. It's special because it's a liquid that carries nutrients and oxygen all over your body.";
+            } else if (tissueType === 'muscle') {
+                message = "Fantastic! You've built Muscle Tissue. These strong cells help the artery pump blood by squeezing and relaxing.";
+            }
+            setFeedbackMessage(message);
+            
+            setTimeout(() => setCells(prev => prev.map(c => ({...c, state: 'regrouping'}))), 500);
+            
+            setTimeout(() => {
+                onComplete();
+                setFeedbackMessage(null);
+            }, 4000);
+        }
+    }, [cells, onComplete, isRegrouping, tissueType]);
+
 
     return (
         <div className="w-full flex flex-col md:flex-row gap-6 items-center">
@@ -158,222 +176,198 @@ const TissueBuilder: React.FC<{
                             />
                         ))
                     )}
+                     {feedbackMessage && (
+                        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-pop-in z-10 rounded-2xl">
+                            <div className="bg-white text-slate-800 p-6 rounded-2xl shadow-xl max-w-md text-center">
+                                <p className="text-xl font-semibold">{feedbackMessage}</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
-            <div className="w-full md:w-1/3 flex flex-col items-center p-4 bg-white/10 rounded-2xl">
-                <h3 className="text-2xl font-bold font-display mb-4">{title}</h3>
-                <div className="mb-4 text-3xl font-black font-display text-green-600 bg-white/30 rounded-full w-20 h-20 flex items-center justify-center border-4 border-white/50">
-                    {isRegrouping ? '✓' : `${cells.length}/${CELL_BUILD_REQUIREMENT}`}
+            <div className="w-full md:w-1/3 p-4 rounded-2xl shadow-lg" style={{ backgroundColor: 'var(--panel-bg)'}}>
+                <h3 className="text-2xl font-bold font-display text-center mb-4">{title}</h3>
+                <p className="text-center mb-4">Drag {CELL_BUILD_REQUIREMENT} cells to the dish to form a tissue.</p>
+                <div className="flex justify-center items-center gap-4 flex-wrap p-4 bg-black/10 rounded-xl">
+                    {cellTypes.map(type => (
+                        <DraggableCell key={type} type={type} onDragStart={setDraggedCell} />
+                    ))}
                 </div>
-                <div className="flex flex-col gap-4">
-                    {cellTypes.map(type => <DraggableCell key={type} type={type} onDragStart={setDraggedCell} />)}
+                <div className="mt-4">
+                    <div className="w-full bg-gray-200/50 rounded-full h-6 shadow-inner">
+                        <div
+                            className="bg-green-500 h-6 rounded-full text-center text-white font-bold transition-all duration-500"
+                            style={{ width: `${(cells.length / CELL_BUILD_REQUIREMENT) * 100}%` }}
+                        >
+                            {cells.length}/{CELL_BUILD_REQUIREMENT}
+                        </div>
+                    </div>
                 </div>
-                <p className="mt-4 text-sm text-center">Drag {CELL_BUILD_REQUIREMENT} cells into the area to build the tissue.</p>
             </div>
         </div>
     );
 };
 
-const ArteryAssembler: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
-    const [placedTissues, setPlacedTissues] = useState<Record<DroppableArea, boolean>>({ epithelial: false, muscle: false, lumen: false });
+const ArteryAssembler: React.FC<{ builtTissues: TissueType[], onComplete: () => void }> = ({ builtTissues, onComplete }) => {
+    const [placedTissues, setPlacedTissues] = useState<DroppableArea[]>([]);
     const [draggedTissue, setDraggedTissue] = useState<TissueType | null>(null);
 
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetArea: DroppableArea) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const targetMap: Record<TissueType, DroppableArea> = {
-            muscle: 'muscle',
-            epithelial: 'epithelial',
-            blood: 'lumen'
-        };
-
-        if (draggedTissue && targetMap[draggedTissue] === targetArea) {
-            setPlacedTissues(prev => ({ ...prev, [targetArea]: true }));
+    const handleDrop = (area: DroppableArea) => {
+        if (draggedTissue && area === draggedTissue) {
+            if (!placedTissues.includes(draggedTissue)) {
+                setPlacedTissues(prev => [...prev, draggedTissue]);
+            }
         }
+        setDraggedTissue(null);
     };
-
-    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-    };
-
+    
     useEffect(() => {
-        if (placedTissues.epithelial && placedTissues.muscle && placedTissues.lumen) {
-            setTimeout(onComplete, 1000);
+        if (placedTissues.includes('blood') && placedTissues.includes('epithelial') && placedTissues.includes('muscle')) {
+            setTimeout(onComplete, 1500);
         }
     }, [placedTissues, onComplete]);
 
-    const getHighlightClass = (target: DroppableArea) => {
-        if (!draggedTissue) return '';
-        const targetMap: Record<TissueType, DroppableArea> = { muscle: 'muscle', epithelial: 'epithelial', blood: 'lumen' };
-        return targetMap[draggedTissue] === target ? 'animate-guide-pulse shadow-2xl shadow-yellow-400' : '';
+    const isEpithelialPlaced = placedTissues.includes('epithelial');
+    const isMusclePlaced = placedTissues.includes('muscle');
+    const isBloodPlaced = placedTissues.includes('blood');
+
+    return (
+        <div className="w-full flex flex-col items-center gap-8">
+            <h2 className="text-3xl font-bold font-display">Assemble the Artery</h2>
+            <div className="flex flex-col md:flex-row items-center justify-center gap-12 w-full">
+                {/* 3D View */}
+                <div className="w-full md:w-2/3 h-[400px]" style={{ perspective: '1000px' }}>
+                    <div className="relative w-full h-full" style={{ transformStyle: 'preserve-3d', transform: 'rotateX(-25deg) rotateY(30deg)' }}>
+                        {/* Muscle Layer (Outer) */}
+                        <div
+                            onDrop={() => handleDrop('muscle')} onDragOver={e => e.preventDefault()}
+                            className={`absolute inset-0 rounded-full border-[60px] transition-all duration-500 
+                                ${isMusclePlaced ? 'border-pink-300' : 'border-pink-300/50'}
+                                ${draggedTissue === 'muscle' && !isMusclePlaced ? '!border-orange-400 scale-105 shadow-2xl animate-pulse' : ''}
+                                ${draggedTissue && draggedTissue !== 'muscle' ? 'scale-90 opacity-50' : ''}`}
+                            style={{
+                                transform: 'translateZ(-60px)',
+                                backgroundImage: isMusclePlaced ? `url(${ASSETS['muscle-tissue']})` : 'none',
+                                backgroundSize: 'cover',
+                            }}
+                        />
+                        {/* Epithelial Layer (Inner lining) */}
+                        <div
+                            onDrop={() => handleDrop('epithelial')} onDragOver={e => e.preventDefault()}
+                            className={`absolute inset-[55px] rounded-full border-[20px] transition-all duration-500 
+                                ${isEpithelialPlaced ? 'border-red-200' : 'border-red-200/50'}
+                                ${draggedTissue === 'epithelial' && !isEpithelialPlaced ? '!border-orange-400 scale-105 shadow-2xl animate-pulse' : ''}
+                                ${draggedTissue && draggedTissue !== 'epithelial' ? 'scale-90 opacity-50' : ''}`}
+                             style={{
+                                transform: 'translateZ(0px)',
+                                backgroundImage: isEpithelialPlaced ? `url(${ASSETS['epithelial-tissue']})` : 'none',
+                                backgroundSize: 'cover',
+                            }}
+                        />
+                         {/* Lumen (Blood flow area) */}
+                        <div
+                            onDrop={() => handleDrop('blood')} onDragOver={e => e.preventDefault()}
+                            className={`absolute inset-[70px] rounded-full transition-all duration-500 
+                                ${isBloodPlaced ? 'bg-red-900/80' : 'bg-red-900/30'}
+                                ${draggedTissue === 'blood' && !isBloodPlaced ? '!bg-orange-400/50 scale-105 animate-pulse' : ''}
+                                ${draggedTissue && draggedTissue !== 'blood' ? 'scale-90 opacity-50' : ''}`}
+                             style={{ transform: 'translateZ(10px)' }}
+                        >
+                            {isBloodPlaced && (
+                                <div className="absolute inset-0 overflow-hidden rounded-full animate-pop-in">
+                                    <style>{`
+                                        @keyframes flow {
+                                            0% { left: -10%; }
+                                            100% { left: 110%; }
+                                        }
+                                    `}</style>
+                                    <AnimatedBloodCell type="rbc" /><AnimatedBloodCell type="rbc" /><AnimatedBloodCell type="rbc" />
+                                    <AnimatedBloodCell type="wbc" /><AnimatedBloodCell type="platelet" /><AnimatedBloodCell type="rbc" />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                {/* Tissue Source */}
+                <div className="w-full md:w-1/3 flex flex-col items-center gap-4">
+                     {builtTissues.map(tissue => (
+                        <DraggableTissue 
+                            key={tissue} 
+                            type={tissue} 
+                            onDragStart={setDraggedTissue} 
+                            onDragEnd={() => setDraggedTissue(null)}
+                            isPlaced={placedTissues.includes(tissue)}
+                        />
+                     ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const FinalSimulation: React.FC<{ onRestart: () => void }> = ({ onRestart }) => (
+    <div className="text-center animate-pop-in">
+        <h2 className="text-4xl md:text-6xl font-black text-green-600 tracking-tight font-display">Congratulations!</h2>
+        <p className="mt-4 text-lg sm:text-xl max-w-3xl mx-auto">
+            You've built a functioning artery! You've seen how simple cells combine to form complex tissues, which then work together to create organs that keep our bodies running.
+        </p>
+        <div className="text-6xl my-8">🎉🔬❤️</div>
+        <button onClick={onRestart} className="mt-4 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-2xl py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 transition-all border-b-4 border-indigo-700 active:border-b-2">
+            Play Again
+        </button>
+    </div>
+);
+
+
+export const StemConnection: React.FC = () => {
+    const [stage, setStage] = useState<Stage>('intro');
+    const [builtTissues, setBuiltTissues] = useState<TissueType[]>([]);
+
+    const handleTissueComplete = (tissue: TissueType) => {
+        if (!builtTissues.includes(tissue)) {
+            setBuiltTissues(prev => [...prev, tissue]);
+        }
+        
+        switch (stage) {
+            case 'build_epithelial':
+                setStage('build_blood');
+                break;
+            case 'build_blood':
+                setStage('build_muscle');
+                break;
+            case 'build_muscle':
+                setStage('assemble_artery');
+                break;
+        }
+    };
+    
+    const restart = () => {
+      setStage('intro');
+      setBuiltTissues([]);
+    }
+
+    const renderContent = () => {
+        switch (stage) {
+            case 'intro':
+                return <IntroScreen onStart={() => setStage('build_epithelial')} />;
+            case 'build_epithelial':
+                return <TissueBuilder title="Build Epithelial Tissue" cellTypes={['epithelial']} onComplete={() => handleTissueComplete('epithelial')} />;
+            case 'build_blood':
+                return <TissueBuilder title="Build Blood Tissue" cellTypes={['rbc', 'wbc', 'platelet']} onComplete={() => handleTissueComplete('blood')} />;
+            case 'build_muscle':
+                return <TissueBuilder title="Build Muscle Tissue" cellTypes={['muscle']} onComplete={() => handleTissueComplete('muscle')} />;
+            case 'assemble_artery':
+                return <ArteryAssembler builtTissues={builtTissues} onComplete={() => setStage('final_simulation')} />;
+            case 'final_simulation':
+                return <FinalSimulation onRestart={restart} />;
+            default:
+                return null;
+        }
     };
 
     return (
-        <div className="w-full flex flex-col lg:flex-row gap-8 items-center justify-center">
-            {/* 3D Artery Diagram */}
-            <div className="w-full lg:w-2/3 flex items-center justify-center min-h-[400px]">
-                <div className="relative w-[400px] h-[400px]" style={{ perspective: '1000px' }}>
-                    <div className="absolute inset-0 w-full h-full" style={{ transformStyle: 'preserve-3d', transform: 'rotateX(60deg) rotateZ(20deg)' }}>
-                       {/* Outermost layer - static */}
-                       <div className="absolute inset-0 rounded-full bg-amber-200 border-8 border-amber-300 shadow-inner" style={{ transform: 'translateZ(-40px)' }} />
-
-                        {/* Muscle Drop Zone */}
-                        <div
-                            onDrop={e => handleDrop(e, 'muscle')}
-                            onDragOver={handleDragOver}
-                            className={`absolute inset-[12%] rounded-full transition-all duration-300 ${getHighlightClass('muscle')}`}
-                            style={{ transform: 'translateZ(-20px)' }}
-                        >
-                            {placedTissues.muscle ?
-                                <div className="w-full h-full rounded-full bg-red-500 animate-pop-in shadow-inner" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(185, 28, 28, 0.5) 10px, rgba(185, 28, 28, 0.5) 20px)' }}/> :
-                                <div className="w-full h-full rounded-full bg-red-800/50 border-4 border-dashed border-red-300 flex items-center justify-center">
-                                    <span className="font-bold text-lg text-white -rotate-[20deg]">Muscle Wall</span>
-                                </div>
-                            }
-                        </div>
-                        
-                        {/* Epithelial Drop Zone */}
-                        <div
-                            onDrop={e => handleDrop(e, 'epithelial')}
-                            onDragOver={handleDragOver}
-                            className={`absolute inset-[35%] rounded-full transition-all duration-300 ${getHighlightClass('epithelial')}`}
-                            style={{ transform: 'translateZ(0px)' }}
-                        >
-                            {placedTissues.epithelial ?
-                                <img src={ASSETS['epithelial-tissue']} className="w-full h-full object-cover rounded-full animate-pop-in" alt="Epithelial layer" /> :
-                                <div className="w-full h-full rounded-full bg-pink-800/50 border-4 border-dashed border-pink-300 flex items-center justify-center">
-                                     <span className="font-bold text-md text-white -rotate-[20deg]">Inner Lining</span>
-                                </div>
-                            }
-                        </div>
-
-                        {/* Lumen Drop Zone */}
-                        <div
-                            onDrop={e => handleDrop(e, 'lumen')}
-                            onDragOver={handleDragOver}
-                            className={`absolute inset-[55%] rounded-full transition-all duration-300 ${getHighlightClass('lumen')}`}
-                            style={{ transform: 'translateZ(20px)' }}
-                        >
-                             {placedTissues.lumen ?
-                                <div className="w-full h-full rounded-full bg-red-900 animate-pop-in shadow-inner" /> :
-                                <div className="w-full h-full rounded-full bg-red-900/70 border-4 border-dashed border-red-400 flex items-center justify-center">
-                                    <span className="font-bold text-sm text-white -rotate-[20deg]">Lumen (Blood)</span>
-                                </div>
-                            }
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-
-            {/* Draggable Tissues */}
-            <div className="w-full lg:w-1/3 flex lg:flex-col items-center p-4 bg-white/10 rounded-2xl h-full justify-center gap-4">
-                 <DraggableTissue type="muscle" onDragStart={setDraggedTissue} onDragEnd={() => setDraggedTissue(null)} isPlaced={placedTissues.muscle} />
-                 <DraggableTissue type="epithelial" onDragStart={setDraggedTissue} onDragEnd={() => setDraggedTissue(null)} isPlaced={placedTissues.epithelial} />
-                 <DraggableTissue type="blood" onDragStart={setDraggedTissue} onDragEnd={() => setDraggedTissue(null)} isPlaced={placedTissues.lumen} />
-            </div>
-        </div>
-    );
-};
-
-
-const FinalSimulation: React.FC = () => {
-    const bloodCellTypes: CellType[] = useMemo(() => 
-        Array.from({ length: 30 }).map(() => {
-            const rand = Math.random();
-            if (rand < 0.8) return 'rbc';
-            if (rand < 0.95) return 'platelet';
-            return 'wbc';
-        }), []);
-
-    return (
-        <div className="w-full flex items-center justify-center animate-pop-in">
-             <div className="relative w-full max-w-2xl aspect-[16/9]" style={{ perspective: '1000px' }}>
-                <div className="absolute inset-0" style={{ transformStyle: 'preserve-3d', transform: 'rotateX(60deg)' }}>
-                    {/* Artery Tube */}
-                    <div className="absolute w-full h-full rounded-[100px] bg-[#f8e6b1]" style={{ transform: 'translateZ(-150px)' }} />
-                    <div className="absolute w-full h-full rounded-[100px] bg-[#d97d8c]" style={{ transform: 'translateZ(-100px)', backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 5px, rgba(0,0,0,0.1) 5px, rgba(0,0,0,0.1) 10px)' }} />
-                    <div className="absolute w-full h-full rounded-[100px] bg-[#f8d7da] border-8 border-[#f2b6bc]" style={{ transform: 'translateZ(-50px)' }} />
-                    {/* Lumen with blood flow */}
-                    <div className="absolute w-full h-full rounded-[100px] bg-[#3d0000] overflow-hidden">
-                        {bloodCellTypes.map((type, i) => <AnimatedBloodCell key={i} type={type} />)}
-                    </div>
-                </div>
-
-                {/* Labels */}
-                 <div className="absolute inset-0 pointer-events-none text-white font-bold">
-                     <p className="absolute top-[5%] left-[50%] -translate-x-1/2 p-2 bg-black/50 rounded">Muscle Wall (Tunica Media)</p>
-                     <p className="absolute top-[30%] left-[50%] -translate-x-1/2 p-2 bg-black/50 rounded">Epithelial Lining (Tunica Intima)</p>
-                     <p className="absolute top-[50%] left-[50%] -translate-x-1/2 p-2 bg-black/50 rounded">Blood Flow in Lumen</p>
-                 </div>
-            </div>
-        </div>
-    );
-};
-
-// --- MAIN COMPONENT ---
-export const StemConnection: React.FC = () => {
-    const [stage, setStage] = useState<Stage>('intro');
-
-    const stageConfig = useMemo(() => ({
-        'intro': {
-            title: "Let's Get Started!",
-            description: "Learn how our body is built, from cells to organs.",
-            content: <IntroScreen onStart={() => setStage('build_epithelial')} />
-        },
-        'build_epithelial': {
-            title: "Build Epithelial Tissue",
-            description: "These cells form protective layers, like our skin!",
-            content: <TissueBuilder key="build_epithelial" title="Epithelial Tissue" cellTypes={['epithelial']} onComplete={() => setStage('build_blood')} />
-        },
-        'build_blood': {
-            title: "Build Blood Tissue",
-            description: "These cells travel through our body, carrying oxygen and fighting germs.",
-            content: <TissueBuilder key="build_blood" title="Blood Tissue" cellTypes={['rbc', 'wbc', 'platelet']} onComplete={() => setStage('build_muscle')} />
-        },
-        'build_muscle': {
-            title: "Build Muscle Tissue",
-            description: "These cells help us move and keep our organs working.",
-            content: <TissueBuilder key="build_muscle" title="Muscle Tissue" cellTypes={['muscle']} onComplete={() => setStage('assemble_artery')} />
-        },
-        'assemble_artery': {
-            title: "Assemble the Artery",
-            description: "Drag the tissues to their correct places. The right spot will glow!",
-            content: <ArteryAssembler onComplete={() => setStage('final_simulation')} />
-        },
-        'final_simulation': {
-            title: "Artery in Action!",
-            description: "Excellent! You've built a functional artery. Watch the blood cells flow.",
-            content: <FinalSimulation />
-        }
-    }), []);
-    
-    const currentStage = stageConfig[stage];
-
-    return (
-        <div className="flex-grow w-full flex flex-col items-center justify-start p-2 sm:p-4 text-center animate-pop-in">
-             <style>{`
-                @keyframes flow {
-                    0% { left: -10%; opacity: 0; }
-                    10% { opacity: 1; }
-                    90% { opacity: 1; }
-                    100% { left: 110%; opacity: 0; }
-                }
-            `}</style>
-            <div className="backdrop-blur-sm border p-4 sm:p-6 rounded-3xl shadow-xl w-full max-w-7xl mb-6" style={{ backgroundColor: 'var(--backdrop-bg)', borderColor: 'var(--border-primary)'}}>
-                <h1 className="text-3xl md:text-5xl font-black tracking-tight font-display" style={{ color: 'var(--text-accent)'}}>
-                    {currentStage.title}
-                </h1>
-                <p className="mt-2 text-md sm:text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)'}}>
-                   {currentStage.description}
-                </p>
-            </div>
-            
-            <div className="w-full max-w-7xl flex-grow flex items-center justify-center">
-              {currentStage.content}
-            </div>
+        <div className="w-full max-w-6xl mx-auto p-4 rounded-2xl shadow-xl flex items-center justify-center min-h-[70vh]" style={{ backgroundColor: 'var(--backdrop-bg)'}}>
+            {renderContent()}
         </div>
     );
 };
