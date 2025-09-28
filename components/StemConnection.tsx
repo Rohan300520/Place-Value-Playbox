@@ -108,7 +108,8 @@ const TissueBuilder: React.FC<{
     const [isRegrouping, setIsRegrouping] = useState(false);
     const [feedbackMessage, setFeedbackMessage] = useState<{ title: string; description: string } | null>(null);
     const baseId = useId();
-    const tissueType = title.split(' ')[0].toLowerCase() as TissueType;
+    // Fix: Corrected logic to get the tissue type from the second word of the title (e.g., "Epithelial") instead of the first ("Build").
+    const tissueType = title.split(' ')[1].toLowerCase() as TissueType;
     const dishRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
