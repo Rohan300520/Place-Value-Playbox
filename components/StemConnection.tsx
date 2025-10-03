@@ -1,8 +1,14 @@
 
 
+
+
+
 import React, { useState, useEffect, useCallback, useId, useMemo, useRef } from 'react';
 import { useAudio } from '../contexts/AudioContext';
 import { speak } from '../utils/speech';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
 
 // --- TYPES ---
 type Stage = 'intro' | 'build_epithelial' | 'build_blood' | 'build_muscle' | 'assemble_artery' | 'final_simulation';
@@ -75,16 +81,6 @@ const DraggableTissue: React.FC<{
         </div>
     );
 }
-
-const AnimatedBloodCell: React.FC<{ type: CellType }> = ({ type }) => {
-    const style = useMemo(() => ({
-        top: `${Math.random() * 60 + 20}%`,
-        // Updated animation for a more realistic, pulsing flow
-        animation: `flow-pulse ${Math.random() * 2 + 2.5}s ease-in-out ${Math.random() * 3}s infinite`,
-        transform: `scale(${Math.random() * 0.5 + 0.7})`,
-    }), []);
-    return <img src={ASSETS[type]} className="absolute w-8 h-8 object-contain" style={style} alt={`${type} flowing`}/>;
-};
 
 
 // --- STAGE COMPONENTS ---
@@ -258,110 +254,234 @@ const TissueBuilder: React.FC<{
 const ArteryAssembler: React.FC<{ builtTissues: TissueType[], onComplete: () => void }> = ({ builtTissues, onComplete }) => {
     const [placedTissues, setPlacedTissues] = useState<DroppableArea[]>([]);
     const [draggedTissue, setDraggedTissue] = useState<TissueType | null>(null);
+    const [highlightedLayer, setHighlightedLayer] = useState<DroppableArea | null>(null);
 
-    const placeTissue = (tissueType: TissueType) => {
+    const mountRef = useRef<HTMLDivElement>(null);
+    const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+    const sceneRef = useRef<THREE.Scene | null>(null);
+    const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+    const controlsRef = useRef<OrbitControls | null>(null);
+    const raycaster = useMemo(() => new THREE.Raycaster(), []);
+    const pointer = useMemo(() => new THREE.Vector2(), []);
+    const layersRef = useRef<Record<DroppableArea, THREE.Mesh>>({} as Record<DroppableArea, THREE.Mesh>);
+    const particlesRef = useRef<THREE.Points | null>(null);
+
+    useEffect(() => {
+        if (!mountRef.current) return;
+        const currentMount = mountRef.current;
+
+        // Scene, Camera, Renderer
+        const scene = new THREE.Scene();
+        sceneRef.current = scene;
+        const camera = new THREE.PerspectiveCamera(75, currentMount.clientWidth / currentMount.clientHeight, 0.1, 1000);
+        camera.position.set(0, 5, 12);
+        cameraRef.current = camera;
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        currentMount.appendChild(renderer.domElement);
+        rendererRef.current = renderer;
+
+        // Controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enablePan = false;
+        controls.minDistance = 8;
+        controls.maxDistance = 25;
+        controls.target.set(0, 0, 0);
+        controls.update();
+        controlsRef.current = controls;
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+        directionalLight.position.set(5, 10, 7.5);
+        scene.add(directionalLight);
+
+        // Artery Layers
+        const textureLoader = new THREE.TextureLoader();
+        const muscleTexture = textureLoader.load(ASSETS['muscle-tissue']);
+        const epithelialTexture = textureLoader.load(ASSETS['epithelial-tissue']);
+        muscleTexture.wrapS = muscleTexture.wrapT = THREE.RepeatWrapping;
+        epithelialTexture.wrapS = epithelialTexture.wrapT = THREE.RepeatWrapping;
+        muscleTexture.repeat.set(3, 1);
+        epithelialTexture.repeat.set(4, 1);
+        
+        const arteryGroup = new THREE.Group();
+        arteryGroup.rotation.x = -Math.PI / 6;
+
+        const path = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0, -5, 0),
+            new THREE.Vector3(0, 5, 0),
+        ]);
+
+        const muscleGeo = new THREE.TubeGeometry(path, 20, 4.0, 12, false);
+        const muscleMat = new THREE.MeshStandardMaterial({ map: muscleTexture, side: THREE.DoubleSide, transparent: true, opacity: 0.1 });
+        const muscleMesh = new THREE.Mesh(muscleGeo, muscleMat);
+        muscleMesh.name = 'muscle';
+        arteryGroup.add(muscleMesh);
+        layersRef.current.muscle = muscleMesh;
+
+        const epithelialGeo = new THREE.TubeGeometry(path, 20, 3.0, 12, false);
+        const epithelialMat = new THREE.MeshStandardMaterial({ map: epithelialTexture, side: THREE.DoubleSide, transparent: true, opacity: 0.1 });
+        const epithelialMesh = new THREE.Mesh(epithelialGeo, epithelialMat);
+        epithelialMesh.name = 'epithelial';
+        arteryGroup.add(epithelialMesh);
+        layersRef.current.epithelial = epithelialMesh;
+        
+        const bloodGeo = new THREE.CylinderGeometry(2.5, 2.5, 10, 32);
+        const bloodMat = new THREE.MeshBasicMaterial({ color: 0x880808, transparent: true, opacity: 0 });
+        const bloodMesh = new THREE.Mesh(bloodGeo, bloodMat);
+        bloodMesh.name = 'blood';
+        arteryGroup.add(bloodMesh);
+        layersRef.current.blood = bloodMesh;
+
+        scene.add(arteryGroup);
+
+        // Blood Particles
+        const particleCount = 500;
+        const positions = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 4;
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 10;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 4;
+        }
+        const particleGeo = new THREE.BufferGeometry();
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const particleMat = new THREE.PointsMaterial({ color: 0xff0000, size: 0.2, transparent: true, opacity: 0 });
+        const particles = new THREE.Points(particleGeo, particleMat);
+        particlesRef.current = particles;
+        arteryGroup.add(particles);
+
+        // Animation Loop
+        const animate = () => {
+            requestAnimationFrame(animate);
+            // Animate particles
+            const p = particlesRef.current;
+            if (p && p.material.opacity > 0) {
+                const positions = p.geometry.attributes.position.array as Float32Array;
+                for (let i = 0; i < particleCount; i++) {
+                    positions[i * 3 + 1] += 0.05; // Move along Y axis
+                    if (positions[i * 3 + 1] > 5) {
+                        positions[i * 3 + 1] = -5;
+                    }
+                }
+                p.geometry.attributes.position.needsUpdate = true;
+            }
+            controls.update();
+            renderer.render(scene, camera);
+        };
+        animate();
+
+        // Resize handler
+        const handleResize = () => {
+            if (!currentMount) return;
+            const width = currentMount.clientWidth;
+            const height = currentMount.clientHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        };
+        window.addEventListener('resize', handleResize);
+
+        // Cleanup
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            if (currentMount && renderer.domElement) {
+                currentMount.removeChild(renderer.domElement);
+            }
+            scene.traverse(object => {
+                if (object instanceof THREE.Mesh) {
+                    object.geometry.dispose();
+                    if (Array.isArray(object.material)) {
+                        object.material.forEach(material => material.dispose());
+                    } else {
+                        object.material.dispose();
+                    }
+                }
+            });
+        };
+    }, []);
+
+    // Update visuals based on state
+    useEffect(() => {
+        Object.entries(layersRef.current).forEach(([name, mesh]) => {
+            const isPlaced = placedTissues.includes(name as DroppableArea);
+            const isHighlighted = highlightedLayer === name;
+            
+            // Fix: Properly handle cases where material can be an array to satisfy TypeScript types.
+            const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+            
+            for (const material of materials) {
+                material.opacity = isPlaced ? (name === 'blood' ? 0.5 : 1.0) : 0.1;
+                
+                if (material instanceof THREE.MeshStandardMaterial) {
+                     material.emissive.setHex(isHighlighted ? 0xff8800 : 0x000000);
+                }
+            }
+            
+            if (name === 'blood' && particlesRef.current) {
+                (particlesRef.current.material as THREE.PointsMaterial).opacity = isPlaced ? 0.8 : 0;
+            }
+        });
+    }, [placedTissues, highlightedLayer]);
+    
+    useEffect(() => {
+        if (placedTissues.length === builtTissues.length && builtTissues.length > 0) {
+            setTimeout(onComplete, 4000);
+        }
+    }, [placedTissues, onComplete, builtTissues]);
+
+    const getIntersectedLayer = (event: React.MouseEvent<HTMLDivElement>): DroppableArea | null => {
+        if (!mountRef.current || !cameraRef.current) return null;
+        const rect = mountRef.current.getBoundingClientRect();
+        pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, cameraRef.current);
+        const intersects = raycaster.intersectObjects(Object.values(layersRef.current));
+        if (intersects.length > 0) {
+            return intersects[0].object.name as DroppableArea;
+        }
+        return null;
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const layer = getIntersectedLayer(e);
+        if (layer !== highlightedLayer) {
+            setHighlightedLayer(layer);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const layer = getIntersectedLayer(e);
+        if (draggedTissue && layer === draggedTissue && !placedTissues.includes(layer)) {
+            setPlacedTissues(prev => [...prev, layer]);
+        }
+        setDraggedTissue(null);
+        setHighlightedLayer(null);
+    };
+
+    const handleClickToPlaceTissue = (tissueType: TissueType) => {
         if (!placedTissues.includes(tissueType)) {
             setPlacedTissues(prev => [...prev, tissueType]);
         }
     };
-    
-    const handleDrop = (area: DroppableArea) => {
-        if (draggedTissue && area === draggedTissue) {
-            placeTissue(draggedTissue);
-        }
-        setDraggedTissue(null);
-    };
-
-    const handleClickToPlaceTissue = (tissueType: TissueType) => {
-        placeTissue(tissueType);
-    };
-    
-    useEffect(() => {
-        if (placedTissues.includes('blood') && placedTissues.includes('epithelial') && placedTissues.includes('muscle')) {
-            setTimeout(onComplete, 4000);
-        }
-    }, [placedTissues, onComplete]);
-
-    const isEpithelialPlaced = placedTissues.includes('epithelial');
-    const isMusclePlaced = placedTissues.includes('muscle');
-    const isBloodPlaced = placedTissues.includes('blood');
 
     return (
         <div className="w-full flex flex-col items-center gap-8">
             <h2 className="text-3xl font-bold font-display">Assemble the Artery</h2>
             <div className="flex flex-col md:flex-row items-center justify-center gap-12 w-full">
                 {/* 3D View */}
-                <div className="w-full md:w-2/3 h-[400px]" style={{ perspective: '1200px' }}>
-                     <style>{`
-                        @keyframes artery-pulse {
-                            0%, 100% { transform: scale(1); }
-                            50% { transform: scale(1.03); }
-                        }
-                        @keyframes flow-pulse {
-                            0% { left: -15%; transform: translateY(2px) scale(0.95); }
-                            25% { transform: translateY(-2px) scale(1.05); }
-                            50% { transform: translateY(3px) scale(0.9); }
-                            75% { transform: translateY(-3px) scale(1.1); }
-                            100% { left: 115%; transform: translateY(2px) scale(0.95); }
-                        }
-                    `}</style>
-                    <div className="relative w-full h-full animate-[artery-pulse_1.2s_ease-in-out_infinite]" style={{ transformStyle: 'preserve-3d', transform: 'rotateX(-25deg) rotateY(30deg)' }}>
-                        {/* Muscle Layer (Outer) */}
-                        <div
-                            onDrop={() => handleDrop('muscle')} onDragOver={e => e.preventDefault()}
-                            className={`absolute inset-0 rounded-full border-[60px] transition-all duration-500 
-                                ${isMusclePlaced ? 'border-pink-300' : 'border-pink-300/30'}
-                                ${draggedTissue === 'muscle' && !isMusclePlaced ? '!border-orange-400 scale-105 shadow-2xl animate-pulse' : ''}
-                                ${draggedTissue && draggedTissue !== 'muscle' ? 'scale-90 opacity-50' : ''}`}
-                            style={{
-                                transform: 'translateZ(-60px)',
-                                backgroundImage: isMusclePlaced 
-                                    ? `linear-gradient(to right, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0.3) 100%), url(${ASSETS['muscle-tissue']})` 
-                                    : 'none',
-                                backgroundSize: '200px',
-                                // Enhanced inner shadow for more depth and realism
-                                boxShadow: 'inset 0 0 40px 10px rgba(0,0,0,0.6), 0 15px 25px rgba(0,0,0,0.3)',
-                            }}
-                        />
-                        {/* Epithelial Layer (Inner lining) */}
-                        <div
-                            onDrop={() => handleDrop('epithelial')} onDragOver={e => e.preventDefault()}
-                            className={`absolute inset-[55px] rounded-full border-[20px] transition-all duration-500 
-                                ${isEpithelialPlaced ? 'border-red-200' : 'border-red-200/50'}
-                                ${draggedTissue === 'epithelial' && !isEpithelialPlaced ? '!border-orange-400 scale-105 shadow-2xl animate-pulse' : ''}
-                                ${draggedTissue && draggedTissue !== 'epithelial' ? 'scale-90 opacity-50' : ''}`}
-                             style={{
-                                transform: 'translateZ(0px)',
-                                backgroundImage: isEpithelialPlaced ? `url(${ASSETS['epithelial-tissue']})` : 'none',
-                                backgroundSize: '150px',
-                                // Sharper inner shadow to define the edge against the lumen
-                                boxShadow: 'inset 0 0 20px 5px rgba(50,0,0,0.5)',
-                            }}
-                        />
-                         {/* Lumen (Blood flow area) */}
-                        <div
-                            onDrop={() => handleDrop('blood')} onDragOver={e => e.preventDefault()}
-                            className={`absolute inset-[70px] rounded-full transition-all duration-500 overflow-hidden
-                                ${draggedTissue === 'blood' && !isBloodPlaced ? 'scale-105 animate-pulse' : ''}
-                                ${draggedTissue && draggedTissue !== 'blood' ? 'scale-90 opacity-50' : ''}`}
-                             style={{ 
-                                transform: 'translateZ(10px)',
-                                // Use a radial gradient for a realistic tube effect
-                                background: isBloodPlaced ? 'radial-gradient(circle, rgba(120,0,0,0.8) 0%, rgba(50,0,0,1) 100%)' : 'rgba(120,0,0,0.3)',
-                                // Deeper shadow for a more convincing tube opening
-                                boxShadow: 'inset 0 0 35px 15px rgba(0,0,0,0.85)',
-                            }}
-                        >
-                            {isBloodPlaced && (
-                                <div className="absolute inset-0 overflow-hidden rounded-full animate-pop-in">
-                                    <AnimatedBloodCell type="rbc" /><AnimatedBloodCell type="rbc" /><AnimatedBloodCell type="rbc" />
-                                    <AnimatedBloodCell type="wbc" /><AnimatedBloodCell type="platelet" /><AnimatedBloodCell type="rbc" />
-                                     <AnimatedBloodCell type="rbc" /><AnimatedBloodCell type="rbc" />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                <div
+                    className="w-full md:w-2/3 h-[400px] cursor-grab active:cursor-grabbing rounded-lg border-2 border-dashed"
+                    style={{ borderColor: 'var(--border-primary)'}}
+                    ref={mountRef}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onDragLeave={() => setHighlightedLayer(null)}
+                />
                 {/* Tissue Source */}
                 <div className="w-full md:w-1/3 flex flex-col items-center gap-4">
                      {builtTissues.map(tissue => (
