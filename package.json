@@ -15,7 +15,8 @@
     "vite": "^7.1.5",
     "vite-plugin-pwa": "^1.0.3",
     "@supabase/supabase-js": "2.39.8",
-    "chart.js": "^4.5.0"
+    "chart.js": "^4.5.0",
+    "three": "^0.180.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
