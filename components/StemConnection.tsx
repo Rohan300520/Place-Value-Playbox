@@ -1,6 +1,8 @@
 
 
 
+
+
 import React, { useState, useEffect, useCallback, useId, useMemo, useRef } from 'react';
 import { useAudio } from '../contexts/AudioContext';
 import { speak } from '../utils/speech';
@@ -407,13 +409,17 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[], onComplete: () => 
             const isPlaced = placedTissues.includes(name as DroppableArea);
             const isHighlighted = highlightedLayer === name;
             
-            const material = mesh.material as THREE.MeshStandardMaterial | THREE.MeshBasicMaterial;
-
-            material.opacity = isPlaced ? (name === 'blood' ? 0.5 : 1.0) : 0.1;
+            // Fix: Properly handle cases where material can be an array to satisfy TypeScript types.
+            const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
             
-            if (material instanceof THREE.MeshStandardMaterial) {
-                 material.emissive.setHex(isHighlighted ? 0xff8800 : 0x000000);
+            for (const material of materials) {
+                material.opacity = isPlaced ? (name === 'blood' ? 0.5 : 1.0) : 0.1;
+                
+                if (material instanceof THREE.MeshStandardMaterial) {
+                     material.emissive.setHex(isHighlighted ? 0xff8800 : 0x000000);
+                }
             }
+            
             if (name === 'blood' && particlesRef.current) {
                 (particlesRef.current.material as THREE.PointsMaterial).opacity = isPlaced ? 0.8 : 0;
             }
