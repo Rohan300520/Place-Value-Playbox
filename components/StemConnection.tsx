@@ -1,15 +1,16 @@
+
 import React, { useState, useEffect, useCallback, useId, useMemo, useRef } from 'react';
 import { useAudio } from '../contexts/AudioContext';
 import { speak } from '../utils/speech';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
 
 // --- TYPES ---
 type Stage = 'intro' | 'build_epithelial' | 'build_blood' | 'build_muscle' | 'assemble_artery';
 type CellType = 'epithelial' | 'rbc' | 'wbc' | 'platelet' | 'muscle';
 type TissueType = 'epithelial' | 'blood' | 'muscle';
-// Update: Added 'adventitia' to handle the new outer layer.
 type DroppableArea = 'epithelial' | 'muscle' | 'blood' | 'adventitia';
 
 interface Cell {
@@ -17,6 +18,13 @@ interface Cell {
   type: CellType;
   style: React.CSSProperties;
   state: 'source' | 'placed' | 'regrouping';
+}
+
+// Fix: Added a specific type for layer data to resolve type inference issues with Object.values/entries.
+interface LayerData {
+  mesh: THREE.Mesh;
+  placedMat?: THREE.Material;
+  isLayer: boolean;
 }
 
 const CELL_BUILD_REQUIREMENT = 8;
@@ -28,16 +36,18 @@ const ASSETS = {
   'wbc': '/assets/wbc.png',
   'platelet': '/assets/platelet.png',
   'muscle': '/assets/muscle-cell.png',
-  'epithelial-tissue': '/assets/epithelial-tissue-glossy.png',
-  'muscle-tissue': '/assets/muscle-tissue-fibrous.jpeg',
+  // UPDATED: New texture paths based on user description
+  'epithelial-tissue': '/assets/epithelium-smooth-glossy.png', // Smooth, glossy, wavy
+  'muscle-tissue': '/assets/muscle-braided.png', // Interwoven, fibrous
+  'adventitia-tissue': '/assets/connective-fibrous.png', // Coarse, fibrous, matte
   'blood-tissue': '/assets/blood-tissue-animated.png',
 };
 
 // --- Data for Layer Info Box ---
 const LAYER_INFO = {
-  epithelial: { name: 'Tunica Intima', description: 'The smooth, glossy inner layer. It helps blood flow without getting stuck!' },
-  muscle: { name: 'Tunica Media', description: 'The strong, muscular middle layer. It squeezes and relaxes to pump blood around your body.' },
-  adventitia: { name: 'Tunica Adventitia', description: 'The tough, protective outer layer. It gives the artery its strength and structure.' },
+  epithelial: { name: 'Epithelium Tissue (Tunica Intima)', description: 'The smooth inner layer. It helps blood flow without getting stuck!' },
+  muscle: { name: 'Smooth Muscle (Tunica Media)', description: 'The strong, muscular middle layer. It squeezes and relaxes to pump blood around your body.' },
+  adventitia: { name: 'Connective Tissue (Tunica Adventitia)', description: 'The tough, protective outer layer. It gives the artery its strength and structure.' },
 };
 
 // --- HELPER & UI COMPONENTS ---
@@ -253,6 +263,9 @@ const TissueBuilder: React.FC<{
     );
 };
 
+// Fix: Replaced the inline type with the new LayerData interface for better reusability and clarity.
+type LayerRefsType = Record<string, LayerData>;
+
 const ArteryAssembler: React.FC<{ builtTissues: TissueType[], onRestart: () => void }> = ({ builtTissues, onRestart }) => {
     const [placedTissues, setPlacedTissues] = useState<DroppableArea[]>([]);
     const [draggedTissue, setDraggedTissue] = useState<TissueType | null>(null);
@@ -262,142 +275,209 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[], onRestart: () => v
 
     const mountRef = useRef<HTMLDivElement>(null);
     const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+    const labelRendererRef = useRef<CSS2DRenderer | null>(null);
     const sceneRef = useRef<THREE.Scene | null>(null);
     const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
     const controlsRef = useRef<OrbitControls | null>(null);
     const raycaster = useMemo(() => new THREE.Raycaster(), []);
     const pointer = useMemo(() => new THREE.Vector2(), []);
-    const layersRef = useRef<Record<string, THREE.Mesh>>({} as Record<string, THREE.Mesh>);
+    const layersRef = useRef<LayerRefsType>({} as LayerRefsType);
     const particlesRef = useRef<THREE.Points | null>(null);
+    const ghostMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xaaaaaa, wireframe: true, transparent: true, opacity: 0.3 }), []);
 
     useEffect(() => {
         if (!mountRef.current) return;
         const currentMount = mountRef.current;
 
-        // Scene, Camera, Renderer
         const scene = new THREE.Scene();
         sceneRef.current = scene;
-        const camera = new THREE.PerspectiveCamera(60, currentMount.clientWidth / currentMount.clientHeight, 0.1, 1000);
-        camera.position.set(8, 6, 14);
+        const camera = new THREE.PerspectiveCamera(75, currentMount.clientWidth / currentMount.clientHeight, 0.1, 1000);
+        camera.position.set(0, 4, 9);
         cameraRef.current = camera;
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         currentMount.appendChild(renderer.domElement);
         rendererRef.current = renderer;
+        
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        currentMount.appendChild(labelRenderer.domElement);
+        labelRendererRef.current = labelRenderer;
 
-        // Controls
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enablePan = false;
-        controls.minDistance = 8;
-        controls.maxDistance = 25;
+        controls.minDistance = 5;
+        controls.maxDistance = 20;
         controls.target.set(0, 0, 0);
         controls.update();
         controlsRef.current = controls;
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+        // UPDATED: Added directional light for MeshStandardMaterial to have shadows and highlights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
         scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0);
         directionalLight.position.set(5, 10, 7.5);
         scene.add(directionalLight);
-
+        
         const arteryGroup = new THREE.Group();
-        arteryGroup.rotation.x = -Math.PI / 8;
+        arteryGroup.rotation.x = -Math.PI / 10;
+        
+        const ARTERY_LENGTH = 10;
+        const CUTAWAY_ANGLE = Math.PI * 1.6;
 
-        const path = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(0, -6, 0),
-            new THREE.Vector3(0.5, 0, 0.5),
-            new THREE.Vector3(0, 6, 0),
-        ]);
+        const LUMEN_RADIUS = 3.2;
+        const TOTAL_WALL_THICKNESS = 1.0;
+        const EPITHELIUM_THICKNESS = TOTAL_WALL_THICKNESS * 0.075;
+        const MUSCLE_THICKNESS = TOTAL_WALL_THICKNESS * 0.80;
+        const ADVENTITIA_THICKNESS = TOTAL_WALL_THICKNESS * 0.125;
 
-        // --- Create Textured Layers ---
+        const EPITHELIUM_OUTER_RADIUS = LUMEN_RADIUS + EPITHELIUM_THICKNESS;
+        const MUSCLE_OUTER_RADIUS = EPITHELIUM_OUTER_RADIUS + MUSCLE_THICKNESS;
+        const ADVENTITIA_OUTER_RADIUS = MUSCLE_OUTER_RADIUS + ADVENTITIA_THICKNESS;
+
         const textureLoader = new THREE.TextureLoader();
-        const epithelialTexture = textureLoader.load(ASSETS['epithelial-tissue']);
-        epithelialTexture.wrapS = THREE.RepeatWrapping;
-        epithelialTexture.wrapT = THREE.RepeatWrapping;
-        epithelialTexture.repeat.set(4, 2);
+        
+        // UPDATED: Load all three textures
+        const adventitiaTexture = textureLoader.load(ASSETS['adventitia-tissue']);
+        adventitiaTexture.wrapS = THREE.RepeatWrapping;
+        adventitiaTexture.wrapT = THREE.RepeatWrapping;
+        adventitiaTexture.repeat.set(2, 1);
 
         const muscleTexture = textureLoader.load(ASSETS['muscle-tissue']);
         muscleTexture.wrapS = THREE.RepeatWrapping;
         muscleTexture.wrapT = THREE.RepeatWrapping;
-        muscleTexture.repeat.set(4, 1);
+        muscleTexture.repeat.set(4, 2);
+
+        const epithelialTexture = textureLoader.load(ASSETS['epithelial-tissue']);
+        epithelialTexture.wrapS = THREE.RepeatWrapping;
+        epithelialTexture.wrapT = THREE.RepeatWrapping;
+        epithelialTexture.repeat.set(4, 2);
         
-        // Layer 1: Tunica Adventitia (Outermost)
-        const adventitiaGeo = new THREE.TubeGeometry(path, 20, 4.5, 12, false);
-        const adventitiaMat = new THREE.MeshStandardMaterial({ color: 0xD2B48C, side: THREE.DoubleSide, transparent: true, opacity: 0.2, roughness: 0.8 });
-        const adventitiaMesh = new THREE.Mesh(adventitiaGeo, adventitiaMat);
+        // UPDATED: Changed materials from MeshBasicMaterial to MeshStandardMaterial to support lighting and textures.
+        // Outer Layer: Connective Tissue (Fibrous, matte)
+        const adventitiaGeo = new THREE.CylinderGeometry(ADVENTITIA_OUTER_RADIUS, ADVENTITIA_OUTER_RADIUS, ARTERY_LENGTH * 0.5, 64, 1, false, 0, CUTAWAY_ANGLE);
+        const adventitiaMat = new THREE.MeshStandardMaterial({ 
+            map: adventitiaTexture, 
+            side: THREE.DoubleSide,
+            roughness: 0.9, // Matte
+            metalness: 0.1 
+        });
+        const adventitiaMesh = new THREE.Mesh(adventitiaGeo, ghostMaterial.clone());
+        adventitiaMesh.position.y = -(ARTERY_LENGTH * 0.25);
         adventitiaMesh.name = 'adventitia';
         arteryGroup.add(adventitiaMesh);
-        layersRef.current.adventitia = adventitiaMesh;
+        layersRef.current.adventitia = { mesh: adventitiaMesh, placedMat: adventitiaMat, isLayer: true };
 
-        // Layer 2: Tunica Media (Middle, Muscle)
-        const muscleGeo = new THREE.TubeGeometry(path, 20, 4.0, 12, false);
-        const muscleMat = new THREE.MeshStandardMaterial({ map: muscleTexture, side: THREE.DoubleSide, transparent: true, opacity: 0.2, roughness: 0.6 });
-        const muscleMesh = new THREE.Mesh(muscleGeo, muscleMat);
+        // Middle Layer: Smooth Muscle (Semi-reflective, interwoven)
+        const muscleGeo = new THREE.CylinderGeometry(MUSCLE_OUTER_RADIUS, MUSCLE_OUTER_RADIUS, ARTERY_LENGTH * 0.75, 64, 1, false, 0, CUTAWAY_ANGLE);
+        const muscleMat = new THREE.MeshStandardMaterial({ 
+            map: muscleTexture, 
+            side: THREE.DoubleSide,
+            roughness: 0.6, // Semi-reflective
+            metalness: 0.2
+        });
+        const muscleMesh = new THREE.Mesh(muscleGeo, ghostMaterial.clone());
+        muscleMesh.position.y = -(ARTERY_LENGTH * 0.125);
         muscleMesh.name = 'muscle';
         arteryGroup.add(muscleMesh);
-        layersRef.current.muscle = muscleMesh;
+        layersRef.current.muscle = { mesh: muscleMesh, placedMat: muscleMat, isLayer: true };
 
-        // Layer 3: Tunica Intima (Innermost, Epithelial)
-        const epithelialGeo = new THREE.TubeGeometry(path, 20, 3.5, 12, false);
-        const epithelialMat = new THREE.MeshStandardMaterial({ map: epithelialTexture, side: THREE.DoubleSide, transparent: true, opacity: 0.2, roughness: 0.3 });
-        const epithelialMesh = new THREE.Mesh(epithelialGeo, epithelialMat);
+        // Inner Layer: Epithelium (Smooth, glossy)
+        const epithelialGeo = new THREE.CylinderGeometry(EPITHELIUM_OUTER_RADIUS, EPITHELIUM_OUTER_RADIUS, ARTERY_LENGTH, 64, 1, false, 0, CUTAWAY_ANGLE);
+        const epithelialMat = new THREE.MeshStandardMaterial({ 
+            map: epithelialTexture, 
+            side: THREE.DoubleSide,
+            roughness: 0.1, // Glossy
+            metalness: 0.3 
+        });
+        const epithelialMesh = new THREE.Mesh(epithelialGeo, ghostMaterial.clone());
         epithelialMesh.name = 'epithelial';
         arteryGroup.add(epithelialMesh);
-        layersRef.current.epithelial = epithelialMesh;
+        layersRef.current.epithelial = { mesh: epithelialMesh, placedMat: epithelialMat, isLayer: true };
         
-        const bloodGeo = new THREE.CylinderGeometry(3.0, 3.0, 12, 32);
-        const bloodMat = new THREE.MeshBasicMaterial({ color: 0x880808, transparent: true, opacity: 0 });
+        const bloodGeo = new THREE.CylinderGeometry(LUMEN_RADIUS, LUMEN_RADIUS, ARTERY_LENGTH, 32);
+        const bloodMat = new THREE.MeshBasicMaterial({ visible: false });
         const bloodMesh = new THREE.Mesh(bloodGeo, bloodMat);
         bloodMesh.name = 'blood';
         arteryGroup.add(bloodMesh);
-        layersRef.current.blood = bloodMesh;
+        layersRef.current.blood = { mesh: bloodMesh, isLayer: false };
 
         scene.add(arteryGroup);
 
-        // Blood Particles
+        const createLabel = (text: string) => {
+            const div = document.createElement('div');
+            div.className = 'artery-label';
+            div.textContent = text;
+            return new CSS2DObject(div);
+        };
+
+        const epithelialLabel = createLabel('Epithelium tissue');
+        epithelialLabel.position.set(EPITHELIUM_OUTER_RADIUS + 0.3, 0, 0);
+        arteryGroup.add(epithelialLabel);
+
+        const muscleLabel = createLabel('Smooth Muscle');
+        muscleLabel.position.set(MUSCLE_OUTER_RADIUS - (MUSCLE_THICKNESS / 2), 1.5, 0);
+        arteryGroup.add(muscleLabel);
+
+        const adventitiaLabel = createLabel('Connective Tissue');
+        adventitiaLabel.position.set(ADVENTITIA_OUTER_RADIUS + 0.3, adventitiaMesh.position.y, 0);
+        arteryGroup.add(adventitiaLabel);
+
+        const dir = new THREE.Vector3(0, 1, 0);
+        const origin = new THREE.Vector3(0, -ARTERY_LENGTH / 2 + 1, 0);
+        const arrowHelper = new THREE.ArrowHelper(dir, origin, ARTERY_LENGTH - 2, 0xffeb3b, 1.5, 0.8);
+        arteryGroup.add(arrowHelper);
+        
+        const bloodFlowLabel = createLabel('Blood flow');
+        bloodFlowLabel.position.set(0, 1.5, 0);
+        arrowHelper.add(bloodFlowLabel);
+
         const particleCount = 500;
         const positions = new Float32Array(particleCount * 3);
-        const pathPoints = path.getPoints(100);
         for (let i = 0; i < particleCount; i++) {
-            const point = pathPoints[Math.floor(Math.random() * pathPoints.length)];
-            positions[i * 3] = point.x + (Math.random() - 0.5) * 5;
-            positions[i * 3 + 1] = point.y;
-            positions[i * 3 + 2] = point.z + (Math.random() - 0.5) * 5;
+            const r = Math.sqrt(Math.random()) * LUMEN_RADIUS;
+            const theta = Math.random() * 2 * Math.PI;
+            positions[i * 3 + 0] = r * Math.cos(theta);
+            positions[i * 3 + 1] = (Math.random() - 0.5) * ARTERY_LENGTH;
+            positions[i * 3 + 2] = r * Math.sin(theta);
         }
         const particleGeo = new THREE.BufferGeometry();
         particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const particleMat = new THREE.PointsMaterial({ color: 0xff0000, size: 0.2, transparent: true, opacity: 0 });
+        const particleMat = new THREE.PointsMaterial({ color: 0xDC143C, size: 0.1, transparent: true, opacity: 0 });
         const particles = new THREE.Points(particleGeo, particleMat);
         particlesRef.current = particles;
         arteryGroup.add(particles);
 
-        // Animation Loop
         const animate = () => {
             requestAnimationFrame(animate);
             const p = particlesRef.current;
-            if (p && p.material.opacity > 0) {
+            if (p && !Array.isArray(p.material) && p.material.opacity > 0) {
                 const positions = p.geometry.attributes.position.array as Float32Array;
                 for (let i = 0; i < particleCount; i++) {
-                    positions[i * 3 + 1] += 0.05;
-                    if (positions[i * 3 + 1] > 6) {
-                        positions[i * 3 + 1] = -6;
+                    positions[i * 3 + 1] += 0.08;
+                    if (positions[i * 3 + 1] > ARTERY_LENGTH / 2) {
+                        positions[i * 3 + 1] = -ARTERY_LENGTH / 2;
                     }
                 }
                 p.geometry.attributes.position.needsUpdate = true;
             }
             controls.update();
             renderer.render(scene, camera);
+            if(labelRendererRef.current) labelRendererRef.current.render(scene, camera);
         };
         animate();
 
-        // Event Listeners
         const handleResize = () => {
             if (!currentMount) return;
             const width = currentMount.clientWidth;
             const height = currentMount.clientHeight;
             renderer.setSize(width, height);
+            if(labelRendererRef.current) labelRendererRef.current.setSize(width, height);
             camera.aspect = width / height;
             camera.updateProjectionMatrix();
         };
@@ -410,7 +490,8 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[], onRestart: () => v
             pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
             pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
             raycaster.setFromCamera(pointer, cameraRef.current);
-            const intersects = raycaster.intersectObjects(Object.values(layersRef.current));
+            // Fix: Cast the result of Object.values to an array of LayerData to ensure correct typing.
+            const intersects = raycaster.intersectObjects((Object.values(layersRef.current) as LayerData[]).map(ld => ld.mesh));
             
             if (intersects.length > 0) {
                 const name = intersects[0].object.name as keyof typeof LAYER_INFO;
@@ -425,12 +506,12 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[], onRestart: () => v
         window.addEventListener('resize', handleResize);
         currentMount.addEventListener('pointermove', handlePointerMove);
 
-        // Cleanup
         return () => {
             window.removeEventListener('resize', handleResize);
             if (currentMount) {
                 currentMount.removeEventListener('pointermove', handlePointerMove);
-                currentMount.removeChild(renderer.domElement);
+                if(renderer.domElement) currentMount.removeChild(renderer.domElement);
+                if(labelRendererRef.current?.domElement) currentMount.removeChild(labelRendererRef.current.domElement);
             }
             scene.traverse(object => {
                 if (object instanceof THREE.Mesh) {
@@ -444,46 +525,49 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[], onRestart: () => v
                 }
             });
         };
-    }, []);
+    }, [ghostMaterial]);
 
-    // Update visuals based on state
     useEffect(() => {
-        Object.entries(layersRef.current).forEach(([name, mesh]) => {
-            const isMusclePlaced = placedTissues.includes('muscle');
-            const isEpithelialPlaced = placedTissues.includes('epithelial');
-            const isBloodPlaced = placedTissues.includes('blood');
+        // Fix: Cast the result of Object.entries to ensure `layerData` has the correct type.
+        (Object.entries(layersRef.current) as [string, LayerData][]).forEach(([name, layerData]) => {
+            if (!layerData.isLayer) return;
+            const { mesh, placedMat } = layerData;
 
             let isPlaced = false;
-            if (name === 'adventitia' || name === 'muscle') isPlaced = isMusclePlaced;
-            else if (name === 'epithelial') isPlaced = isEpithelialPlaced;
-            else if (name === 'blood') isPlaced = isBloodPlaced;
+            if (name === 'adventitia' || name === 'muscle') isPlaced = placedTissues.includes('muscle');
+            else if (name === 'epithelial') isPlaced = placedTissues.includes('epithelial');
 
             let isHighlighted = highlightedLayer === name;
             if ((highlightedLayer === 'muscle' || highlightedLayer === 'adventitia') && (name === 'muscle' || name === 'adventitia')) {
                 isHighlighted = true;
             }
             
-            // Fix: Use `instanceof` checks for type safety when accessing properties like opacity and emissive.
-            const applyChanges = (material: THREE.Material) => {
-                if (material instanceof THREE.MeshStandardMaterial) {
-                    material.opacity = isPlaced ? (name === 'blood' ? 0.5 : 1.0) : 0.2;
-                    material.emissive.setHex(isHighlighted ? 0xff8800 : 0x000000);
-                } else if (material instanceof THREE.MeshBasicMaterial) {
-                    material.opacity = isPlaced ? (name === 'blood' ? 0.5 : 1.0) : 0.2;
+            if (isPlaced) {
+                // If placed, use the final material. It's a MeshBasicMaterial, so no emissive property.
+                if (mesh.material !== placedMat) {
+                    mesh.material = placedMat!;
                 }
-            };
-
-            if (Array.isArray(mesh.material)) {
-                mesh.material.forEach(applyChanges);
             } else {
-                applyChanges(mesh.material);
-            }
-            
-            if (name === 'blood' && particlesRef.current) {
-                (particlesRef.current.material as THREE.PointsMaterial).opacity = isPlaced ? 0.8 : 0;
+                // If not placed, use the ghost material and set its emissive color for highlighting.
+                if (mesh.material === placedMat) {
+                    mesh.material = ghostMaterial.clone();
+                }
+                
+                const material = mesh.material as THREE.MeshStandardMaterial;
+                if (material.emissive) { // Check if emissive property exists
+                    material.emissive.setHex(isHighlighted ? 0xffaa33 : 0x000000);
+                }
             }
         });
-    }, [placedTissues, highlightedLayer]);
+
+        const isBloodPlaced = placedTissues.includes('blood');
+        if (particlesRef.current) {
+            const material = particlesRef.current.material;
+            if (!Array.isArray(material)) {
+                (material as THREE.PointsMaterial).opacity = isBloodPlaced ? 0.8 : 0;
+            }
+        }
+    }, [placedTissues, highlightedLayer, ghostMaterial]);
     
     useEffect(() => {
         if (builtTissues.length > 0 && builtTissues.every(t => placedTissues.includes(t))) {
@@ -498,7 +582,8 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[], onRestart: () => v
         pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(pointer, cameraRef.current);
-        const intersects = raycaster.intersectObjects(Object.values(layersRef.current));
+        // Fix: Cast the result of Object.values to an array of LayerData to ensure correct typing.
+        const intersects = raycaster.intersectObjects((Object.values(layersRef.current) as LayerData[]).map(ld => ld.mesh));
         if (intersects.length > 0) {
             return intersects[0].object.name as DroppableArea;
         }
@@ -565,8 +650,8 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[], onRestart: () => v
                                 </div>
                             )}
                         </div>
-                        <div className="w-full md:w-1/3 flex flex-col items-center gap-4">
-                            {builtTissues.map(tissue => (
+                        <div className="flex-shrink-0 flex flex-col gap-4 items-center">
+                             {builtTissues.map(tissue => (
                                 <DraggableTissue 
                                     key={tissue} 
                                     type={tissue} 
@@ -575,44 +660,37 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[], onRestart: () => v
                                     onClick={handleClickToPlaceTissue}
                                     isPlaced={placedTissues.includes(tissue)}
                                 />
-                            ))}
+                             ))}
                         </div>
                     </div>
-                    <p className="text-center text-sm italic" style={{color: 'var(--text-secondary)'}}>This is a simplified 3D model for educational purposes.</p>
                 </>
             )}
         </div>
     );
-};
+}
 
+// --- MAIN COMPONENT ---
 export const StemConnection: React.FC = () => {
     const [stage, setStage] = useState<Stage>('intro');
     const [builtTissues, setBuiltTissues] = useState<TissueType[]>([]);
 
     const handleTissueComplete = (tissue: TissueType) => {
-        if (!builtTissues.includes(tissue)) {
-            setBuiltTissues(prev => [...prev, tissue]);
-        }
-        
-        switch (stage) {
-            case 'build_epithelial':
-                setStage('build_blood');
-                break;
-            case 'build_blood':
-                setStage('build_muscle');
-                break;
-            case 'build_muscle':
-                setStage('assemble_artery');
-                break;
+        setBuiltTissues(prev => [...prev, tissue]);
+        if (tissue === 'epithelial') {
+            setStage('build_blood');
+        } else if (tissue === 'blood') {
+            setStage('build_muscle');
+        } else if (tissue === 'muscle') {
+            setStage('assemble_artery');
         }
     };
     
-    const restart = () => {
-      setStage('intro');
-      setBuiltTissues([]);
+    const handleRestart = () => {
+        setBuiltTissues([]);
+        setStage('intro');
     }
 
-    const renderContent = () => {
+    const renderStage = () => {
         switch (stage) {
             case 'intro':
                 return <IntroScreen onStart={() => setStage('build_epithelial')} />;
@@ -623,15 +701,27 @@ export const StemConnection: React.FC = () => {
             case 'build_muscle':
                 return <TissueBuilder title="Build Muscle Tissue" cellTypes={['muscle']} onComplete={() => handleTissueComplete('muscle')} />;
             case 'assemble_artery':
-                return <ArteryAssembler builtTissues={builtTissues} onRestart={restart} />;
+                return <ArteryAssembler builtTissues={builtTissues} onRestart={handleRestart} />;
             default:
                 return null;
         }
     };
 
     return (
-        <div className="w-full max-w-6xl mx-auto p-4 rounded-2xl shadow-xl flex items-center justify-center min-h-[70vh]" style={{ backgroundColor: 'var(--backdrop-bg)'}}>
-            {renderContent()}
+        <div className="w-full max-w-7xl animate-pop-in flex flex-col items-center p-4 sm:p-6 rounded-2xl shadow-xl" style={{ backgroundColor: 'var(--backdrop-bg)'}}>
+             <style>{`
+                .artery-label {
+                    color: #ffffff;
+                    background: rgba(0, 0, 0, 0.75);
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-size: 14px;
+                    font-weight: bold;
+                    text-shadow: 1px 1px 2px black;
+                    white-space: nowrap;
+                }
+            `}</style>
+            {renderStage()}
         </div>
     );
 };
