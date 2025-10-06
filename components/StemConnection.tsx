@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useId, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useId, useRef, useMemo } from 'react';
 import { useAudio } from '../contexts/AudioContext';
 import { speak } from '../utils/speech';
 import * as THREE from 'three';
@@ -61,8 +61,8 @@ const LAYER_INFO = {
 };
 
 // --- PROCEDURAL TEXTURE HELPERS ---
-const createFibrousTexture = (
-    width: number, height: number, baseColor: string, lineColor: string, numLines: number, horizontal: boolean
+const createCellularTexture = (
+    width: number, height: number, baseColor: string, lineColor: string, cellSize: number
 ): THREE.CanvasTexture => {
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -71,51 +71,42 @@ const createFibrousTexture = (
     context.fillStyle = baseColor;
     context.fillRect(0, 0, width, height);
     context.strokeStyle = lineColor;
-    context.lineWidth = 1;
-    context.globalAlpha = 0.3;
+    context.lineWidth = width / 128; // a thin line relative to texture size
+    context.globalAlpha = 0.8;
 
-    for (let i = 0; i < numLines; i++) {
-        context.beginPath();
-        if (horizontal) {
-            const y = Math.random() * height;
-            const wobble = (Math.random() - 0.5) * 10;
-            context.moveTo(0, y);
-            context.quadraticCurveTo(width / 2, y + wobble, width, y);
-        } else {
-            const x1 = Math.random() * width;
-            const y1 = Math.random() * height;
-            const angle = Math.random() * Math.PI * 2;
-            const length = Math.random() * 50 + 20;
-            const x2 = x1 + Math.cos(angle) * length;
-            const y2 = y1 + Math.sin(angle) * length;
-            context.moveTo(x1, y1);
-            context.lineTo(x2, y2);
+    const hexRadius = cellSize;
+    const hexHeight = Math.sqrt(3) * hexRadius;
+    const hexWidth = 2 * hexRadius;
+    const horizSpacing = hexWidth * 3 / 4;
+    const vertSpacing = hexHeight;
+
+    for (let y = -hexHeight; y < height + hexHeight; y += vertSpacing / 2) {
+        for (let x = -horizSpacing; x < width + horizSpacing; x += horizSpacing) {
+            const j = Math.floor(y / (vertSpacing / 2));
+            
+            const finalX = j % 2 === 0 ? x : x + horizSpacing / 2;
+
+            context.beginPath();
+            for (let side = 0; side < 7; side++) {
+                const angle = 2 * Math.PI / 6 * side;
+                const px = finalX + hexRadius * Math.cos(angle);
+                const py = y + hexRadius * Math.sin(angle);
+                if (side === 0) {
+                    context.moveTo(px, py);
+                } else {
+                    context.lineTo(px, py);
+                }
+            }
+            context.stroke();
         }
-        context.stroke();
     }
-    return new THREE.CanvasTexture(canvas);
-};
 
-const createNoiseTexture = (width: number, height: number): THREE.CanvasTexture => {
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext('2d')!;
-    const imageData = context.createImageData(width, height);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-        const value = Math.floor(Math.random() * 100) + 155; // Subtle noise
-        data[i] = value;
-        data[i + 1] = value;
-        data[i + 2] = value;
-        data[i + 3] = 255;
-    }
-    context.putImageData(imageData, 0, 0);
     const texture = new THREE.CanvasTexture(canvas);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     return texture;
 };
+
 
 // --- HELPER & UI COMPONENTS ---
 const DraggableCell: React.FC<{ 
@@ -329,6 +320,7 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
     const [draggedTissue, setDraggedTissue] = useState<TissueType | null>(null);
     const [highlightedLayer, setHighlightedLayer] = useState<DroppableArea | null>(null);
     const [hoveredLayerInfo, setHoveredLayerInfo] = useState<{ name: string; description: string } | null>(null);
+    const [isCutaway, setIsCutaway] = useState(true);
 
     const mountRef = useRef<HTMLDivElement>(null);
     const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -349,6 +341,11 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
       rotationSpeed: THREE.Euler;
     }[]>([]);
 
+    const clipPlanes = useMemo(() => [
+        new THREE.Plane(new THREE.Vector3(1, 0, 0), 0),
+        new THREE.Plane(new THREE.Vector3(0, 0, 1), 0),
+    ], []);
+
     useEffect(() => {
         if (!mountRef.current) return;
         const currentMount = mountRef.current;
@@ -361,6 +358,7 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.localClippingEnabled = true; // Enable clipping
         currentMount.appendChild(renderer.domElement);
         rendererRef.current = renderer;
         
@@ -403,34 +401,29 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
         const TUBE_SEGMENTS = 64;
         const RADIAL_SEGMENTS = 32;
 
-        const adventitiaTexture = createFibrousTexture(256, 256, '#F5F5DC', '#D2B48C', 1000, false);
         const adventitiaGeo = new THREE.TubeGeometry(curve, TUBE_SEGMENTS, ADVENTITIA_OUTER_RADIUS, RADIAL_SEGMENTS, false);
-        const adventitiaMat = new THREE.MeshStandardMaterial({ map: adventitiaTexture, side: THREE.DoubleSide, roughness: 0.8, metalness: 0.1 });
+        const adventitiaMat = new THREE.MeshStandardMaterial({ color: 0xDAA520, side: THREE.DoubleSide, roughness: 0.4, metalness: 0.3, clippingPlanes: clipPlanes });
         const adventitiaMesh = new THREE.Mesh(adventitiaGeo, adventitiaMat);
         adventitiaMesh.name = 'adventitia';
         arteryGroup.add(adventitiaMesh);
         layersRef.current.adventitia = { mesh: adventitiaMesh, isLayer: true };
-
-        const muscleTexture = createFibrousTexture(512, 128, '#E6A8A8', '#8B4513', 500, true);
-        muscleTexture.wrapS = THREE.RepeatWrapping;
-        muscleTexture.repeat.x = 4;
+        
         const muscleGeo = new THREE.TubeGeometry(curve, TUBE_SEGMENTS, MUSCLE_OUTER_RADIUS, RADIAL_SEGMENTS, false);
-        const muscleMat = new THREE.MeshStandardMaterial({ map: muscleTexture, side: THREE.DoubleSide, roughness: 0.6, metalness: 0.2 });
+        const muscleMat = new THREE.MeshStandardMaterial({ color: 0x800080, side: THREE.DoubleSide, roughness: 0.6, metalness: 0.2, clippingPlanes: clipPlanes });
         const muscleMesh = new THREE.Mesh(muscleGeo, muscleMat);
         muscleMesh.name = 'muscle';
         arteryGroup.add(muscleMesh);
         layersRef.current.muscle = { mesh: muscleMesh, isLayer: true };
 
-        const bumpTexture = createNoiseTexture(256, 256);
-        bumpTexture.repeat.set(4, 2);
+        const cellularTexture = createCellularTexture(256, 512, '#C75D6E', '#BF4A5C', 20);
+        cellularTexture.repeat.set(8, 4);
         const epithelialGeo = new THREE.TubeGeometry(curve, TUBE_SEGMENTS, EPITHELIUM_OUTER_RADIUS, RADIAL_SEGMENTS, false);
         const epithelialMat = new THREE.MeshStandardMaterial({ 
-            color: new THREE.Color('#FFFAF0'),
+            map: cellularTexture,
             side: THREE.DoubleSide, 
-            roughness: 0.4, 
+            roughness: 0.5, 
             metalness: 0.1,
-            bumpMap: bumpTexture,
-            bumpScale: 0.02,
+            clippingPlanes: clipPlanes,
         });
         const epithelialMesh = new THREE.Mesh(epithelialGeo, epithelialMat);
         epithelialMesh.name = 'epithelial';
@@ -543,7 +536,7 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
             pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
             pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
             raycaster.setFromCamera(pointer, cameraRef.current);
-            const intersects = raycaster.intersectObjects(Object.values(layersRef.current).map(ld => ld.mesh));
+            const intersects = raycaster.intersectObjects((Object.values(layersRef.current) as LayerData[]).map(ld => ld.mesh));
             
             if (intersects.length > 0) {
                 const name = intersects[0].object.name as keyof typeof LAYER_INFO;
@@ -569,7 +562,7 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
     }, []);
 
     useEffect(() => {
-        Object.entries(layersRef.current).forEach(([name, layerData]) => {
+        (Object.entries(layersRef.current) as [string, LayerData][]).forEach(([name, layerData]) => {
             if (!layerData.isLayer) return;
             const { mesh } = layerData;
             const material = mesh.material as THREE.MeshStandardMaterial;
@@ -591,6 +584,17 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
         }
 
     }, [placedTissues, highlightedLayer]);
+
+    useEffect(() => {
+        const layerNames: DroppableArea[] = ['adventitia', 'muscle', 'epithelial'];
+        layerNames.forEach(name => {
+            const layer = layersRef.current[name];
+            if (layer?.mesh?.material) {
+                const material = layer.mesh.material as THREE.MeshStandardMaterial;
+                material.clippingPlanes = isCutaway ? clipPlanes : [];
+            }
+        });
+    }, [isCutaway, clipPlanes]);
     
     const getIntersectedLayer = (event: React.MouseEvent<HTMLDivElement>): DroppableArea | null => {
         if (!mountRef.current || !cameraRef.current) return null;
@@ -598,7 +602,7 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
         pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(pointer, cameraRef.current);
-        const intersects = raycaster.intersectObjects(Object.values(layersRef.current).map(ld => ld.mesh));
+        const intersects = raycaster.intersectObjects((Object.values(layersRef.current) as LayerData[]).map(ld => ld.mesh));
         if (intersects.length > 0) {
             return intersects[0].object.name as DroppableArea;
         }
@@ -632,8 +636,16 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
     };
 
     return (
-        <div className="w-full flex flex-col items-center gap-8">
-            <h2 className="text-3xl font-bold font-display">Assemble the Artery</h2>
+        <div className="w-full flex flex-col items-center gap-4">
+            <div className="w-full flex justify-between items-center">
+                <h2 className="text-3xl font-bold font-display">Assemble the Artery</h2>
+                <button 
+                    onClick={() => setIsCutaway(prev => !prev)}
+                    className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transform hover:scale-105 transition-all duration-200 border-b-4 border-indigo-700 active:border-b-2"
+                >
+                    {isCutaway ? 'Show Full Artery' : 'Show Cutaway View'}
+                </button>
+            </div>
             <div className="flex flex-col md:flex-row items-center justify-center gap-12 w-full">
                 <div className="w-full md:w-2/3 h-[400px] md:h-[500px] rounded-lg border-2 border-dashed relative" style={{ borderColor: 'var(--border-primary)'}}>
                     <div
