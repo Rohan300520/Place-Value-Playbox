@@ -445,10 +445,10 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
         arteryGroup.rotation.x = -Math.PI / 10;
         
         const curve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(-4.2, -1.0, 0),
-            new THREE.Vector3(-1.4, 0.5, 0),
-            new THREE.Vector3(1.4, -0.5, 0),
-            new THREE.Vector3(4.2, 1.0, 0)
+            new THREE.Vector3(-2.52, -0.2, 0),
+            new THREE.Vector3(-0.84, 0.3, 0),
+            new THREE.Vector3(0.84, -0.3, 0),
+            new THREE.Vector3(2.52, 0.2, 0)
         ]);
 
         const LUMEN_RADIUS = 0.49;
@@ -461,9 +461,9 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
 
         const endNormal = curve.getTangentAt(1).clone().negate();
         // Reversed stagger: outermost is shortest, innermost is longest.
-        const vasaPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(endNormal, curve.getPointAt(0.6));
-        const adventitiaPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(endNormal, curve.getPointAt(0.75));
-        const musclePlane = new THREE.Plane().setFromNormalAndCoplanarPoint(endNormal, curve.getPointAt(0.9));
+        const vasaPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(endNormal, curve.getPointAt(0.42));
+        const adventitiaPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(endNormal, curve.getPointAt(0.525));
+        const musclePlane = new THREE.Plane().setFromNormalAndCoplanarPoint(endNormal, curve.getPointAt(0.63));
         
         clippingConfigsRef.current = {
             vasa: [vasaPlane],
