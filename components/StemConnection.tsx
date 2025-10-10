@@ -30,16 +30,16 @@ const CELL_BUILD_REQUIREMENT = 8;
 // --- CONFIGURATION ---
 const ASSET_PATHS = {
   // Cells (for UI)
-  'epithelial': '/assets/stem/epithelial_cell.png',
-  'rbc': '/assets/stem/rbc_cell.png',
-  'wbc': '/assets/stem/wbc_cell.png',
-  'platelet': '/assets/stem/platelet_cell.png',
-  'muscle': '/assets/stem/muscle_cell.png',
+  'epithelial': '/assets/endothelial-cell.webp',
+  'rbc': '/assets/rbc.webp',
+  'wbc': '/assets/wbc.webp',
+  'platelet': '/assets/platelet.webp',
+  'muscle': '/assets/muscle-cell.webp',
   // Tissues (for UI)
-  'epithelial-tissue': '/assets/stem/epithelial_tissue.png',
-  'muscle-tissue': '/assets/stem/muscle_tissue.png',
-  'adventitia-tissue': '/assets/stem/connective_tissue.png',
-  'blood-tissue': '/assets/stem/blood_tissue.png',
+  'epithelial-tissue': '/assets/epithelial-tissue.webp',
+  'muscle-tissue': '/assets/muscle-tissue-fibrous.jpeg',
+  'adventitia-tissue': '/assets/adventitia-tissue.png',
+  'blood-tissue': '/assets/blood-tissue-animated.png',
 };
 
 const ASSET_INFO = {
