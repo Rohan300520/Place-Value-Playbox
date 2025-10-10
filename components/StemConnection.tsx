@@ -410,7 +410,7 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
         const scene = new THREE.Scene();
         sceneRef.current = scene;
         const camera = new THREE.PerspectiveCamera(75, currentMount.clientWidth / currentMount.clientHeight, 0.1, 1000);
-        camera.position.set(12, 3, 10);
+        camera.position.set(10, 3, 8);
         cameraRef.current = camera;
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
@@ -429,8 +429,8 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enablePan = false;
-        controls.minDistance = 5;
-        controls.maxDistance = 25;
+        controls.minDistance = 3;
+        controls.maxDistance = 20;
         controls.target.set(3, 0, 0);
         controls.update();
         controlsRef.current = controls;
@@ -451,11 +451,11 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
             new THREE.Vector3(10, 1.5, 0)
         ]);
 
-        const LUMEN_RADIUS = 3.2;
-        const EPITHELIUM_OUTER_RADIUS = 3.3;
-        const MUSCLE_OUTER_RADIUS = 4.0;
-        const ADVENTITIA_OUTER_RADIUS = 4.2;
-        const VASA_VASORUM_OUTER_RADIUS = 4.5;
+        const LUMEN_RADIUS = 2.1;
+        const EPITHELIUM_OUTER_RADIUS = 2.2;
+        const MUSCLE_OUTER_RADIUS = 2.7;
+        const ADVENTITIA_OUTER_RADIUS = 2.8;
+        const VASA_VASORUM_OUTER_RADIUS = 3.0;
         const TUBE_SEGMENTS = 64;
         const RADIAL_SEGMENTS = 32;
 
@@ -618,7 +618,8 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
             pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
             pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
             raycaster.setFromCamera(pointer, cameraRef.current);
-            const intersects = raycaster.intersectObjects(Object.values(layersRef.current).map(ld => ld.mesh));
+            // Fix: Cast the result of Object.values to the correct type to resolve property access error.
+            const intersects = raycaster.intersectObjects((Object.values(layersRef.current) as LayerData[]).map(ld => ld.mesh));
             
             if (intersects.length > 0) {
                 const name = intersects[0].object.name as keyof typeof LAYER_INFO;
@@ -647,7 +648,8 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
 
     useEffect(() => {
         const isAdventitiaPlaced = placedTissues.includes('adventitia');
-        Object.entries(layersRef.current).forEach(([name, layerData]) => {
+        // Fix: Cast the result of Object.entries to the correct type to resolve property access errors.
+        (Object.entries(layersRef.current) as [string, LayerData][]).forEach(([name, layerData]) => {
             if (!layerData.isLayer) return;
             const { mesh } = layerData;
             const material = mesh.material as THREE.MeshStandardMaterial;
@@ -687,7 +689,8 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
         pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(pointer, cameraRef.current);
-        const intersects = raycaster.intersectObjects(Object.values(layersRef.current).map(ld => ld.mesh));
+        // Fix: Cast the result of Object.values to the correct type to resolve property access error.
+        const intersects = raycaster.intersectObjects((Object.values(layersRef.current) as LayerData[]).map(ld => ld.mesh));
         if (intersects.length > 0) {
             return intersects[0].object.name as DroppableArea;
         }
@@ -749,7 +752,7 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
                     )}
                 </div>
                 <div className="flex-shrink-0 flex flex-col gap-4 items-center">
-                     {builtTissues.map(tissue => (
+                     {builtTissues.filter(tissue => tissue !== 'blood').map(tissue => (
                         <DraggableTissue 
                             key={tissue} 
                             type={tissue} 
