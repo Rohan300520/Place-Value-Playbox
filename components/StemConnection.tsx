@@ -410,7 +410,7 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
         const scene = new THREE.Scene();
         sceneRef.current = scene;
         const camera = new THREE.PerspectiveCamera(75, currentMount.clientWidth / currentMount.clientHeight, 0.1, 1000);
-        camera.position.set(5, 7, 14);
+        camera.position.set(12, 3, 10);
         cameraRef.current = camera;
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
@@ -459,7 +459,6 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
         const TUBE_SEGMENTS = 64;
         const RADIAL_SEGMENTS = 32;
 
-        const sideCut = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
         const endNormal = curve.getTangentAt(1).clone().negate();
         // Reversed stagger: outermost is shortest, innermost is longest.
         const vasaPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(endNormal, curve.getPointAt(0.6));
@@ -467,10 +466,10 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
         const musclePlane = new THREE.Plane().setFromNormalAndCoplanarPoint(endNormal, curve.getPointAt(0.9));
         
         clippingConfigsRef.current = {
-            vasa: [sideCut, vasaPlane],
-            adventitia: [sideCut, adventitiaPlane],
-            muscle: [sideCut, musclePlane],
-            epithelial: [sideCut], // Innermost layer has no end clipping, making it the longest.
+            vasa: [vasaPlane],
+            adventitia: [adventitiaPlane],
+            muscle: [musclePlane],
+            epithelial: [],
         };
 
         const vasaVasorumGeo = new THREE.TubeGeometry(curve, TUBE_SEGMENTS, VASA_VASORUM_OUTER_RADIUS, RADIAL_SEGMENTS, false);
