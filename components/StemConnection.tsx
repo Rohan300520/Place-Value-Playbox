@@ -410,7 +410,7 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
         const scene = new THREE.Scene();
         sceneRef.current = scene;
         const camera = new THREE.PerspectiveCamera(75, currentMount.clientWidth / currentMount.clientHeight, 0.1, 1000);
-        camera.position.set(10, 3, 8);
+        camera.position.set(0, 1.5, 6);
         cameraRef.current = camera;
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
@@ -429,9 +429,9 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enablePan = false;
-        controls.minDistance = 3;
-        controls.maxDistance = 20;
-        controls.target.set(3, 0, 0);
+        controls.minDistance = 2;
+        controls.maxDistance = 12;
+        controls.target.set(0, 0, 0);
         controls.update();
         controlsRef.current = controls;
 
@@ -445,17 +445,17 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
         arteryGroup.rotation.x = -Math.PI / 10;
         
         const curve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(-10, -1.5, 0),
-            new THREE.Vector3(-4, 0.5, 0),
-            new THREE.Vector3(4, -0.5, 0),
-            new THREE.Vector3(10, 1.5, 0)
+            new THREE.Vector3(-4.2, -1.0, 0),
+            new THREE.Vector3(-1.4, 0.5, 0),
+            new THREE.Vector3(1.4, -0.5, 0),
+            new THREE.Vector3(4.2, 1.0, 0)
         ]);
 
-        const LUMEN_RADIUS = 2.1;
-        const EPITHELIUM_OUTER_RADIUS = 2.2;
-        const MUSCLE_OUTER_RADIUS = 2.7;
-        const ADVENTITIA_OUTER_RADIUS = 2.8;
-        const VASA_VASORUM_OUTER_RADIUS = 3.0;
+        const LUMEN_RADIUS = 0.49;
+        const EPITHELIUM_OUTER_RADIUS = 0.525;
+        const MUSCLE_OUTER_RADIUS = 0.65;
+        const ADVENTITIA_OUTER_RADIUS = 0.675;
+        const VASA_VASORUM_OUTER_RADIUS = 0.725;
         const TUBE_SEGMENTS = 64;
         const RADIAL_SEGMENTS = 32;
 
@@ -520,7 +520,7 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
         layersRef.current.blood = { mesh: bloodMesh, isLayer: false };
 
         const RBC_COUNT = 500;
-        const rbcGeo = new THREE.SphereGeometry(0.2, 8, 8);
+        const rbcGeo = new THREE.SphereGeometry(0.1, 8, 8);
         const rbcMat = new THREE.MeshBasicMaterial({ color: 0xDC143C });
         const rbcMesh = new THREE.InstancedMesh(rbcGeo, rbcMat, RBC_COUNT);
         rbcMesh.visible = false;
@@ -550,15 +550,15 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
         };
 
         const labelEpithelium = createLabel('Epithelium');
-        labelEpithelium.position.copy(curve.getPointAt(0.8)).add(new THREE.Vector3(0, EPITHELIUM_OUTER_RADIUS + 0.5, 0));
+        labelEpithelium.position.copy(curve.getPointAt(0.8)).add(new THREE.Vector3(0, EPITHELIUM_OUTER_RADIUS + 0.15, 0));
         arteryGroup.add(labelEpithelium);
         
         const labelMuscle = createLabel('Smooth Muscle');
-        labelMuscle.position.copy(curve.getPointAt(0.6)).add(new THREE.Vector3(0, MUSCLE_OUTER_RADIUS + 0.5, 0));
+        labelMuscle.position.copy(curve.getPointAt(0.6)).add(new THREE.Vector3(0, MUSCLE_OUTER_RADIUS + 0.15, 0));
         arteryGroup.add(labelMuscle);
         
         const labelAdventitia = createLabel('Connective Tissue');
-        labelAdventitia.position.copy(curve.getPointAt(0.4)).add(new THREE.Vector3(0, ADVENTITIA_OUTER_RADIUS + 0.5, 0));
+        labelAdventitia.position.copy(curve.getPointAt(0.4)).add(new THREE.Vector3(0, ADVENTITIA_OUTER_RADIUS + 0.15, 0));
         arteryGroup.add(labelAdventitia);
 
         const animate = () => {
@@ -736,7 +736,7 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissue
                 </button>
             </div>
             <div className="flex flex-col md:flex-row items-center justify-center gap-12 w-full">
-                <div className="w-full md:w-2/3 h-[400px] md:h-[500px] rounded-lg border-2 border-dashed relative" style={{ borderColor: 'var(--border-primary)'}}>
+                <div className="w-full md:w-2/3 h-[500px] md:h-[600px] rounded-lg border-2 border-dashed relative" style={{ borderColor: 'var(--border-primary)'}}>
                     <div
                         className="w-full h-full cursor-grab active:cursor-grabbing"
                         ref={mountRef}
