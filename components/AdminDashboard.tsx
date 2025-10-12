@@ -53,7 +53,7 @@ const NewKeyForm: React.FC<{ onGenerateKey: AdminDashboardProps['onGenerateKey']
           type="number"
           value={usageLimit}
           onChange={(e) => setUsageLimit(parseInt(e.target.value, 10) || 0)}
-          placeholder="Usage Limit"
+          placeholder="e.g., 100 uses"
           required
           min="1"
           className="w-full p-3 text-lg rounded-lg border-2 focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition"
@@ -63,9 +63,9 @@ const NewKeyForm: React.FC<{ onGenerateKey: AdminDashboardProps['onGenerateKey']
       <div className="mt-4">
         <label className="block text-lg font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>Validity Period</label>
         <div className="grid grid-cols-3 gap-2">
-          <input type="number" value={validityDays} onChange={e => setValidityDays(parseInt(e.target.value) || 0)} placeholder="Days" className="w-full p-2 text-center rounded-md border-2" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }} />
-          <input type="number" value={validityHours} onChange={e => setValidityHours(parseInt(e.target.value) || 0)} placeholder="Hours" className="w-full p-2 text-center rounded-md border-2" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }} />
-          <input type="number" value={validityMinutes} onChange={e => setValidityMinutes(parseInt(e.target.value) || 0)} placeholder="Minutes" className="w-full p-2 text-center rounded-md border-2" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }} />
+          <input type="number" value={validityDays} onChange={e => setValidityDays(parseInt(e.target.value) || 0)} placeholder="e.g., 30 Days" className="w-full p-2 text-center rounded-md border-2" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }} />
+          <input type="number" value={validityHours} onChange={e => setValidityHours(parseInt(e.target.value) || 0)} placeholder="e.g., 12 Hours" className="w-full p-2 text-center rounded-md border-2" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }} />
+          <input type="number" value={validityMinutes} onChange={e => setValidityMinutes(parseInt(e.target.value) || 0)} placeholder="e.g., 0 Minutes" className="w-full p-2 text-center rounded-md border-2" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }} />
         </div>
       </div>
       <button
