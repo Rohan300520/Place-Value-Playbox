@@ -28,12 +28,8 @@ const ASSET_PATHS = {
   'epithelial-tissue': '/assets/epithelial-tissue.webp',
   'muscle-tissue': '/assets/muscle-tissue-fibrous.jpeg',
   'blood-tissue': '/assets/blood-tissue-animated.png',
-  // New assets for 2D Artery
-  'artery-outline': '/assets/artery-outline.png',
-  'artery-layer-muscle': '/assets/artery-layer-muscle.png',
-  'artery-layer-epithelial': '/assets/artery-layer-epithelial.png',
-  'artery-layer-blood': '/assets/artery-layer-blood.png',
-  'artery-background': '/assets/human-torso.webp',
+  // Final Artery Image
+  'artery': '/assets/artery.png',
 };
 
 const ASSET_INFO = {
@@ -45,6 +41,7 @@ const ASSET_INFO = {
   'epithelial-tissue': { name: 'Epithelial Tissue' },
   'muscle-tissue': { name: 'Muscle Tissue' },
   'blood-tissue': { name: 'Blood Tissue' },
+  'artery': { name: 'Artery' },
 };
 
 // --- HELPER & UI COMPONENTS ---
@@ -360,25 +357,33 @@ const ArteryAssembler: React.FC<{ builtTissues: TissueType[], onComplete: () => 
             <p className="text-center">Drag the tissues you built to form the artery!</p>
             <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full mt-4">
                 <div 
-                    onDrop={handleDrop}
-                    onDragOver={(e) => { e.preventDefault(); setIsDropZoneActive(true); }}
-                    onDragLeave={() => setIsDropZoneActive(false)}
-                    className="relative w-full max-w-xl h-96 rounded-2xl p-4 transition-all duration-300" 
+                    onDrop={isComplete ? undefined : handleDrop}
+                    onDragOver={isComplete ? undefined : (e) => { e.preventDefault(); setIsDropZoneActive(true); }}
+                    onDragLeave={isComplete ? undefined : () => setIsDropZoneActive(false)}
+                    className="relative w-full max-w-xl h-96 rounded-2xl p-4 transition-all duration-500 flex items-center justify-center" 
                     style={{ 
-                        backgroundImage: `url(${ASSET_PATHS['artery-background']})`, 
-                        backgroundSize: 'cover', 
-                        backgroundPosition: 'center',
-                        border: isDropZoneActive ? '4px dashed #f97316' : '4px dashed transparent'
+                        border: !isComplete && isDropZoneActive ? '4px dashed #f97316' : '4px dashed var(--border-primary)',
+                        backgroundColor: 'var(--panel-bg)'
                     }}
                 >
-                    <div className="absolute inset-0 w-full h-full pointer-events-none">
-                        <img src={ASSET_PATHS['artery-outline']} alt="Artery Outline" className="w-full h-full object-contain opacity-50" />
-                        {placedTissues.includes('muscle') && <img src={ASSET_PATHS['artery-layer-muscle']} alt="Muscle Layer" className="absolute inset-0 w-full h-full object-contain animate-pop-in" />}
-                        {placedTissues.includes('epithelial') && <img src={ASSET_PATHS['artery-layer-epithelial']} alt="Epithelial Layer" className="absolute inset-0 w-full h-full object-contain animate-pop-in" style={{ animationDelay: '0.1s' }} />}
-                        {placedTissues.includes('blood') && <img src={ASSET_PATHS['artery-layer-blood']} alt="Blood Layer" className="absolute inset-0 w-full h-full object-contain animate-pop-in" style={{ animationDelay: '0.2s' }} />}
-                    </div>
+                    {isComplete ? (
+                        <img 
+                            src={ASSET_PATHS['artery']} 
+                            alt="Completed Artery" 
+                            className="w-full h-full object-contain animate-bouncy-pop-in"
+                        />
+                    ) : (
+                        <div className="text-center">
+                            <p className="text-2xl font-bold" style={{ color: 'var(--text-secondary)'}}>Combine Tissues Here</p>
+                            <div className="flex gap-4 mt-4 h-16">
+                                {placedTissues.map(t => (
+                                    <div key={t} className="w-16 h-16 rounded-lg shadow-md bg-cover bg-center animate-pop-in" style={{ backgroundImage: `url(${ASSET_PATHS[`${t}-tissue`]})` }} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
-                <div className="flex-shrink-0 flex flex-col gap-4 items-center p-4 bg-black/10 rounded-2xl">
+                <div className={`flex-shrink-0 flex flex-col gap-4 items-center p-4 bg-black/10 rounded-2xl transition-opacity duration-500 ${isComplete ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                      <h3 className="font-bold text-lg">Your Tissues</h3>
                      {builtTissues.map(tissue => (
                         <DraggableTissue 
