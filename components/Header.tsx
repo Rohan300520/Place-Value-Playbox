@@ -27,7 +27,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onHelpClick }) => {
               </svg>
             </button>
             <div className="flex-shrink-0 ml-4 flex items-center" style={{ color: 'var(--text-primary)'}}>
-              <img src="/assets/logo.svg" alt="SMART C Logo" className="h-12 md:h-16" />
+              <img src="/assets/logo.jpeg" alt="SMART C Logo" className="h-12 md:h-16" />
             </div>
           </div>
           <div className="flex items-center gap-4">
