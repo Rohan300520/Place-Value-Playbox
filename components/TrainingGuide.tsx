@@ -76,22 +76,24 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStepConfig,
             case 'action_multi': {
                 const column = currentStepConfig.column;
                 if (!column) return null; 
-
-                // Position the guide box statically at the bottom-center of the screen. This predictable position
-                // prevents it from ever overlapping with the columns or source blocks.
-                const positionClass = 'bottom-28 left-1/2 -translate-x-1/2';
                 
                 return (
                     <>
-                        {currentStepConfig.source && <GhostBlock value={currentStepConfig.source} />}
-                        <GuideBox className={`${positionClass} max-w-sm sm:max-w-md`}>
+                        
+                        <div className="w-full mb-4 sm:mb-6 backdrop-blur-sm border-2 p-4 sm:p-6 rounded-2xl shadow-xl text-xl sm:text-2xl font-bold text-center animate-pop-in"
+                            style={{ 
+                                backgroundColor: 'rgba(30, 41, 59, 0.95)',
+                                borderColor: 'rgba(56, 189, 248, 0.5)',
+                                color: '#f1f5f9'
+                            }}
+                        >
                             <p>{colorSpan(currentStepConfig.text)}</p>
                             {currentStepConfig.type === 'action_multi' && currentStepConfig.count && (
                                 <div className={`mt-2 text-3xl font-black ${colorMap[column]} tabular-nums font-display`}>
                                     {columnCounts[column]} / {currentStepConfig.count}
                                 </div>
                             )}
-                        </GuideBox>
+                        </div>
                     </>
                 );
             }

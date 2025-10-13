@@ -77,11 +77,11 @@ export const ChallengePanel: React.FC<ChallengePanelProps> = ({ question, score,
     }
 
     return (
-        <div className={`backdrop-blur-md rounded-2xl border-2 ${statusClasses} shadow-lg p-3 sm:p-4 mb-4 sm:mb-6 flex flex-col justify-between items-center w-full transition-all duration-500 min-h-[150px]`} style={{ backgroundColor: 'var(--backdrop-bg)'}}>
+        <div className={`backdrop-blur-md rounded-2xl border-2 ${statusClasses} shadow-lg p-2 sm:p-4 mb-2 sm:mb-4 flex flex-col justify-between items-center w-full transition-all duration-500`} style={{ backgroundColor: 'var(--backdrop-bg)'}}>
             <div className="flex justify-between w-full items-start gap-4">
                 <div className="flex-1 text-left">
                     <span className="text-md sm:text-lg font-bold uppercase tracking-wider font-display" style={{ color: 'var(--text-accent)'}}>Level {question.level}</span>
-                    <p className="text-lg sm:text-xl font-semibold mt-1" style={{ color: 'var(--text-primary)'}}>{question.question}</p>
+                    <p className="text-base sm:text-lg md:text-xl font-semibold mt-1" style={{ color: 'var(--text-primary)'}}>{question.question}</p>
                      {(status === 'incorrect' || status === 'timed_out') && correctAnswer !== null && (
                          <div className="mt-2 p-2 bg-red-100/80 border border-red-400 rounded-lg">
                              <p className="text-red-700 font-bold text-center">

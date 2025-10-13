@@ -70,14 +70,14 @@ export const PlaceValueColumn: React.FC<PlaceValueColumnProps> = ({
 
   return (
     <div className={`flex flex-col rounded-2xl shadow-xl transition-all duration-300 ${isSpotlighted ? 'relative z-20' : ''}`} style={{ backgroundColor: styles.bg }}>
-      <h2 className={`font-display text-xl sm:text-2xl font-black text-center p-2 sm:p-4 border-b-4`} style={{ color: styles.text, borderColor: styles.border }}>
+      <h2 className={`font-display text-xl sm:text-2xl font-black text-center p-2 sm:p-3 border-b-4`} style={{ color: styles.text, borderColor: styles.border }}>
         {title}
       </h2>
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         data-droptarget={category}
-        className={`flex-grow min-h-[180px] sm:min-h-[300px] p-1 sm:p-2 md:p-4 transition-all duration-300 rounded-b-2xl border-4 border-dashed bg-black/5 ${borderStyle} ${isRegroupingDestination ? 'animate-pulse' : ''} ${isSpotlighted && !isBeingDraggedOver ? 'animate-guide-pulse' : ''} ${isPulsing ? 'animate-column-pulse' : ''}`}
+        className={`flex-grow min-h-[160px] sm:min-h-[220px] lg:min-h-[300px] p-1 sm:p-2 md:p-4 transition-all duration-300 rounded-b-2xl border-4 border-dashed bg-black/5 ${borderStyle} ${isRegroupingDestination ? 'animate-pulse' : ''} ${isSpotlighted && !isBeingDraggedOver ? 'animate-guide-pulse' : ''} ${isPulsing ? 'animate-column-pulse' : ''}`}
       >
         { (category === 'hundreds' || category === 'thousands') && blocks.length > 4 ? (
           <div className="relative w-full h-full">
@@ -95,7 +95,7 @@ export const PlaceValueColumn: React.FC<PlaceValueColumnProps> = ({
                   id={block.id}
                   category={category}
                   value={block.value} 
-                  isDraggable={appState === 'playground'}
+                  isDraggable={appState === 'playground' || appState === 'challenge'}
                   onDragStart={onDragStart}
                   isAnimating={block.isAnimating}
                   isNewlyRegrouped={block.isNewlyRegrouped}
@@ -111,7 +111,7 @@ export const PlaceValueColumn: React.FC<PlaceValueColumnProps> = ({
                 id={block.id}
                 category={category}
                 value={block.value} 
-                isDraggable={appState === 'playground'}
+                isDraggable={appState === 'playground' || appState === 'challenge'}
                 onDragStart={onDragStart}
                 isAnimating={block.isAnimating}
                 isNewlyRegrouped={block.isNewlyRegrouped}

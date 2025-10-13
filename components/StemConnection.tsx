@@ -1,16 +1,13 @@
 import React, { useState, useEffect, useCallback, useId, useRef, useMemo } from 'react';
 import { useAudio } from '../contexts/AudioContext';
 import { speak } from '../utils/speech';
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { Confetti } from './Confetti';
 
 
 // --- TYPES ---
-type Stage = 'intro' | 'build_epithelial' | 'build_blood' | 'build_muscle' | 'assemble_artery';
+type Stage = 'intro' | 'build_epithelial' | 'build_blood' | 'build_muscle' | 'assemble_artery' | 'complete';
 type CellType = 'epithelial' | 'rbc' | 'wbc' | 'platelet' | 'muscle';
 type TissueType = 'epithelial' | 'blood' | 'muscle';
-type DroppableArea = 'epithelial' | 'muscle' | 'adventitia' | 'blood' | 'vasa';
 
 interface Cell {
   id: string;
@@ -18,13 +15,6 @@ interface Cell {
   style: React.CSSProperties;
   state: 'source' | 'placed' | 'regrouping';
 }
-
-interface LayerData {
-  mesh: THREE.Mesh;
-  isLayer: boolean;
-}
-
-const CELL_BUILD_REQUIREMENT = 8;
 
 // --- CONFIGURATION ---
 const ASSET_PATHS = {
@@ -37,8 +27,13 @@ const ASSET_PATHS = {
   // Tissues (for UI)
   'epithelial-tissue': '/assets/epithelial-tissue.webp',
   'muscle-tissue': '/assets/muscle-tissue-fibrous.jpeg',
-  'adventitia-tissue': '/assets/adventitia-tissue.png',
   'blood-tissue': '/assets/blood-tissue-animated.png',
+  // New assets for 2D Artery
+  'artery-outline': '/assets/artery-outline.png',
+  'artery-layer-muscle': '/assets/artery-layer-muscle.png',
+  'artery-layer-epithelial': '/assets/artery-layer-epithelial.png',
+  'artery-layer-blood': '/assets/artery-layer-blood.png',
+  'artery-background': '/assets/human-torso.webp',
 };
 
 const ASSET_INFO = {
@@ -49,124 +44,7 @@ const ASSET_INFO = {
   'muscle': { name: 'Muscle Cell' },
   'epithelial-tissue': { name: 'Epithelial Tissue' },
   'muscle-tissue': { name: 'Muscle Tissue' },
-  'adventitia-tissue': { name: 'Connective Tissue' },
   'blood-tissue': { name: 'Blood Tissue' },
-};
-
-const LAYER_INFO = {
-  epithelial: { name: 'Epithelium (Tunica Intima)', description: 'The smooth inner layer. It helps blood flow without getting stuck!' },
-  muscle: { name: 'Smooth Muscle (Tunica Media)', description: 'The strong, muscular middle layer. It squeezes and relaxes to pump blood around your body.' },
-  adventitia: { name: 'Connective Tissue (Tunica Adventitia)', description: 'The tough, protective outer layer. It gives the artery its strength and structure.' },
-  vasa: { name: 'Vasa Vasorum', description: 'These are the "vessels of the vessels"—tiny blood vessels that supply the artery wall itself with nutrients.' },
-};
-
-// --- PROCEDURAL TEXTURE HELPERS ---
-const createMuscleTexture = (width: number, height: number): THREE.CanvasTexture => {
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext('2d')!;
-    // Match the grey color from the user's model
-    context.fillStyle = '#808080'; 
-    context.fillRect(0, 0, width, height);
-    // Add the white mesh pattern
-    context.strokeStyle = '#FFFFFF';
-    context.lineWidth = width / 30; 
-    context.lineCap = 'round';
-    
-    const numLines = 10;
-    // Draw a random criss-cross pattern
-    for(let i=0; i < numLines; i++) {
-        context.beginPath();
-        context.moveTo(Math.random() * width, Math.random() * height);
-        context.lineTo(Math.random() * width, Math.random() * height);
-        context.stroke();
-    }
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    return texture;
-};
-
-const createAdventitiaTexture = (width: number, height: number): THREE.CanvasTexture => {
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext('2d')!;
-    // Deep purple base
-    context.fillStyle = '#4B0082'; // Indigo
-    context.fillRect(0, 0, width, height);
-    
-    // Subtle grid pattern
-    context.strokeStyle = 'rgba(255,255,255,0.1)';
-    context.lineWidth = 1;
-    for (let i = 0; i < width; i += 15) {
-        context.beginPath();
-        context.moveTo(i, 0);
-        context.lineTo(i, height);
-        context.stroke();
-        context.beginPath();
-        context.moveTo(0, i);
-        context.lineTo(width, i);
-        context.stroke();
-    }
-    
-    // Yellow stitching pattern
-    context.strokeStyle = '#FFFF00'; // Yellow
-    context.lineWidth = width / 50;
-    context.lineJoin = 'round';
-    context.beginPath();
-    const amplitude = height / 10;
-    const period = width / 5;
-    for (let y = height / 4; y < height; y += height / 2) {
-        context.moveTo(0, y);
-        for (let x = 0; x < width; x += period) {
-            context.lineTo(x + period / 2, y + amplitude);
-            context.lineTo(x + period, y);
-        }
-    }
-    context.stroke();
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    return texture;
-};
-
-const createVasaVasorumTexture = (width: number, height: number): THREE.CanvasTexture => {
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext('2d')!;
-    // Soft pink base
-    context.fillStyle = '#FFB6C1'; // LightPink
-    context.fillRect(0, 0, width, height);
-    // Fine red lines for vessels
-    context.strokeStyle = '#DC143C'; // Crimson
-    context.lineCap = 'round';
-    
-    const drawBranch = (x: number, y: number, angle: number, length: number, depth: number, lineWidth: number) => {
-        if (depth <= 0 || length < 2) return;
-        context.lineWidth = lineWidth;
-        context.beginPath();
-        context.moveTo(x, y);
-        const endX = x + length * Math.cos(angle);
-        const endY = y + length * Math.sin(angle);
-        context.lineTo(endX, endY);
-        context.stroke();
-        const angleChange = Math.PI / 4;
-        drawBranch(endX, endY, angle - (Math.random() * angleChange), length * 0.75, depth - 1, lineWidth * 0.7);
-        drawBranch(endX, endY, angle + (Math.random() * angleChange), length * 0.75, depth - 1, lineWidth * 0.7);
-    };
-    
-    const initialWidth = width / 128;
-    drawBranch(width * 0.2, height * 0.2, Math.PI / 4, width / 4, 5, initialWidth);
-    drawBranch(width * 0.8, height * 0.8, -3 * Math.PI / 4, width / 4, 5, initialWidth);
-    drawBranch(width * 0.5, height * 0.9, -Math.PI / 2, width / 6, 4, initialWidth * 0.8);
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    return texture;
 };
 
 // --- HELPER & UI COMPONENTS ---
@@ -239,9 +117,19 @@ const TissueBuilder: React.FC<{
     const [draggedCell, setDraggedCell] = useState<CellType | null>(null);
     const [isRegrouping, setIsRegrouping] = useState(false);
     const [feedbackMessage, setFeedbackMessage] = useState<{ title: string; description: string } | null>(null);
+    const [validationMessage, setValidationMessage] = useState<string | null>(null);
     const baseId = useId();
     const tissueType = title.split(' ')[1].toLowerCase() as TissueType;
     const dishRef = useRef<HTMLDivElement>(null);
+
+    const buildRequirement = tissueType === 'blood' ? 9 : 8;
+
+    const cellCounts = useMemo(() => {
+        return cells.reduce((acc, cell) => {
+            acc[cell.type] = (acc[cell.type] || 0) + 1;
+            return acc;
+        }, {} as Record<CellType, number>);
+    }, [cells]);
 
     useEffect(() => {
         setCells([]);
@@ -268,28 +156,78 @@ const TissueBuilder: React.FC<{
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
-        if (draggedCell && cellTypes.includes(draggedCell) && cells.length < CELL_BUILD_REQUIREMENT) {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            addCell(draggedCell, x, y);
+        if (draggedCell && cellTypes.includes(draggedCell)) {
+            if (tissueType === 'blood' && (cellCounts[draggedCell] || 0) >= 3) {
+                setDraggedCell(null);
+                return; // Prevent adding more than 3 of one type
+            }
+            if (cells.length < buildRequirement) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                addCell(draggedCell, x, y);
+            }
         }
         setDraggedCell(null);
     };
 
     const handleClickToAddCell = (type: CellType) => {
-      if (cellTypes.includes(type) && cells.length < CELL_BUILD_REQUIREMENT) {
-          const rect = dishRef.current?.getBoundingClientRect() || { width: 500, height: 400, left: 0, top: 0 };
-          const radius = Math.min(rect.width, rect.height) / 3.5; 
-          const angle = (cells.length / (CELL_BUILD_REQUIREMENT -1)) * 2 * Math.PI;
-          const x = rect.width / 2 + radius * Math.cos(angle);
-          const y = rect.height / 2 + radius * Math.sin(angle);
-          addCell(type, x, y);
+      if (cellTypes.includes(type)) {
+          if (tissueType === 'blood' && (cellCounts[type] || 0) >= 3) {
+              return; // Prevent adding more than 3 of one type
+          }
+          if (cells.length < buildRequirement) {
+              const rect = dishRef.current?.getBoundingClientRect() || { width: 500, height: 400, left: 0, top: 0 };
+              const radius = Math.min(rect.width, rect.height) / 3.5; 
+              const angle = (cells.length / (buildRequirement - 1)) * 2 * Math.PI;
+              const x = rect.width / 2 + radius * Math.cos(angle);
+              const y = rect.height / 2 + radius * Math.sin(angle);
+              addCell(type, x, y);
+          }
       }
     };
 
     useEffect(() => {
-        if (cells.length >= CELL_BUILD_REQUIREMENT && !isRegrouping) {
+        if (tissueType === 'blood') {
+            const requiredCounts = { rbc: 3, wbc: 3, platelet: 3 };
+            const needed: string[] = [];
+            
+            const rbcNeeded = requiredCounts.rbc - (cellCounts.rbc || 0);
+            if (rbcNeeded > 0) needed.push(`${rbcNeeded} Red Blood Cell${rbcNeeded > 1 ? 's' : ''}`);
+
+            const wbcNeeded = requiredCounts.wbc - (cellCounts.wbc || 0);
+            if (wbcNeeded > 0) needed.push(`${wbcNeeded} White Blood Cell${wbcNeeded > 1 ? 's' : ''}`);
+
+            const plateletNeeded = requiredCounts.platelet - (cellCounts.platelet || 0);
+            if (plateletNeeded > 0) needed.push(`${plateletNeeded} Platelet${plateletNeeded > 1 ? 's' : ''}`);
+
+            if (needed.length > 0 && cells.length < buildRequirement) {
+                setValidationMessage(`Keep going! You still need: ${needed.join(', ')}.`);
+            } else {
+                 setValidationMessage(null);
+            }
+        } else {
+            setValidationMessage(null);
+        }
+    }, [cells, cellCounts, tissueType, buildRequirement]);
+
+    useEffect(() => {
+        if (isRegrouping) {
+            return;
+        }
+
+        let canComplete = false;
+        if (tissueType === 'blood') {
+            if (cellCounts.rbc === 3 && cellCounts.wbc === 3 && cellCounts.platelet === 3) {
+                canComplete = true;
+            }
+        } else {
+            if (cells.length >= buildRequirement) {
+                canComplete = true;
+            }
+        }
+
+        if (canComplete) {
             setIsRegrouping(true);
             let title = '';
             let description = '';
@@ -299,7 +237,7 @@ const TissueBuilder: React.FC<{
                 description = "Great job! These cells create linings for organs, just like the inside of our artery.";
             } else if (tissueType === 'blood') {
                 title = "Blood Cells form Blood Tissue!";
-                description = "Awesome! This is a special liquid tissue that carries nutrients and oxygen all over your body.";
+                description = "Awesome! This is a special blood fluid tissue that carries nutrients and oxygen all over your body.";
             } else if (tissueType === 'muscle') {
                 title = "Muscle Cells form Muscle Tissue!";
                 description = "Fantastic! These strong cells help the artery pump blood by squeezing and relaxing.";
@@ -315,7 +253,7 @@ const TissueBuilder: React.FC<{
                 setFeedbackMessage(null);
             }, 4000);
         }
-    }, [cells, onComplete, isRegrouping, tissueType, isSpeechEnabled]);
+    }, [cells, cellCounts, onComplete, isRegrouping, tissueType, isSpeechEnabled, cellTypes, buildRequirement]);
 
     return (
         <div className="w-full flex flex-col md:flex-row gap-6 items-center">
@@ -327,12 +265,18 @@ const TissueBuilder: React.FC<{
                     className={`relative w-full rounded-2xl shadow-inner min-h-[400px] p-4 transition-all duration-300 ${draggedCell ? 'bg-black/10 ring-4 ring-orange-400' : 'bg-black/5'}`}
                 >
                     {isRegrouping ? (
-                         <div className="w-full h-full flex items-center justify-center animate-bouncy-pop-in">
+                         <div className="w-full h-full flex flex-col items-center justify-center gap-4 animate-bouncy-pop-in">
                             <div 
                                 className="w-64 h-64 rounded-lg shadow-2xl bg-cover bg-center" 
                                 style={{ backgroundImage: `url(${ASSET_PATHS[`${tissueType}-tissue`]})` }}
                                 aria-label={ASSET_INFO[`${tissueType}-tissue`].name}
                             />
+                            {feedbackMessage && (
+                                <div className="bg-white text-slate-800 p-4 rounded-2xl shadow-xl max-w-md text-center animate-pop-in mt-4">
+                                    <h4 className="text-xl font-bold font-display text-green-600 mb-1">{feedbackMessage.title}</h4>
+                                    <p className="text-base">{feedbackMessage.description}</p>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         cells.map(cell => (
@@ -343,19 +287,11 @@ const TissueBuilder: React.FC<{
                             />
                         ))
                     )}
-                     {feedbackMessage && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-4 animate-pop-in z-10 rounded-2xl">
-                            <div className="bg-white text-slate-800 p-6 rounded-2xl shadow-xl max-w-md text-center">
-                                <h4 className="text-2xl font-bold font-display text-green-600 mb-2">{feedbackMessage.title}</h4>
-                                <p className="text-lg">{feedbackMessage.description}</p>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
             <div className="w-full md:w-1/3 p-4 rounded-2xl shadow-lg" style={{ backgroundColor: 'var(--panel-bg)'}}>
                 <h3 className="text-2xl font-bold font-display text-center mb-4">{title}</h3>
-                <p className="text-center mb-4">Drag or click {CELL_BUILD_REQUIREMENT} cells to form a tissue.</p>
+                <p className="text-center mb-4">Drag or click {buildRequirement} cells to form a tissue.</p>
                 <div className="flex justify-center items-center gap-4 flex-wrap p-4 bg-black/10 rounded-xl">
                     {cellTypes.map(type => (
                         <DraggableCell key={type} type={type} onDragStart={setDraggedCell} onClick={handleClickToAddCell} />
@@ -365,408 +301,118 @@ const TissueBuilder: React.FC<{
                     <div className="w-full bg-gray-200/50 rounded-full h-6 shadow-inner">
                         <div
                             className="bg-green-500 h-6 rounded-full text-center text-white font-bold transition-all duration-500"
-                            style={{ width: `${(cells.length / CELL_BUILD_REQUIREMENT) * 100}%` }}
+                            style={{ width: `${(cells.length / buildRequirement) * 100}%` }}
                         >
-                            {cells.length}/{CELL_BUILD_REQUIREMENT}
+                            {cells.length}/{buildRequirement}
                         </div>
                     </div>
+                    {validationMessage && (
+                        <p className="mt-2 text-center font-semibold text-orange-600 animate-pulse">
+                            {validationMessage}
+                        </p>
+                    )}
                 </div>
             </div>
         </div>
     );
 };
 
-const ArteryAssembler: React.FC<{ builtTissues: TissueType[] }> = ({ builtTissues }) => {
-    const [placedTissues, setPlacedTissues] = useState<DroppableArea[]>([]);
+const ArteryAssembler: React.FC<{ builtTissues: TissueType[], onComplete: () => void }> = ({ builtTissues, onComplete }) => {
+    const [placedTissues, setPlacedTissues] = useState<TissueType[]>([]);
     const [draggedTissue, setDraggedTissue] = useState<TissueType | null>(null);
-    const [highlightedLayer, setHighlightedLayer] = useState<DroppableArea | null>(null);
-    const [hoveredLayerInfo, setHoveredLayerInfo] = useState<{ name: string; description: string } | null>(null);
-    const [isCutaway, setIsCutaway] = useState(true);
-
-    const mountRef = useRef<HTMLDivElement>(null);
-    const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-    const labelRendererRef = useRef<CSS2DRenderer | null>(null);
-    const sceneRef = useRef<THREE.Scene | null>(null);
-    const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-    const controlsRef = useRef<OrbitControls | null>(null);
-    const raycaster = useRef(new THREE.Raycaster()).current;
-    const pointer = useRef(new THREE.Vector2()).current;
-    const layersRef = useRef<Record<string, LayerData>>({} as Record<string, LayerData>);
-    const clippingConfigsRef = useRef<Record<string, THREE.Plane[] | null>>({});
-
-    const rbcInstanceRef = useRef<THREE.InstancedMesh | null>(null);
-    const particlesRef = useRef<{
-      progress: number;
-      speed: number;
-      offset: THREE.Vector3;
-      rotation: THREE.Euler;
-      rotationSpeed: THREE.Euler;
-    }[]>([]);
-
-    useEffect(() => {
-        if (!mountRef.current) return;
-        const currentMount = mountRef.current;
-
-        const scene = new THREE.Scene();
-        sceneRef.current = scene;
-        const camera = new THREE.PerspectiveCamera(75, currentMount.clientWidth / currentMount.clientHeight, 0.1, 1000);
-        camera.position.set(0, 1.5, 6);
-        cameraRef.current = camera;
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.localClippingEnabled = true;
-        currentMount.appendChild(renderer.domElement);
-        rendererRef.current = renderer;
-        
-        const labelRenderer = new CSS2DRenderer();
-        labelRenderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
-        labelRenderer.domElement.style.position = 'absolute';
-        labelRenderer.domElement.style.top = '0px';
-        labelRenderer.domElement.style.pointerEvents = 'none';
-        currentMount.appendChild(labelRenderer.domElement);
-        labelRendererRef.current = labelRenderer;
-
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enablePan = false;
-        controls.minDistance = 2;
-        controls.maxDistance = 12;
-        controls.target.set(0, 0, 0);
-        controls.update();
-        controlsRef.current = controls;
-
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-        scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.8);
-        directionalLight.position.set(5, 10, 7.5);
-        scene.add(directionalLight);
-        
-        const arteryGroup = new THREE.Group();
-        arteryGroup.rotation.x = -Math.PI / 10;
-        
-        const curve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(-2.52, -0.2, 0),
-            new THREE.Vector3(-0.84, 0.3, 0),
-            new THREE.Vector3(0.84, -0.3, 0),
-            new THREE.Vector3(2.52, 0.2, 0)
-        ]);
-
-        const LUMEN_RADIUS = 0.49;
-        const EPITHELIUM_OUTER_RADIUS = 0.525;
-        const MUSCLE_OUTER_RADIUS = 0.65;
-        const ADVENTITIA_OUTER_RADIUS = 0.675;
-        const VASA_VASORUM_OUTER_RADIUS = 0.725;
-        const TUBE_SEGMENTS = 64;
-        const RADIAL_SEGMENTS = 32;
-
-        const endNormal = curve.getTangentAt(1).clone().negate();
-        // Reversed stagger: outermost is shortest, innermost is longest.
-        const vasaPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(endNormal, curve.getPointAt(0.42));
-        const adventitiaPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(endNormal, curve.getPointAt(0.525));
-        const musclePlane = new THREE.Plane().setFromNormalAndCoplanarPoint(endNormal, curve.getPointAt(0.63));
-        
-        clippingConfigsRef.current = {
-            vasa: [vasaPlane],
-            adventitia: [adventitiaPlane],
-            muscle: [musclePlane],
-            epithelial: [],
-        };
-
-        const vasaVasorumGeo = new THREE.TubeGeometry(curve, TUBE_SEGMENTS, VASA_VASORUM_OUTER_RADIUS, RADIAL_SEGMENTS, false);
-        const vasaVasorumTexture = createVasaVasorumTexture(512, 512);
-        vasaVasorumTexture.repeat.set(4, 1);
-        const vasaVasorumMat = new THREE.MeshStandardMaterial({ map: vasaVasorumTexture, side: THREE.DoubleSide, roughness: 0.9, metalness: 0.1, clippingPlanes: clippingConfigsRef.current.vasa });
-        const vasaVasorumMesh = new THREE.Mesh(vasaVasorumGeo, vasaVasorumMat);
-        vasaVasorumMesh.name = 'vasa';
-        arteryGroup.add(vasaVasorumMesh);
-        layersRef.current.vasa = { mesh: vasaVasorumMesh, isLayer: true };
-
-        const adventitiaGeo = new THREE.TubeGeometry(curve, TUBE_SEGMENTS, ADVENTITIA_OUTER_RADIUS, RADIAL_SEGMENTS, false);
-        const adventitiaTexture = createAdventitiaTexture(256, 128);
-        adventitiaTexture.repeat.set(12, 3);
-        const adventitiaMat = new THREE.MeshStandardMaterial({ map: adventitiaTexture, side: THREE.DoubleSide, roughness: 0.6, metalness: 0.2, clippingPlanes: clippingConfigsRef.current.adventitia });
-        const adventitiaMesh = new THREE.Mesh(adventitiaGeo, adventitiaMat);
-        adventitiaMesh.name = 'adventitia';
-        arteryGroup.add(adventitiaMesh);
-        layersRef.current.adventitia = { mesh: adventitiaMesh, isLayer: true };
-        
-        const muscleGeo = new THREE.TubeGeometry(curve, TUBE_SEGMENTS, MUSCLE_OUTER_RADIUS, RADIAL_SEGMENTS, false);
-        const muscleTexture = createMuscleTexture(256, 256);
-        muscleTexture.repeat.set(16, 4);
-        const muscleMat = new THREE.MeshStandardMaterial({ map: muscleTexture, side: THREE.DoubleSide, roughness: 0.7, metalness: 0.1, clippingPlanes: clippingConfigsRef.current.muscle });
-        const muscleMesh = new THREE.Mesh(muscleGeo, muscleMat);
-        muscleMesh.name = 'muscle';
-        arteryGroup.add(muscleMesh);
-        layersRef.current.muscle = { mesh: muscleMesh, isLayer: true };
-
-        const epithelialGeo = new THREE.TubeGeometry(curve, TUBE_SEGMENTS, EPITHELIUM_OUTER_RADIUS, RADIAL_SEGMENTS, false);
-        const epithelialMat = new THREE.MeshStandardMaterial({ 
-            color: 0xFF4500, // OrangeRed
-            side: THREE.DoubleSide, 
-            roughness: 0.5, 
-            metalness: 0.1,
-            clippingPlanes: clippingConfigsRef.current.epithelial,
-        });
-        const epithelialMesh = new THREE.Mesh(epithelialGeo, epithelialMat);
-        epithelialMesh.name = 'epithelial';
-        arteryGroup.add(epithelialMesh);
-        layersRef.current.epithelial = { mesh: epithelialMesh, isLayer: true };
-        
-        const bloodGeo = new THREE.TubeGeometry(curve, TUBE_SEGMENTS, LUMEN_RADIUS, RADIAL_SEGMENTS, false);
-        const bloodMat = new THREE.MeshBasicMaterial({ visible: false });
-        const bloodMesh = new THREE.Mesh(bloodGeo, bloodMat);
-        bloodMesh.name = 'blood';
-        arteryGroup.add(bloodMesh);
-        layersRef.current.blood = { mesh: bloodMesh, isLayer: false };
-
-        const RBC_COUNT = 500;
-        const rbcGeo = new THREE.SphereGeometry(0.1, 8, 8);
-        const rbcMat = new THREE.MeshBasicMaterial({ color: 0xDC143C });
-        const rbcMesh = new THREE.InstancedMesh(rbcGeo, rbcMat, RBC_COUNT);
-        rbcMesh.visible = false;
-        rbcInstanceRef.current = rbcMesh;
-        const dummy = new THREE.Object3D();
-
-        for (let i = 0; i < RBC_COUNT; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const radius = Math.random() * LUMEN_RADIUS * 0.9;
-            particlesRef.current.push({
-                progress: Math.random(),
-                speed: Math.random() * 0.002 + 0.001,
-                offset: new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, 0),
-                rotation: new THREE.Euler(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI),
-                rotationSpeed: new THREE.Euler((Math.random()-0.5)*0.1, (Math.random()-0.5)*0.1, (Math.random()-0.5)*0.1),
-            });
-        }
-        arteryGroup.add(rbcMesh);
-
-        scene.add(arteryGroup);
-        
-        const createLabel = (text: string, className = 'artery-label') => {
-            const div = document.createElement('div');
-            div.className = className;
-            div.textContent = text;
-            return new CSS2DObject(div);
-        };
-
-        const labelEpithelium = createLabel('Epithelium');
-        labelEpithelium.position.copy(curve.getPointAt(0.8)).add(new THREE.Vector3(0, EPITHELIUM_OUTER_RADIUS + 0.15, 0));
-        arteryGroup.add(labelEpithelium);
-        
-        const labelMuscle = createLabel('Smooth Muscle');
-        labelMuscle.position.copy(curve.getPointAt(0.6)).add(new THREE.Vector3(0, MUSCLE_OUTER_RADIUS + 0.15, 0));
-        arteryGroup.add(labelMuscle);
-        
-        const labelAdventitia = createLabel('Connective Tissue');
-        labelAdventitia.position.copy(curve.getPointAt(0.4)).add(new THREE.Vector3(0, ADVENTITIA_OUTER_RADIUS + 0.15, 0));
-        arteryGroup.add(labelAdventitia);
-
-        const animate = () => {
-            requestAnimationFrame(animate);
-            if (!rbcMesh.visible) {
-                 if (controlsRef.current && rendererRef.current && sceneRef.current && cameraRef.current) {
-                    controlsRef.current.update();
-                    rendererRef.current.render(sceneRef.current, cameraRef.current);
-                    if(labelRendererRef.current) labelRendererRef.current.render(sceneRef.current, cameraRef.current);
-                }
-                return;
-            };
-
-            const particles = particlesRef.current;
-            particles.forEach((p, i) => {
-                p.progress += p.speed;
-                if (p.progress > 1) p.progress = 0;
-                const pos = curve.getPointAt(p.progress);
-                const tangent = curve.getTangentAt(p.progress);
-                const up = new THREE.Vector3(0, 1, 0);
-                const binormal = new THREE.Vector3().crossVectors(tangent, up).normalize();
-                const normal = new THREE.Vector3().crossVectors(binormal, tangent).normalize();
-                const offsetPos = p.offset.clone();
-                const matrix = new THREE.Matrix4().makeBasis(tangent, normal, binormal);
-                offsetPos.applyMatrix4(matrix);
-                dummy.position.copy(pos).add(offsetPos);
-                p.rotation.x += p.rotationSpeed.x;
-                p.rotation.y += p.rotationSpeed.y;
-                p.rotation.z += p.rotationSpeed.z;
-                dummy.rotation.copy(p.rotation);
-                dummy.scale.set(1, 1, 0.4);
-                dummy.updateMatrix();
-                rbcMesh.setMatrixAt(i, dummy.matrix);
-            });
-            rbcMesh.instanceMatrix.needsUpdate = true;
-            controls.update();
-            renderer.render(scene, camera);
-            if(labelRendererRef.current) labelRendererRef.current.render(scene, camera);
-        };
-        animate();
-
-        const handleResize = () => {
-            if (!currentMount || !rendererRef.current) return;
-            const width = currentMount.clientWidth;
-            const height = currentMount.clientHeight;
-            rendererRef.current.setSize(width, height);
-            if(labelRendererRef.current) labelRendererRef.current.setSize(width, height);
-            camera.aspect = width / height;
-            camera.updateProjectionMatrix();
-        };
-
-        const handlePointerMove = (event: PointerEvent) => {
-            if (!mountRef.current || !cameraRef.current || draggedTissue) {
-                setHighlightedLayer(null); setHoveredLayerInfo(null); return;
-            }
-            const rect = mountRef.current.getBoundingClientRect();
-            pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-            raycaster.setFromCamera(pointer, cameraRef.current);
-            // Fix: Cast the result of Object.values to the correct type to resolve property access error.
-            const intersects = raycaster.intersectObjects((Object.values(layersRef.current) as LayerData[]).map(ld => ld.mesh));
-            
-            if (intersects.length > 0) {
-                const name = intersects[0].object.name as keyof typeof LAYER_INFO;
-                if (LAYER_INFO[name]) {
-                    setHighlightedLayer(name); setHoveredLayerInfo(LAYER_INFO[name]);
-                } else {
-                    setHighlightedLayer(null); setHoveredLayerInfo(null);
-                }
-            } else {
-                setHighlightedLayer(null); setHoveredLayerInfo(null);
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
-        currentMount.addEventListener('pointermove', handlePointerMove);
-
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            if (currentMount) {
-                currentMount.removeEventListener('pointermove', handlePointerMove);
-                if(renderer.domElement) currentMount.removeChild(renderer.domElement);
-                if(labelRendererRef.current?.domElement) currentMount.removeChild(labelRendererRef.current.domElement);
-            }
-        };
-    }, []);
-
-    useEffect(() => {
-        const isAdventitiaPlaced = placedTissues.includes('adventitia');
-        // Fix: Cast the result of Object.entries to the correct type to resolve property access errors.
-        (Object.entries(layersRef.current) as [string, LayerData][]).forEach(([name, layerData]) => {
-            if (!layerData.isLayer) return;
-            const { mesh } = layerData;
-            const material = mesh.material as THREE.MeshStandardMaterial;
-            let isPlaced = placedTissues.includes(name as DroppableArea);
-            let isHighlighted = highlightedLayer === name;
-            
-            if (material.emissive) {
-                material.emissive.setHex(isHighlighted && !isPlaced ? 0xffaa33 : 0x000000);
-            }
-
-            material.transparent = !isPlaced;
-            material.opacity = isPlaced ? 1.0 : 0.3;
-            material.needsUpdate = true;
-        });
-
-        if (rbcInstanceRef.current) {
-            rbcInstanceRef.current.visible = placedTissues.includes('blood');
-        }
-
-    }, [placedTissues, highlightedLayer]);
-
-    useEffect(() => {
-        const configs = clippingConfigsRef.current;
-        if (!configs) return;
-
-        (Object.keys(layersRef.current) as DroppableArea[]).forEach(name => {
-             const layer = layersRef.current[name];
-             if (layer?.mesh?.material) {
-                 (layer.mesh.material as THREE.MeshStandardMaterial).clippingPlanes = isCutaway ? (configs[name] || []) : [];
-             }
-        });
-    }, [isCutaway]);
-    
-    const getIntersectedLayer = (event: React.MouseEvent<HTMLDivElement>): DroppableArea | null => {
-        if (!mountRef.current || !cameraRef.current) return null;
-        const rect = mountRef.current.getBoundingClientRect();
-        pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        raycaster.setFromCamera(pointer, cameraRef.current);
-        // Fix: Cast the result of Object.values to the correct type to resolve property access error.
-        const intersects = raycaster.intersectObjects((Object.values(layersRef.current) as LayerData[]).map(ld => ld.mesh));
-        if (intersects.length > 0) {
-            return intersects[0].object.name as DroppableArea;
-        }
-        return null;
-    };
-
-    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        const layer = getIntersectedLayer(e);
-        if (layer !== highlightedLayer) setHighlightedLayer(layer);
-    };
+    const [isDropZoneActive, setIsDropZoneActive] = useState(false);
+    const [feedback, setFeedback] = useState<string | null>(null);
+    const [showConfetti, setShowConfetti] = useState(false);
 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
-        const layer = getIntersectedLayer(e);
-        if (draggedTissue === 'muscle' && (layer === 'muscle' || layer === 'adventitia' || layer === 'vasa') && !placedTissues.includes('muscle')) {
-            setPlacedTissues(prev => [...prev, 'muscle', 'adventitia', 'vasa']);
-        } else if (draggedTissue && (layer === draggedTissue) && !placedTissues.includes(layer as DroppableArea)) {
-            if (draggedTissue === 'epithelial') setPlacedTissues(prev => [...prev, 'epithelial', 'blood']);
-            else setPlacedTissues(prev => [...prev, layer as DroppableArea]);
-        }
+        placeTissue(draggedTissue);
+        setIsDropZoneActive(false);
         setDraggedTissue(null);
-        setHighlightedLayer(null);
     };
 
-    const handleClickToPlaceTissue = (tissueType: TissueType) => {
-        if (tissueType === 'muscle' && !placedTissues.includes('muscle')) {
-            setPlacedTissues(prev => [...prev, 'muscle', 'adventitia', 'vasa']);
-        } else if (tissueType === 'epithelial' && !placedTissues.includes('epithelial')) {
-            setPlacedTissues(prev => [...prev, 'epithelial', 'blood']);
+    const placeTissue = (tissue: TissueType | null) => {
+        if (tissue && !placedTissues.includes(tissue)) {
+            setPlacedTissues(prev => [...prev, tissue]);
+            const tissueName = ASSET_INFO[`${tissue}-tissue`].name;
+            setFeedback(`Great! You've added the ${tissueName}.`);
+            setTimeout(() => setFeedback(null), 2500);
         }
     };
+
+    const isComplete = useMemo(() => {
+        return builtTissues.every(t => placedTissues.includes(t));
+    }, [placedTissues, builtTissues]);
+
+    useEffect(() => {
+        if (isComplete) {
+            const finalMessage = "Congratulations! You built a complete artery that carries blood all over the body!";
+            setFeedback(finalMessage);
+            setShowConfetti(true);
+            setTimeout(onComplete, 4000);
+        }
+    }, [isComplete, onComplete]);
 
     return (
         <div className="w-full flex flex-col items-center gap-4">
-            <div className="w-full flex justify-between items-center">
-                <h2 className="text-3xl font-bold font-display">Assemble the Artery</h2>
-                <button 
-                    onClick={() => setIsCutaway(prev => !prev)}
-                    className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transform hover:scale-105 transition-all duration-200 border-b-4 border-indigo-700 active:border-b-2"
+            {showConfetti && <Confetti onComplete={() => setShowConfetti(false)} />}
+            <h2 className="text-3xl font-bold font-display text-center">Assemble the Artery</h2>
+            <p className="text-center">Drag the tissues you built to form the artery!</p>
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full mt-4">
+                <div 
+                    onDrop={handleDrop}
+                    onDragOver={(e) => { e.preventDefault(); setIsDropZoneActive(true); }}
+                    onDragLeave={() => setIsDropZoneActive(false)}
+                    className="relative w-full max-w-xl h-96 rounded-2xl p-4 transition-all duration-300" 
+                    style={{ 
+                        backgroundImage: `url(${ASSET_PATHS['artery-background']})`, 
+                        backgroundSize: 'cover', 
+                        backgroundPosition: 'center',
+                        border: isDropZoneActive ? '4px dashed #f97316' : '4px dashed transparent'
+                    }}
                 >
-                    {isCutaway ? 'Show Full Artery' : 'Show Cutaway View'}
-                </button>
-            </div>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-12 w-full">
-                <div className="w-full md:w-2/3 h-[500px] md:h-[600px] rounded-lg border-2 border-dashed relative" style={{ borderColor: 'var(--border-primary)'}}>
-                    <div
-                        className="w-full h-full cursor-grab active:cursor-grabbing"
-                        ref={mountRef}
-                        onDragOver={handleDragOver}
-                        onDrop={handleDrop}
-                        onDragLeave={() => { setHighlightedLayer(null); setHoveredLayerInfo(null); }}
-                    />
-                    {!draggedTissue && hoveredLayerInfo && (
-                        <div className="absolute top-2 left-2 p-4 bg-black/60 backdrop-blur-sm rounded-lg text-white max-w-xs animate-pop-in pointer-events-none z-10">
-                            <h4 className="text-xl font-bold font-display text-orange-400">{hoveredLayerInfo.name}</h4>
-                            <p className="mt-1">{hoveredLayerInfo.description}</p>
-                        </div>
-                    )}
+                    <div className="absolute inset-0 w-full h-full pointer-events-none">
+                        <img src={ASSET_PATHS['artery-outline']} alt="Artery Outline" className="w-full h-full object-contain opacity-50" />
+                        {placedTissues.includes('muscle') && <img src={ASSET_PATHS['artery-layer-muscle']} alt="Muscle Layer" className="absolute inset-0 w-full h-full object-contain animate-pop-in" />}
+                        {placedTissues.includes('epithelial') && <img src={ASSET_PATHS['artery-layer-epithelial']} alt="Epithelial Layer" className="absolute inset-0 w-full h-full object-contain animate-pop-in" style={{ animationDelay: '0.1s' }} />}
+                        {placedTissues.includes('blood') && <img src={ASSET_PATHS['artery-layer-blood']} alt="Blood Layer" className="absolute inset-0 w-full h-full object-contain animate-pop-in" style={{ animationDelay: '0.2s' }} />}
+                    </div>
                 </div>
-                <div className="flex-shrink-0 flex flex-col gap-4 items-center">
-                     {builtTissues.filter(tissue => tissue !== 'blood').map(tissue => (
+                <div className="flex-shrink-0 flex flex-col gap-4 items-center p-4 bg-black/10 rounded-2xl">
+                     <h3 className="font-bold text-lg">Your Tissues</h3>
+                     {builtTissues.map(tissue => (
                         <DraggableTissue 
                             key={tissue} 
                             type={tissue} 
                             onDragStart={setDraggedTissue} 
                             onDragEnd={() => setDraggedTissue(null)}
-                            onClick={handleClickToPlaceTissue}
-                            isPlaced={placedTissues.includes(tissue) || (tissue === 'muscle' && placedTissues.includes('adventitia'))}
+                            onClick={() => placeTissue(tissue)}
+                            isPlaced={placedTissues.includes(tissue)}
                         />
                      ))}
                 </div>
             </div>
+            {feedback && (
+                <div className="mt-4 bg-white/90 text-slate-800 p-4 rounded-2xl shadow-xl max-w-md text-center font-bold text-lg animate-pop-in">
+                   <p>{feedback}</p>
+                </div>
+            )}
         </div>
     );
 }
+
+const CompletionScreen: React.FC<{ onRestart: () => void }> = ({ onRestart }) => (
+    <div className="text-center animate-pop-in flex flex-col items-center">
+        <h2 className="text-4xl md:text-6xl font-black text-green-600 tracking-tight font-display">STEM Connection Complete!</h2>
+        <p className="mt-4 text-lg sm:text-xl max-w-3xl mx-auto">
+            Amazing work! You've seen how tiny cells build tissues, and tissues build organs. Science is all about building blocks!
+        </p>
+        <button onClick={onRestart} className="mt-8 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-2xl py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 transition-all border-b-4 border-indigo-700 active:border-b-2">
+            Play Again
+        </button>
+    </div>
+);
+
 
 // --- MAIN COMPONENT ---
 export const StemConnection: React.FC = () => {
@@ -784,6 +430,11 @@ export const StemConnection: React.FC = () => {
         }
     };
     
+    const restartModule = () => {
+        setStage('intro');
+        setBuiltTissues([]);
+    }
+
     const renderStage = () => {
         switch (stage) {
             case 'intro':
@@ -795,7 +446,9 @@ export const StemConnection: React.FC = () => {
             case 'build_muscle':
                 return <TissueBuilder title="Build Muscle Tissue" cellTypes={['muscle']} onComplete={() => handleTissueComplete('muscle')} />;
             case 'assemble_artery':
-                return <ArteryAssembler builtTissues={['epithelial', 'blood', 'muscle']} />;
+                return <ArteryAssembler builtTissues={['epithelial', 'blood', 'muscle']} onComplete={() => setStage('complete')} />;
+            case 'complete':
+                return <CompletionScreen onRestart={restartModule} />;
             default:
                 return null;
         }
@@ -803,18 +456,6 @@ export const StemConnection: React.FC = () => {
 
     return (
         <div className="w-full max-w-7xl animate-pop-in flex flex-col items-center p-4 sm:p-6 rounded-2xl shadow-xl" style={{ backgroundColor: 'var(--backdrop-bg)'}}>
-             <style>{`
-                .artery-label {
-                    color: #ffffff;
-                    background: rgba(0, 0, 0, 0.75);
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    font-size: 14px;
-                    font-weight: bold;
-                    text-shadow: 1px 1px 2px black;
-                    white-space: nowrap;
-                }
-            `}</style>
             {renderStage()}
         </div>
     );

@@ -406,8 +406,8 @@ const AppContent: React.FC = () => {
               });
 
               if (gameState === 'training') {
-                  const currentStep = trainingPlan.find(s => s.step === trainingStep);
-                  if (currentStep?.type === 'action_multi' && currentStep.column === source) {
+                  const currentStepConfig = trainingPlan.find(s => s.step === trainingStep);
+                  if (currentStepConfig?.type === 'action_multi' && currentStepConfig.column === source) {
                       const nextStepConfig = trainingPlan.find(s => s.step === trainingStep + 1);
                       if (nextStepConfig?.type === 'magic_feedback') {
                           setTrainingFeedback(nextStepConfig.text);
@@ -518,7 +518,7 @@ const AppContent: React.FC = () => {
   const handleGenericDragOver = (event: React.DragEvent<HTMLDivElement>) => event.preventDefault();
   
   const handleDropOnBackground = () => {
-    if (gameState === 'playground' && draggedOrigin) removeBlock(draggedOrigin.category, draggedOrigin.id);
+    if ((gameState === 'playground' || gameState === 'challenge') && draggedOrigin) removeBlock(draggedOrigin.category, draggedOrigin.id);
     setDraggedValue(null); setDraggedOrigin(null);
   };
 
@@ -702,6 +702,13 @@ const AppContent: React.FC = () => {
         const currentQuestion = filteredQuestions[currentQuestionIndex];
         return (
           <div className="flex flex-col items-center w-full max-w-7xl animate-pop-in">
+            {gameState === 'training' && (
+              <TrainingGuide
+                currentStepConfig={currentStepConfig}
+                columnCounts={{ ones: columns.ones.length, tens: columns.tens.length, hundreds: columns.hundreds.length, thousands: columns.thousands.length }}
+                onComplete={goBackToMenu}
+                feedback={trainingFeedback}
+              />)}
             {gameState === 'challenge' && (
               <ChallengePanel 
                 question={currentQuestion} 
@@ -721,7 +728,7 @@ const AppContent: React.FC = () => {
               <PlaceValueColumn title="Tens" category="tens" blocks={columns.tens} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={columns.ones.length >= 10} isDropAllowed={isDropAllowedForValue('tens', draggedValue)} isDragging={!!draggedValue} color="green" isTouchTarget={touchTarget === 'tens'} appState={gameState} isSpotlighted={currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi') && currentStepConfig.column === 'tens'} />
               <PlaceValueColumn title="Ones" category="ones" blocks={columns.ones} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('ones', draggedValue)} isDragging={!!draggedValue} color="blue" isTouchTarget={touchTarget === 'ones'} appState={gameState} isSpotlighted={currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi') && currentStepConfig.column === 'ones'} />
             </div>
-            <div className="mt-4 sm:mt-8 flex flex-col sm:flex-row items-center justify-between w-full gap-4">
+            <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row items-center justify-between w-full gap-4">
               <div className="flex-1">
                 <ResetButton onClick={() => resetBoard(true)} />
               </div>
@@ -731,7 +738,6 @@ const AppContent: React.FC = () => {
               </div>
               <div className="flex-1"></div>
             </div>
-            {gameState === 'training' && <TrainingGuide currentStepConfig={currentStepConfig} columnCounts={{ ones: columns.ones.length, tens: columns.tens.length, hundreds: columns.hundreds.length, thousands: columns.thousands.length }} onComplete={goBackToMenu} feedback={trainingFeedback} />}
           </div>
         );
       default:
