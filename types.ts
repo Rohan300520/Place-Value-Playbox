@@ -85,6 +85,7 @@ export type EquationState = {
   operator: FractionOperator | null;
   term2: Fraction | null;
   result: Fraction | null;
+  unsimplifiedResult?: Fraction | null;
   isSolved: boolean;
 };
 
@@ -106,18 +107,27 @@ export interface FractionChallengeQuestion {
   answer: Fraction;
 }
 
-export type TrainingAction = 'select_term1' | 'select_operator' | 'select_term2' | 'solve';
+export type TrainingAction = 
+  | 'select_term1' 
+  | 'select_operator' 
+  | 'select_term2' 
+  | 'solve' 
+  | 'set_denominator'
+  | 'select_pieces'
+  | 'select_point'
+  | 'continue';
 
 export interface FractionTrainingStep {
   step: number;
   type: 'intro' | 'action' | 'feedback' | 'complete';
+  ui?: 'concept' | 'number_line' | 'operations';
   text: string;
   requiredAction?: TrainingAction;
-  requiredValue?: Fraction | FractionOperator;
-  // Fix: Broadened the `spotlightOn` type to include the string 'solve' for training steps involving the solve button.
-  spotlightOn?: Fraction | FractionOperator | 'solve';
+  requiredValue?: Fraction | FractionOperator | number;
+  spotlightOn?: Fraction | FractionOperator | 'solve' | `denominator-${number}` | 'pieces' | 'continue_button' | 'number_line_ticks' | `number_line_point-${string}`;
   duration?: number;
   clearBoardAfter?: boolean;
+  count?: number;
 }
 
 

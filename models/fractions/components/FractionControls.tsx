@@ -6,7 +6,6 @@ interface FractionControlsProps {
     onSolve: () => void;
     onClear: () => void;
     equation: EquationState;
-    // Fix: Allow `spotlightOn` to be 'solve' to enable highlighting the solve button.
     spotlightOn?: FractionOperator | 'solve';
 }
 
@@ -36,6 +35,9 @@ const OperatorButton: React.FC<{
 export const FractionControls: React.FC<FractionControlsProps> = ({ onOperatorSelect, onSolve, onClear, equation, spotlightOn }) => {
     const { term1, operator, term2, isSolved } = equation;
     
+    // Base disabled condition for operators
+    const isOperatorDisabled = !term1 || !!operator || isSolved;
+
     return (
         <div className="w-full flex justify-between items-center p-4 rounded-2xl" style={{ backgroundColor: 'var(--panel-bg)' }}>
             <button
@@ -49,14 +51,14 @@ export const FractionControls: React.FC<FractionControlsProps> = ({ onOperatorSe
                 <OperatorButton
                     operator="+"
                     onClick={() => onOperatorSelect('+')}
-                    disabled={!term1 || !!operator || isSolved}
+                    disabled={isOperatorDisabled || (!!spotlightOn && spotlightOn !== '+')}
                     isActive={operator === '+'}
                     isSpotlighted={spotlightOn === '+'}
                 />
                 <OperatorButton
                     operator="-"
                     onClick={() => onOperatorSelect('-')}
-                    disabled={!term1 || !!operator || isSolved}
+                    disabled={isOperatorDisabled || (!!spotlightOn && spotlightOn !== '-')}
                     isActive={operator === '-'}
                     isSpotlighted={spotlightOn === '-'}
                 />
