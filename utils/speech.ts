@@ -106,24 +106,36 @@ export const speak = (text: string, lang = 'en-US'): Promise<void> => {
         return resolve();
     }
 
-    // Always cancel previous speech to prevent queueing issues.
-    cancelSpeech();
+    // Fix: Removed unconditional `cancelSpeech()` to allow browser's native speech queue to work.
+    // Interruptions are now handled explicitly in the component logic where needed.
 
     const utterance = new SpeechSynthesisUtterance(text);
 
     // Store a reference to the utterance to prevent it from being garbage collected.
     utteranceQueue.push(utterance);
-    utterance.onend = () => {
+    
+    const removeFromQueue = () => {
         const index = utteranceQueue.indexOf(utterance);
         if (index > -1) utteranceQueue.splice(index, 1);
+    };
+
+    utterance.onend = () => {
+        removeFromQueue();
         resolve();
     };
 
     utterance.onerror = (event: SpeechSynthesisErrorEvent) => {
-      // Log the specific error string, not the entire event object.
+      removeFromQueue();
+      // The 'interrupted' error is not a true error in our app's context. 
+      // It happens when we intentionally cancel speech to start a new one.
+      // We can safely ignore it by resolving the promise.
+      if (event.error === 'interrupted' || event.error === 'canceled') {
+          resolve();
+          return;
+      }
+      
+      // Log other, actual errors.
       console.error(`An error occurred during speech synthesis: ${event.error}`);
-      const index = utteranceQueue.indexOf(utterance);
-      if (index > -1) utteranceQueue.splice(index, 1);
       reject(new Error(event.error));
     };
     

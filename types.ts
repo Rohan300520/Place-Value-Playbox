@@ -1,11 +1,27 @@
-// Define the basic types for blocks and columns
+import type React from 'react';
+
+// --- Core App State ---
+export type AppState = 'model_selection' | 'place_value_playbox' | 'fractions';
+
+export type UserInfo = {
+  name: string;
+  school: string;
+  keyId: string;
+};
+
+// --- UI & Theming ---
+export type Theme = 'light' | 'dark';
+export type Language = 'en' | 'hi' | 'kn';
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
+// --- Place Value Playbox Model ---
 export type BlockValue = 1 | 10 | 100 | 1000;
 export type PlaceValueCategory = 'ones' | 'tens' | 'hundreds' | 'thousands';
 
 export interface Block {
   id: string;
   value: BlockValue;
-  isAnimating?: boolean;
+  isAnimating?: boolean | null; // true for swirl-out, false for poof-out, null/undefined for no animation
   isNewlyRegrouped?: boolean;
 }
 
@@ -13,108 +29,112 @@ export type PlaceValueColumns = {
   [key in PlaceValueCategory]: Block[];
 };
 
-// Define the state of the application
-export type AppState = 
-  | 'home'
+export type PlaceValueState =
   | 'welcome'
   | 'model_intro'
   | 'mode_selection'
-  | 'playground'
   | 'training'
+  | 'playground'
   | 'challenge'
-  | 'stem_connection'
-  | 'challenge_difficulty_selection';
+  | 'challenge_difficulty_selection'
+  | 'stem_connection';
 
-// Define the structure for training steps
-type TrainingActionStep = {
+export interface TrainingStep {
   step: number;
-  type: 'action';
-  source: BlockValue;
-  column: PlaceValueCategory;
+  type: 'action' | 'feedback' | 'action_multi' | 'magic_feedback' | 'complete';
   text: string;
-};
+  source?: BlockValue;
+  column?: PlaceValueCategory;
+  count?: number;
+  duration?: number;
+  clearBoardAfter?: boolean;
+  targetColumn?: PlaceValueCategory;
+}
 
-type TrainingFeedbackStep = {
-  step: number;
-  type: 'feedback';
-  text: string;
-  duration: number;
-  clearBoardAfter: boolean;
-};
-
-type TrainingActionMultiStep = {
-  step: number;
-  type: 'action_multi';
-  source: BlockValue;
-  column: PlaceValueCategory;
-  count: number;
-  text: string;
-};
-
-type TrainingMagicFeedbackStep = {
-  step: number;
-  type: 'magic_feedback';
-  text: string;
-  duration: number;
-  clearBoardAfter: boolean;
-  targetColumn: PlaceValueCategory;
-};
-
-type TrainingCompleteStep = {
-  step: number;
-  type: 'complete';
-  text: string;
-};
-
-export type TrainingStep = 
-  | TrainingActionStep 
-  | TrainingFeedbackStep 
-  | TrainingActionMultiStep
-  | TrainingMagicFeedbackStep
-  | TrainingCompleteStep;
-
-// Define the structure for challenge questions
-export interface ChallengeQuestion {
+export interface PlaceValueChallengeQuestion {
   id: number;
   level: number;
   question: string;
   answer: number;
   type: 'build' | 'interpret';
-  concept: string;
+  concept: 'place_value' | 'number_word' | 'addition' | 'subtraction';
 }
 
-// Define difficulty levels for challenge mode
-export type Difficulty = 'easy' | 'medium' | 'hard';
+// --- STEM Connection (Artery) Model ---
+export type StemStage = 'intro' | 'build_epithelial' | 'build_blood' | 'build_muscle' | 'assemble_artery' | 'complete';
+export type CellType = 'epithelial' | 'rbc' | 'wbc' | 'platelet' | 'muscle';
+export type TissueType = 'epithelial' | 'blood' | 'muscle';
 
-// User information for licensing and analytics
-export interface UserInfo {
-    name: string;
-    school: string;
-    keyId: string;
+export interface StemCell {
+  id: string;
+  type: CellType;
+  state: 'placed' | 'regrouping';
+  style: React.CSSProperties;
 }
 
-// Theme for the application UI
-export type Theme = 'light' | 'dark';
+// --- Fractions Model ---
+export interface Fraction {
+  numerator: number;
+  denominator: number;
+}
 
-// Language for localization
-export type Language = 'en' | 'hi' | 'kn';
+export type FractionOperator = '+' | '-';
 
-// Analytics event structure
+export type EquationState = {
+  term1: Fraction | null;
+  operator: FractionOperator | null;
+  term2: Fraction | null;
+  result: Fraction | null;
+  isSolved: boolean;
+};
+
+export type FractionState =
+  | 'welcome'
+  | 'mode_selection'
+  | 'training'
+  | 'explore'
+  | 'challenge'
+  | 'challenge_difficulty_selection';
+
+export interface FractionChallengeQuestion {
+  id: number;
+  level: Difficulty;
+  term1: Fraction;
+  operator: FractionOperator;
+  term2: Fraction;
+  type: 'add' | 'subtract';
+  answer: Fraction;
+}
+
+export type TrainingAction = 'select_term1' | 'select_operator' | 'select_term2' | 'solve';
+
+export interface FractionTrainingStep {
+  step: number;
+  type: 'intro' | 'action' | 'feedback' | 'complete';
+  text: string;
+  requiredAction?: TrainingAction;
+  requiredValue?: Fraction | FractionOperator;
+  // Fix: Broadened the `spotlightOn` type to include the string 'solve' for training steps involving the solve button.
+  spotlightOn?: Fraction | FractionOperator | 'solve';
+  duration?: number;
+  clearBoardAfter?: boolean;
+}
+
+
+// --- Analytics ---
 export interface AnalyticsEvent {
-  id: string; // Unique ID for the event
+  id: string;
   timestamp: number;
   eventName: string;
-  userInfo: UserInfo | null;
+  userInfo: UserInfo;
   payload: Record<string, any>;
 }
-
-// --- Analytics Dashboard Types ---
 
 export interface GlobalStats {
   total_users: number;
   total_sessions: number;
   total_challenge_attempts: number;
-  avg_success_rate: number | null;
+  avg_success_rate: number;
 }
 
 export interface SchoolSummary {
@@ -135,21 +155,21 @@ export interface SchoolUserDetails {
 export interface UserChallengeHistory {
   event_timestamp: string;
   question: string;
-  level: string;
-  status: string;
+  level: Difficulty;
+  status: 'correct' | 'incorrect' | 'timed_out';
   duration: number;
-  user_answer: string;
-  correct_answer: string;
+  user_answer: number | string;
+  correct_answer: number | string;
 }
 
 export interface DailyActivity {
-    day: string; // Date string "YYYY-MM-DD"
-    session_count: number;
-    user_count: number;
+  day: string;
+  session_count: number;
+  user_count: number;
 }
 
 export interface SchoolChallengeStats {
-    correct_count: number;
-    incorrect_count: number;
-    timed_out_count: number;
+  correct_count: number;
+  incorrect_count: number;
+  timed_out_count: number;
 }

@@ -1,8 +1,8 @@
 // Fix: Corrected import path for types
-import type { ChallengeQuestion } from '../types';
+import type { PlaceValueChallengeQuestion } from '../types';
 
 // A comprehensive and balanced list of questions covering various concepts.
-const allChallengeQuestions: ChallengeQuestion[] = [
+const allChallengeQuestions: PlaceValueChallengeQuestion[] = [
     // --- LEVEL 1 (EASY) ---
     // Place Value & Number Words
     { id: 1, level: 1, question: "What number is 6 hundreds, 2 tens, and 7 ones?", answer: 627, type: 'build', concept: 'place_value' },
@@ -44,4 +44,4 @@ const allChallengeQuestions: ChallengeQuestion[] = [
 ];
 
 // Filter out any questions that might exceed the app's current display limit of 4 columns.
-export const challengeQuestions: ChallengeQuestion[] = allChallengeQuestions.filter(q => q.answer < 10000);
+export const challengeQuestions: PlaceValueChallengeQuestion[] = allChallengeQuestions.filter(q => q.answer < 20000);

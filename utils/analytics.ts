@@ -117,7 +117,7 @@ export const syncAnalyticsData = async (): Promise<void> => {
             },
             payload: event.payload,
             key_id: event.userInfo.keyId,
-            model: 'place-value-playbox',
+            model: event.payload.model || 'unknown',
         }));
 
         const { error } = await supabase.from('usage_logs').insert(eventsToInsert);
@@ -146,8 +146,8 @@ export const syncAnalyticsData = async (): Promise<void> => {
 
 // --- Functions to fetch aggregated data for the dashboard ---
 
-export const getGlobalStats = async (): Promise<GlobalStats | null> => {
-    const { data, error } = await supabase.rpc('get_global_stats');
+export const getGlobalStats = async (model?: string): Promise<GlobalStats | null> => {
+    const { data, error } = await supabase.rpc('get_global_stats', { p_model_name: model });
     if (error) {
         console.error('Error fetching global stats:', error);
         return null;
@@ -155,8 +155,8 @@ export const getGlobalStats = async (): Promise<GlobalStats | null> => {
     return data?.[0] || { total_users: 0, total_sessions: 0, total_challenge_attempts: 0, avg_success_rate: 0 };
 };
 
-export const getSchoolSummary = async (): Promise<SchoolSummary[]> => {
-    const { data, error } = await supabase.rpc('get_school_summary');
+export const getSchoolSummary = async (model?: string): Promise<SchoolSummary[]> => {
+    const { data, error } = await supabase.rpc('get_school_summary', { p_model_name: model });
     if (error) {
         console.error('Error fetching school summary:', error);
         return [];
@@ -164,8 +164,8 @@ export const getSchoolSummary = async (): Promise<SchoolSummary[]> => {
     return data || [];
 };
 
-export const getSchoolDetails = async (schoolName: string): Promise<SchoolUserDetails[]> => {
-    const { data, error } = await supabase.rpc('get_school_details', { p_school_name: schoolName });
+export const getSchoolDetails = async (schoolName: string, model?: string): Promise<SchoolUserDetails[]> => {
+    const { data, error } = await supabase.rpc('get_school_details', { p_school_name: schoolName, p_model_name: model });
     if (error) {
         console.error('Error fetching school details:', error);
         return [];
@@ -173,8 +173,8 @@ export const getSchoolDetails = async (schoolName: string): Promise<SchoolUserDe
     return data || [];
 };
 
-export const getUserChallengeHistory = async (schoolName: string, userName: string): Promise<UserChallengeHistory[]> => {
-    const { data, error } = await supabase.rpc('get_user_challenge_history', { p_school_name: schoolName, p_user_name: userName });
+export const getUserChallengeHistory = async (schoolName: string, userName: string, model?: string): Promise<UserChallengeHistory[]> => {
+    const { data, error } = await supabase.rpc('get_user_challenge_history', { p_school_name: schoolName, p_user_name: userName, p_model_name: model });
     if (error) {
         console.error('Error fetching user challenge history:', error);
         return [];
@@ -182,8 +182,8 @@ export const getUserChallengeHistory = async (schoolName: string, userName: stri
     return data || [];
 };
 
-export const getDailyActivity = async (): Promise<DailyActivity[]> => {
-    const { data, error } = await supabase.rpc('get_daily_activity');
+export const getDailyActivity = async (model?: string): Promise<DailyActivity[]> => {
+    const { data, error } = await supabase.rpc('get_daily_activity', { p_model_name: model });
     if (error) {
         console.error('Error fetching daily activity:', error);
         return [];
@@ -191,8 +191,8 @@ export const getDailyActivity = async (): Promise<DailyActivity[]> => {
     return data || [];
 };
 
-export const getSchoolChallengeStats = async (schoolName: string): Promise<SchoolChallengeStats | null> => {
-    const { data, error } = await supabase.rpc('get_school_challenge_stats', { p_school_name: schoolName });
+export const getSchoolChallengeStats = async (schoolName: string, model?: string): Promise<SchoolChallengeStats | null> => {
+    const { data, error } = await supabase.rpc('get_school_challenge_stats', { p_school_name: schoolName, p_model_name: model });
     if (error) {
         console.error('Error fetching school challenge stats:', error);
         return null;

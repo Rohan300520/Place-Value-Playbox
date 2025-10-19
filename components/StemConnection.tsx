@@ -2,19 +2,7 @@ import React, { useState, useEffect, useCallback, useId, useRef, useMemo } from 
 import { useAudio } from '../contexts/AudioContext';
 import { speak } from '../utils/speech';
 import { Confetti } from './Confetti';
-
-
-// --- TYPES ---
-type Stage = 'intro' | 'build_epithelial' | 'build_blood' | 'build_muscle' | 'assemble_artery' | 'complete';
-type CellType = 'epithelial' | 'rbc' | 'wbc' | 'platelet' | 'muscle';
-type TissueType = 'epithelial' | 'blood' | 'muscle';
-
-interface Cell {
-  id: string;
-  type: CellType;
-  style: React.CSSProperties;
-  state: 'source' | 'placed' | 'regrouping';
-}
+import type { StemStage, CellType, TissueType, StemCell } from '../types';
 
 // --- CONFIGURATION ---
 const ASSET_PATHS = {
@@ -29,7 +17,7 @@ const ASSET_PATHS = {
   'muscle-tissue': '/assets/muscle-tissue-fibrous.jpeg',
   'blood-tissue': '/assets/blood-tissue-animated.png',
   // Final Artery Image
-  'artery': '/assets/artery.jpeg',
+  'artery': '/assets/artery.png',
 };
 
 const ASSET_INFO = {
@@ -110,7 +98,7 @@ const TissueBuilder: React.FC<{
     onComplete: () => void;
 }> = ({ title, cellTypes, onComplete }) => {
     const { isSpeechEnabled } = useAudio();
-    const [cells, setCells] = useState<Cell[]>([]);
+    const [cells, setCells] = useState<StemCell[]>([]);
     const [draggedCell, setDraggedCell] = useState<CellType | null>(null);
     const [isRegrouping, setIsRegrouping] = useState(false);
     const [feedbackMessage, setFeedbackMessage] = useState<{ title: string; description: string } | null>(null);
@@ -135,7 +123,7 @@ const TissueBuilder: React.FC<{
     }, [title]);
 
     const addCell = (type: CellType, x: number, y: number) => {
-        const newCell: Cell = {
+        const newCell: StemCell = {
             id: `${baseId}-${type}-${cells.length}`,
             type: type,
             state: 'placed',
@@ -421,7 +409,7 @@ const CompletionScreen: React.FC<{ onRestart: () => void }> = ({ onRestart }) =>
 
 // --- MAIN COMPONENT ---
 export const StemConnection: React.FC = () => {
-    const [stage, setStage] = useState<Stage>('intro');
+    const [stage, setStage] = useState<StemStage>('intro');
     const [builtTissues, setBuiltTissues] = useState<TissueType[]>([]);
 
     const handleTissueComplete = (tissue: TissueType) => {

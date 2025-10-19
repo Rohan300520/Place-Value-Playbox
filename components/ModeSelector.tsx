@@ -1,9 +1,9 @@
 import React from 'react';
 // Fix: Corrected import path for types
-import type { AppState } from '../types';
+import type { PlaceValueState } from '../types';
 
 interface ModeSelectorProps {
-  onSelectMode: (mode: AppState) => void;
+  onSelectMode: (mode: PlaceValueState) => void;
 }
 
 const ModeCard: React.FC<{

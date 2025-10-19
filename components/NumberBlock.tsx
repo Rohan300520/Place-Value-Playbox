@@ -79,9 +79,12 @@ export const NumberBlock: React.FC<NumberBlockProps> = ({
   
   const animationClass = isAnimating === true
     ? 'animate-regroup-swirl-out'
+    // This animation (`poof-out`) is not currently used, but is kept for potential future features.
     : isAnimating === false
     ? 'animate-poof-out'
-    : 'animate-bouncy-pop-in';
+    : isNewlyRegrouped
+    ? 'animate-bouncy-pop-in' // Always use pop-in for newly regrouped blocks
+    : ''; // No animation for blocks added from the source tray
 
 
   const blockElement = (

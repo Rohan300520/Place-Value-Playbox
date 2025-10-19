@@ -24,7 +24,7 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'assets/logo.jpeg', // Point to an existing icon
+            src: 'assets/logo.svg', // Point to an existing icon
             sizes: 'any',
             type: 'image/svg+xml',
             purpose: 'any maskable',

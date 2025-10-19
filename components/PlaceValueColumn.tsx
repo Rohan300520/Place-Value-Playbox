@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 // Fix: Corrected import path for types
-import type { Block, PlaceValueCategory, BlockValue } from '../types';
+import type { Block, PlaceValueCategory, BlockValue, PlaceValueState } from '../types';
 import { NumberBlock } from './NumberBlock';
 
 interface PlaceValueColumnProps {
@@ -16,7 +16,7 @@ interface PlaceValueColumnProps {
   color: 'blue' | 'green' | 'yellow' | 'purple';
   isSpotlighted?: boolean;
   isTouchTarget?: boolean;
-  appState: string;
+  appState: PlaceValueState;
 }
 
 const colorVars = {

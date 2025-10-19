@@ -17,6 +17,10 @@ import type {
 } from '../types';
 import type { Chart as ChartJS, ChartConfiguration } from 'chart.js';
 
+interface AnalyticsDashboardProps {
+    modelFilter?: string;
+}
+
 // --- Reusable Chart Component ---
 const Chart: React.FC<{ config: ChartConfiguration, title: string }> = ({ config, title }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -296,7 +300,7 @@ const UserView: React.FC<{ history: UserChallengeHistory[] }> = ({ history }) =>
 };
 
 // --- Main Dashboard Component ---
-export const AnalyticsDashboard: React.FC = () => {
+export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ modelFilter }) => {
     const [path, setPath] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -310,15 +314,15 @@ export const AnalyticsDashboard: React.FC = () => {
     const [schoolChallengeStats, setSchoolChallengeStats] = useState<SchoolChallengeStats | null>(null);
     const [userHistory, setUserHistory] = useState<UserChallengeHistory[]>([]);
 
-    const fetchData = useCallback(async (currentPath: string[]) => {
+    const fetchData = useCallback(async (currentPath: string[], model?: string) => {
         setIsLoading(true);
         setError(null);
         try {
             if (currentPath.length === 0) {
                 const [stats, schools, activity] = await Promise.all([
-                    getGlobalStats(), 
-                    getSchoolSummary(),
-                    getDailyActivity()
+                    getGlobalStats(model), 
+                    getSchoolSummary(model),
+                    getDailyActivity(model)
                 ]);
                 setGlobalStats(stats);
                 setSchoolSummary(schools);
@@ -326,14 +330,14 @@ export const AnalyticsDashboard: React.FC = () => {
             } else if (currentPath.length === 1) {
                 const schoolName = currentPath[0];
                 const [details, challengeStats] = await Promise.all([
-                    getSchoolDetails(schoolName),
-                    getSchoolChallengeStats(schoolName)
+                    getSchoolDetails(schoolName, model),
+                    getSchoolChallengeStats(schoolName, model)
                 ]);
                 setSchoolDetails(details);
                 setSchoolChallengeStats(challengeStats);
             } else if (currentPath.length === 2) {
                 const [schoolName, userName] = currentPath;
-                const history = await getUserChallengeHistory(schoolName, userName);
+                const history = await getUserChallengeHistory(schoolName, userName, model);
                 setUserHistory(history);
             }
         } catch (e: any) {
@@ -345,8 +349,8 @@ export const AnalyticsDashboard: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        fetchData(path);
-    }, [path, fetchData]);
+        fetchData(path, modelFilter);
+    }, [path, modelFilter, fetchData]);
     
     const renderContent = () => {
         if (isLoading) return <div className="text-center py-10">Loading analytics...</div>;
@@ -369,7 +373,7 @@ export const AnalyticsDashboard: React.FC = () => {
             <div className="flex justify-between items-center mb-2">
                  <h2 className="text-2xl font-bold font-display" style={{ color: 'var(--text-accent)' }}>Usage Analytics</h2>
                  <button 
-                    onClick={() => fetchData(path)} 
+                    onClick={() => fetchData(path, modelFilter)} 
                     disabled={isLoading}
                     className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-400 text-white font-bold py-2 px-4 rounded-lg shadow-md transform hover:scale-105 transition-all duration-200 border-b-4 border-indigo-700 active:border-b-2"
                  >
