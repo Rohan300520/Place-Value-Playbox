@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { EquationState, Fraction } from '../../../types';
 import { FractionBlock } from './FractionBlock';
+import { CalculationExplanationPanel } from './CalculationExplanationPanel';
 
 const commonDenominator = (d1 = 1, d2 = 1) => {
     const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
@@ -22,16 +23,21 @@ interface StepLineProps {
     animationClass?: string;
     isComparison?: boolean;
     comparisonResult?: Fraction | null;
+    isSubdividing?: boolean;
+    subdivisionTargets?: { term1: Fraction, term2: Fraction } | null;
 }
 
-const CalculationStep: React.FC<StepLineProps> = ({ term1, operator, term2, result, isVisible, animationClass, isComparison, comparisonResult }) => {
+const CalculationStep: React.FC<StepLineProps> = ({ 
+    term1, operator, term2, result, isVisible, animationClass, 
+    isComparison, comparisonResult, isSubdividing, subdivisionTargets 
+}) => {
     if (!isVisible) return null;
 
     return (
         <div className={`flex items-center justify-center w-full gap-4 min-h-[3rem] ${animationClass}`}>
-            {term1 && <FractionBlock fraction={term1} />}
+            {term1 && <FractionBlock fraction={term1} subdivisionTarget={isSubdividing ? subdivisionTargets?.term1 : undefined} />}
             {operator && <span className="text-4xl font-chalk">{operator}</span>}
-            {term2 && <FractionBlock fraction={term2} />}
+            {term2 && <FractionBlock fraction={term2} subdivisionTarget={isSubdividing ? subdivisionTargets?.term2 : undefined} />}
             {result && (
                  <>
                     <span className="text-4xl font-chalk">=</span>
@@ -55,42 +61,66 @@ export const CalculationCanvas: React.FC<{
     const [animationStep, setAnimationStep] = useState(0); 
     const [explanation, setExplanation] = useState<string | null>(null);
     const [convertedFractions, setConvertedFractions] = useState<{ term1: Fraction, term2: Fraction } | null>(null);
+    const [isSubdividing, setIsSubdividing] = useState(false);
+    const [explanationPanelData, setExplanationPanelData] = useState<{ original: Fraction; target: Fraction } | null>(null);
 
     useEffect(() => {
+        // Reset all animation state when the solve state changes.
+        setAnimationStep(0);
+        setExplanation(null);
+        setConvertedFractions(null);
+        setIsSubdividing(false);
+        setExplanationPanelData(null);
+        let timeouts: ReturnType<typeof setTimeout>[] = [];
+        const run = (fn: () => void, delay: number) => timeouts.push(setTimeout(fn, delay));
+        
         if (isSolved && term1 && term2 && operator && result && unsimplifiedResult) {
             const isAlreadyCommon = term1.denominator === term2.denominator;
             const needsSimplifying = !fractionsAreEqual(unsimplifiedResult, result);
-            let timeouts: ReturnType<typeof setTimeout>[] = [];
-            const run = (fn: () => void, delay: number) => timeouts.push(setTimeout(fn, delay));
-    
-            setAnimationStep(0);
-            setExplanation(null);
-            setConvertedFractions(null);
-            
             let currentTime = 0;
-    
+
             if (!isAlreadyCommon) {
-                currentTime += 1000;
+                const cd = commonDenominator(term1.denominator, term2.denominator);
+                const cTerm1 = { numerator: term1.numerator * (cd / term1.denominator), denominator: cd };
+                const cTerm2 = { numerator: term2.numerator * (cd / term2.denominator), denominator: cd };
+                
+                currentTime += 500;
+                run(() => setExplanation("The pieces are different sizes. Let's make them match!"), currentTime);
+                
+                const term1NeedsConv = term1.denominator !== cd;
+                const term2NeedsConv = term2.denominator !== cd;
+                const fractionToExplain = term1NeedsConv ? term1 : (term2NeedsConv ? term2 : null);
+                const targetForExplain = term1NeedsConv ? cTerm1 : (term2NeedsConv ? cTerm2 : null);
+
+                currentTime += 2000;
                 run(() => {
-                    const cd = commonDenominator(term1.denominator, term2.denominator);
-                    const cTerm1 = { numerator: term1.numerator * (cd / term1.denominator), denominator: cd };
-                    const cTerm2 = { numerator: term2.numerator * (cd / term2.denominator), denominator: cd };
+                    setExplanation(null);
+                    if (fractionToExplain && targetForExplain) {
+                        setExplanationPanelData({ original: fractionToExplain, target: targetForExplain });
+                    }
                     setConvertedFractions({ term1: cTerm1, term2: cTerm2 });
-                    setExplanation(`First, we find a common size for the pieces: ${cd}ths.`);
+                    setIsSubdividing(true);
+                }, currentTime);
+                
+                currentTime += 5000;
+                run(() => {
+                    setExplanationPanelData(null);
+                    setExplanation(`Great! Now the pieces are all ${cd}ths.`);
                     setAnimationStep(1);
                 }, currentTime);
-                currentTime += 3000;
+                
+                currentTime += 2500;
             } else {
                 currentTime += 1000;
             }
-    
+
             run(() => {
                 setExplanation(`Now we can ${operator === '+' ? 'add' : 'subtract'} the pieces.`);
                 setAnimationStep(2);
             }, currentTime);
             
             currentTime += 2500;
-    
+
             if (needsSimplifying) {
                 run(() => {
                     setExplanation(`This can be simplified to its lowest terms!`);
@@ -105,10 +135,6 @@ export const CalculationCanvas: React.FC<{
             }, currentTime);
     
             return () => timeouts.forEach(clearTimeout);
-        } else {
-            setAnimationStep(0);
-            setExplanation(null);
-            setConvertedFractions(null);
         }
     }, [isSolved, term1, term2, operator, result, unsimplifiedResult]);
 
@@ -140,23 +166,44 @@ export const CalculationCanvas: React.FC<{
                     </p>
                 </div>
             )}
-            <div className="w-full space-y-2">
-                <CalculationStep term1={term1} operator={operator} term2={term2} isVisible={!!term1} animationClass="animate-pop-in" />
-                <CalculationStep term1={convertedFractions?.term1} operator={operator} term2={convertedFractions?.term2} isVisible={animationStep >= 1 && !isAlreadyCommon} animationClass="animate-pop-in"/>
+             {explanationPanelData && (
+                <CalculationExplanationPanel 
+                    original={explanationPanelData.original} 
+                    target={explanationPanelData.target}
+                />
+            )}
+            <div className="w-full space-y-2 relative">
+                {/* Step 0: Initial equation & subdivision animation */}
+                <CalculationStep 
+                    term1={term1} 
+                    operator={operator} 
+                    term2={term2} 
+                    isVisible={!!term1} 
+                    animationClass={`transition-opacity duration-500 ${animationStep >= 1 && !isAlreadyCommon ? 'opacity-0' : 'opacity-100'}`}
+                    isSubdividing={isSubdividing}
+                    subdivisionTargets={convertedFractions}
+                />
                 
-                {/* Final Result Steps */}
+                {/* Step 1: Converted fractions fade in */}
+                <CalculationStep
+                    term1={convertedFractions?.term1}
+                    operator={operator}
+                    term2={convertedFractions?.term2}
+                    isVisible={!isAlreadyCommon}
+                    animationClass={`absolute inset-0 transition-opacity duration-500 ${animationStep === 1 ? 'opacity-100' : 'opacity-0'}`}
+                />
+
+                {/* Step 2 & 3: Results */}
                 {animationStep < 4 ? (
-                    <>
-                        <CalculationStep 
-                            result={unsimplifiedResult} 
-                            isVisible={animationStep >= 2}
-                            isComparison={needsSimplifying && animationStep === 3}
-                            comparisonResult={result}
-                            animationClass="animate-pop-in"
-                        />
-                    </>
+                    <CalculationStep 
+                        result={unsimplifiedResult} 
+                        isVisible={animationStep >= 2}
+                        isComparison={needsSimplifying && animationStep === 3}
+                        comparisonResult={result}
+                        animationClass="animate-pop-in"
+                    />
                 ) : (
-                     <CalculationStep result={result} isVisible={true} animationClass="animate-merge"/>
+                    <CalculationStep result={result} isVisible={true} animationClass="animate-merge"/>
                 )}
 
             </div>

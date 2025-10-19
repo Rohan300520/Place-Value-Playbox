@@ -97,6 +97,8 @@ export type FractionState =
   | 'challenge'
   | 'challenge_difficulty_selection';
 
+export type ExploreView = 'operations' | 'anatomy' | 'number_line';
+
 export interface FractionChallengeQuestion {
   id: number;
   level: Difficulty;

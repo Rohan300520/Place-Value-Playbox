@@ -1,8 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import type { Fraction, FractionState, Difficulty, FractionChallengeQuestion, UserInfo, EquationState, FractionOperator, TrainingAction } from '../../types';
+import type { Fraction, FractionState, Difficulty, FractionChallengeQuestion, UserInfo, EquationState, FractionOperator, TrainingAction, ExploreView } from '../../types';
 import { Header } from '../../components/Header';
 import { WelcomeScreen } from './components/WelcomeScreen';
-import { ConceptIntro } from './components/ConceptIntro';
 import { ModeSelector } from './components/ModeSelector';
 import { DifficultySelector } from './components/DifficultySelector';
 import { FractionWall } from './components/FractionWall';
@@ -11,6 +10,8 @@ import { FractionControls } from './components/FractionControls';
 import { FractionChallengePanel } from './components/FractionChallengePanel';
 import { TrainingGuide } from './components/TrainingGuide';
 import { NumberLine } from './components/NumberLine';
+import { ConceptIntro } from './components/ConceptIntro';
+import { ExploreViewSwitcher } from './components/ExploreViewSwitcher';
 import { Confetti } from '../../components/Confetti';
 import { challenges } from './utils/challenges';
 import { fractionTrainingPlan } from './utils/training';
@@ -50,6 +51,9 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
     const [showHelp, setShowHelp] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
     
+    // Explore State
+    const [exploreView, setExploreView] = useState<ExploreView>('operations');
+
     // Challenge State
     const [challengeAnswer, setChallengeAnswer] = useState<Fraction | null>(null);
     const [challengeStatus, setChallengeStatus] = useState<'playing' | 'correct' | 'incorrect' | 'timed_out'>('playing');
@@ -137,6 +141,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
 
     const goBackToMenu = useCallback(() => {
         clearEquation();
+        setExploreView('operations');
         setGameState('mode_selection');
         spokenStepsRef.current.clear();
     }, [clearEquation]);
@@ -319,6 +324,8 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         syncAnalyticsData();
         if (mode === 'challenge') {
             setGameState('challenge_difficulty_selection');
+        } else if (mode === 'explore') {
+            setExploreView('operations');
         } else if (mode === 'training') {
             setTrainingStep(0);
             setConceptDenominator(4);
@@ -345,6 +352,25 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
             case 'welcome': return <WelcomeScreen onStart={() => setGameState('mode_selection')} />;
             case 'mode_selection': return <ModeSelector onSelectMode={handleModeSelection} />;
             case 'challenge_difficulty_selection': return <DifficultySelector onSelectDifficulty={startChallenge} onBack={goBackToMenu} />;
+            case 'explore':
+                return (
+                    <div className="fractions-theme w-full flex-grow flex flex-col items-center justify-center">
+                        <div className="w-full max-w-7xl flex flex-col items-center animate-pop-in p-4 rounded-2xl bg-slate-900/20">
+                            <ExploreViewSwitcher activeView={exploreView} onSelectView={setExploreView} />
+                            {exploreView === 'operations' && (
+                                <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mt-4">
+                                    <div className="lg:sticky top-24"><FractionWall onSelect={handleSelectFraction} pulseOn={wallPulse} /></div>
+                                    <div className="flex flex-col gap-4">
+                                        <CalculationCanvas equation={equation} />
+                                        <FractionControls onOperatorSelect={handleSelectOperator} onSolve={handleSolve} onClear={clearEquation} equation={equation} />
+                                    </div>
+                                </div>
+                            )}
+                            {exploreView === 'anatomy' && <div className="mt-6"><ConceptIntro isTrainingMode={false} /></div>}
+                            {exploreView === 'number_line' && <div className="mt-6"><NumberLine isExploreMode={true} /></div>}
+                        </div>
+                    </div>
+                );
             case 'training':
                 const trainingUI = currentTrainingStep?.ui || 'operations';
                 return (
@@ -395,9 +421,8 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                         </div>
                      </div>
                 );
-            default:
+            default: // Challenge Mode
                 const currentQuestion = filteredQuestions[currentQuestionIndex];
-                const isExplore = gameState === 'explore';
                 return (
                     <div className="fractions-theme w-full flex-grow flex flex-col items-center justify-center">
                         <div className="w-full max-w-7xl flex flex-col items-center animate-pop-in p-4 rounded-2xl bg-slate-900/20">
@@ -420,19 +445,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                                 </div>
 
                                 <div className="flex flex-col gap-4">
-                                    {gameState === 'challenge' 
-                                        ? <CalculationCanvas equation={{...initialEquationState, term1: challengeAnswer}} isChallengeMode={true} />
-                                        : <CalculationCanvas equation={equation} />
-                                    }
-
-                                    {isExplore && (
-                                       <FractionControls 
-                                            onOperatorSelect={handleSelectOperator}
-                                            onSolve={handleSolve}
-                                            onClear={clearEquation}
-                                            equation={equation}
-                                       />
-                                    )}
+                                    <CalculationCanvas equation={{...initialEquationState, term1: challengeAnswer}} isChallengeMode={true} />
                                 </div>
                             </div>
                         </div>

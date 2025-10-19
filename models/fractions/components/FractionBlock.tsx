@@ -5,6 +5,7 @@ interface FractionBlockProps {
   fraction: Fraction;
   onClick?: () => void;
   isResult?: boolean;
+  subdivisionTarget?: Fraction;
 }
 
 // Color palette for the wooden blocks based on denominator
@@ -20,7 +21,7 @@ const BLOCK_COLORS = [
 ];
 const DENOMINATORS = [1, 2, 3, 4, 6, 8, 12, 16];
 
-export const FractionBlock: React.FC<FractionBlockProps> = ({ fraction, onClick, isResult = false }) => {
+export const FractionBlock: React.FC<FractionBlockProps> = ({ fraction, onClick, isResult = false, subdivisionTarget }) => {
     if (!fraction) return null;
     const { numerator, denominator } = fraction;
 
@@ -34,8 +35,25 @@ export const FractionBlock: React.FC<FractionBlockProps> = ({ fraction, onClick,
     const width = isResult ? `auto` : `${Math.min(value * 100, 100)}%`;
     const minWidth = isResult ? '10rem' : 'auto';
     
+    const needsSubdivision = subdivisionTarget && subdivisionTarget.denominator !== fraction.denominator;
+    const conversionFactor = needsSubdivision ? subdivisionTarget.denominator / fraction.denominator : 1;
+    
+    const subdivideStyle = needsSubdivision ? {
+        '--subdivide-size': `${100 / conversionFactor}%`,
+    } as React.CSSProperties : {};
+    
     const backgroundStyle = {
-      background: `linear-gradient(135deg, ${color}cc, ${color}ff)`,
+      background: `
+        repeating-linear-gradient(
+            to right,
+            transparent,
+            transparent calc(var(--subdivide-size, 100%) - 2px),
+            rgba(0,0,0,0.3) calc(var(--subdivide-size, 100%) - 2px),
+            rgba(0,0,0,0.3) var(--subdivide-size, 100%)
+        ),
+        linear-gradient(135deg, ${color}cc, ${color}ff)
+      `,
+      backgroundSize: `100% 100%, 100% 100%`,
       boxShadow: `inset 0 -6px 0 ${color}aa, 2px 2px 5px rgba(0,0,0,0.2)`,
     };
     
@@ -44,10 +62,10 @@ export const FractionBlock: React.FC<FractionBlockProps> = ({ fraction, onClick,
     return (
         <div
             onClick={onClick}
-            className={`relative flex items-center justify-center h-12 rounded-lg text-white font-chalk text-2xl transition-transform duration-200 ${onClick ? 'cursor-pointer hover:scale-105' : ''}`}
-            style={{ ...backgroundStyle, width, minWidth }}
+            className={`relative flex items-center justify-center h-12 rounded-lg text-white font-chalk text-2xl transition-transform duration-200 ${onClick ? 'cursor-pointer hover:scale-105' : ''} ${needsSubdivision ? 'animate-subdivide' : ''}`}
+            style={{ ...backgroundStyle, width, minWidth, ...subdivideStyle }}
         >
-            {/* Subdivisions for visualization */}
+            {/* Static subdivisions for visualization */}
             {Array.from({ length: denominator }).map((_, i) => (
                 <div key={i} className="flex-1 h-full border-r-2 border-white/20 last:border-r-0"></div>
             ))}
