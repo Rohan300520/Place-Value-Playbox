@@ -52,7 +52,13 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
             <h3 className="text-2xl font-bold text-green-600 font-display">Game Modes</h3>
             <ul className="list-disc list-inside space-y-2">
               <li><strong className="text-sky-600">Training:</strong> A step-by-step guide that walks you through building and solving your first equation.</li>
-              <li><strong className="text-orange-600">Explore:</strong> A sandbox to freely build and solve any fraction equation you can imagine.</li>
+              <li><strong className="text-orange-600">Explore:</strong> A sandbox to freely experiment with fractions. Switch between three views:
+                <ul className='list-disc list-inside ml-6 mt-1'>
+                    <li><b>Operations:</b> The main calculator for adding and subtracting.</li>
+                    <li><b>Anatomy:</b> A visual tool to understand numerators and denominators.</li>
+                    <li><b>Number Line:</b> See where fractions fit on a ruler from 0 to 1.</li>
+                </ul>
+              </li>
               <li><strong className="text-amber-600">Challenge:</strong> Test your skills by building the correct equation to answer timed questions.</li>
             </ul>
           </section>

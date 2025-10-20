@@ -3,7 +3,7 @@ import type { Fraction, FractionState, Difficulty, FractionChallengeQuestion, Us
 import { Header } from '../../components/Header';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { ModeSelector } from './components/ModeSelector';
-import { DifficultySelector } from './components/DifficultySelector';
+import { DifficultySelector } from '../../components/DifficultySelector';
 import { FractionWall } from './components/FractionWall';
 import { CalculationCanvas } from './components/CalculationCanvas';
 import { FractionControls } from './components/FractionControls';
@@ -19,6 +19,7 @@ import { logEvent, syncAnalyticsData } from '../../utils/analytics';
 import { speak, cancelSpeech } from '../../utils/speech';
 import { useAudio } from '../../contexts/AudioContext';
 import { HelpModal } from './components/HelpModal';
+import { CalculationStepsPanel } from './components/CalculationStepsPanel';
 
 function fractionsAreEqual(f1: Fraction | null, f2: Fraction | null): boolean {
     if (!f1 || !f2) return false;
@@ -363,6 +364,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                                     <div className="flex flex-col gap-4">
                                         <CalculationCanvas equation={equation} />
                                         <FractionControls onOperatorSelect={handleSelectOperator} onSolve={handleSolve} onClear={clearEquation} equation={equation} />
+                                        <CalculationStepsPanel equation={equation} />
                                     </div>
                                 </div>
                             )}
@@ -415,6 +417,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                                             equation={equation}
                                             spotlightOn={currentTrainingStep?.spotlightOn && typeof currentTrainingStep.spotlightOn === 'string' ? currentTrainingStep.spotlightOn : undefined}
                                         />
+                                        <CalculationStepsPanel equation={equation} />
                                     </div>
                                 </div>
                             )}

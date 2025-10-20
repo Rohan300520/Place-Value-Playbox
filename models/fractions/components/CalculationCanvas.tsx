@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { EquationState, Fraction } from '../../../types';
 import { FractionBlock } from './FractionBlock';
-import { CalculationExplanationPanel } from './CalculationExplanationPanel';
 
 const commonDenominator = (d1 = 1, d2 = 1) => {
     const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
@@ -59,18 +58,14 @@ export const CalculationCanvas: React.FC<{
 }> = ({ equation, isChallengeMode = false }) => {
     const { term1, term2, operator, result, unsimplifiedResult, isSolved } = equation;
     const [animationStep, setAnimationStep] = useState(0); 
-    const [explanation, setExplanation] = useState<string | null>(null);
     const [convertedFractions, setConvertedFractions] = useState<{ term1: Fraction, term2: Fraction } | null>(null);
     const [isSubdividing, setIsSubdividing] = useState(false);
-    const [explanationPanelData, setExplanationPanelData] = useState<{ original: Fraction; target: Fraction } | null>(null);
 
     useEffect(() => {
         // Reset all animation state when the solve state changes.
         setAnimationStep(0);
-        setExplanation(null);
         setConvertedFractions(null);
         setIsSubdividing(false);
-        setExplanationPanelData(null);
         let timeouts: ReturnType<typeof setTimeout>[] = [];
         const run = (fn: () => void, delay: number) => timeouts.push(setTimeout(fn, delay));
         
@@ -84,28 +79,14 @@ export const CalculationCanvas: React.FC<{
                 const cTerm1 = { numerator: term1.numerator * (cd / term1.denominator), denominator: cd };
                 const cTerm2 = { numerator: term2.numerator * (cd / term2.denominator), denominator: cd };
                 
-                currentTime += 500;
-                run(() => setExplanation("The pieces are different sizes. Let's make them match!"), currentTime);
-                
-                const term1NeedsConv = term1.denominator !== cd;
-                const term2NeedsConv = term2.denominator !== cd;
-                const fractionToExplain = term1NeedsConv ? term1 : (term2NeedsConv ? term2 : null);
-                const targetForExplain = term1NeedsConv ? cTerm1 : (term2NeedsConv ? cTerm2 : null);
-
-                currentTime += 2000;
+                currentTime += 2500;
                 run(() => {
-                    setExplanation(null);
-                    if (fractionToExplain && targetForExplain) {
-                        setExplanationPanelData({ original: fractionToExplain, target: targetForExplain });
-                    }
                     setConvertedFractions({ term1: cTerm1, term2: cTerm2 });
                     setIsSubdividing(true);
                 }, currentTime);
                 
-                currentTime += 5000;
+                currentTime += 3000;
                 run(() => {
-                    setExplanationPanelData(null);
-                    setExplanation(`Great! Now the pieces are all ${cd}ths.`);
                     setAnimationStep(1);
                 }, currentTime);
                 
@@ -115,7 +96,6 @@ export const CalculationCanvas: React.FC<{
             }
 
             run(() => {
-                setExplanation(`Now we can ${operator === '+' ? 'add' : 'subtract'} the pieces.`);
                 setAnimationStep(2);
             }, currentTime);
             
@@ -123,14 +103,12 @@ export const CalculationCanvas: React.FC<{
 
             if (needsSimplifying) {
                 run(() => {
-                    setExplanation(`This can be simplified to its lowest terms!`);
                     setAnimationStep(3);
                 }, currentTime);
                 currentTime += 2500;
             }
             
             run(() => {
-                setExplanation(null);
                 setAnimationStep(4);
             }, currentTime);
     
@@ -159,19 +137,6 @@ export const CalculationCanvas: React.FC<{
 
     return (
         <div className="w-full min-h-[20rem] p-6 rounded-2xl chalk-border flex flex-col justify-end items-center relative">
-            {explanation && (
-                <div className="absolute top-4 w-full text-center px-4 animate-pop-in">
-                    <p className="inline-block bg-slate-900/80 p-3 rounded-lg text-xl font-chalk text-chalk-cyan shadow-md">
-                        {explanation}
-                    </p>
-                </div>
-            )}
-             {explanationPanelData && (
-                <CalculationExplanationPanel 
-                    original={explanationPanelData.original} 
-                    target={explanationPanelData.target}
-                />
-            )}
             <div className="w-full space-y-2 relative">
                 {/* Step 0: Initial equation & subdivision animation */}
                 <CalculationStep 

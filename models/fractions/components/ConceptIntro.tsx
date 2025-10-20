@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import type { FractionTrainingStep, TrainingAction } from '../../../types';
 
 interface ConceptIntroProps {
-  onContinue?: () => void; // For standalone mode
-  
   // For training mode
   isTrainingMode?: boolean;
   onAction?: (action: { type: TrainingAction, value: number }) => void;
@@ -32,7 +30,6 @@ const FractionPiece: React.FC<{ isSelected: boolean, onClick: () => void }> = ({
 );
 
 export const ConceptIntro: React.FC<ConceptIntroProps> = ({ 
-    onContinue, 
     isTrainingMode = false, 
     onAction, 
     currentStep,
@@ -97,7 +94,7 @@ export const ConceptIntro: React.FC<ConceptIntroProps> = ({
                     <div className="text-center w-64">
                          <p className="text-xl font-chalk text-chalk-yellow">Denominator</p>
                          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mx-auto text-chalk-yellow" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 13l-3 3m0 0l-3-3m3 3V8m0 13a9 9 0 110-18 9 9 0 010-18z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 13l-3 3m0 0l-3-3m3 3V8m0 13a9 9 0 110 18 9 9 0 010-18z" />
                         </svg>
                         <p className="text-lg text-chalk-light mt-2">How many equal pieces the whole is cut into.</p>
                     </div>
@@ -110,14 +107,6 @@ export const ConceptIntro: React.FC<ConceptIntroProps> = ({
                         <DenominatorButton value={4} activeValue={denominator} onClick={handleDenominatorChange} isSpotlighted={currentStep?.spotlightOn === 'denominator-4'}/>
                         <DenominatorButton value={8} activeValue={denominator} onClick={handleDenominatorChange} isSpotlighted={currentStep?.spotlightOn === 'denominator-8'}/>
                     </div>
-                    {!isTrainingMode && (
-                        <button 
-                            onClick={onContinue}
-                            className="control-button bg-green-600 border-green-800 hover:bg-green-500 animate-guide-pulse"
-                        >
-                            Continue
-                        </button>
-                    )}
                 </div>
             </div>
         </div>

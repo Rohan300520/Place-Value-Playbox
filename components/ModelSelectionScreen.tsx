@@ -157,7 +157,7 @@ export const ModelSelectionScreen: React.FC<{ onSelectModel: (model: AppState) =
                     </h1>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                         {modelsToDisplay.map(model => <ModelCard key={model.id} {...model} onSelect={onSelectModel} />)}
-                        {activeLevel === 'High School' && <ComingSoonCard />}
+                        {modelsToDisplay.length === 0 && <ComingSoonCard />}
                     </div>
                 </div>
             </main>
