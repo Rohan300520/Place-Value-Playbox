@@ -1,90 +1,98 @@
-// Fix: Implemented the full component for the Class 10 Surface Area and Volume model.
-import React, { useState, useCallback } from 'react';
-import type { ShapeType, ShapeDimensions, CalculationType, CalculationResult, UserInfo } from '../../types';
+import React, { useState } from 'react';
 import { Header } from '../../components/Header';
+import type { UserInfo, ShapeType, ShapeDimensions, CalculationType, CalculationResult } from '../../types';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { ShapeSelector } from './components/ShapeSelector';
+import { Canvas3D } from './components/Canvas3D';
 import { InputPanel } from './components/InputPanel';
 import { SolutionPanel } from './components/SolutionPanel';
-import { Canvas3D } from './components/Canvas3D';
 import { SHAPE_DATA, CLASS_10_SHAPES } from './utils/formulas';
 
 export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserInfo | null }> = ({ onExit, currentUser }) => {
-    const [gameState, setGameState] = useState<'welcome' | 'shape_selection' | 'explore'>('welcome');
+    const [appState, setAppState] = useState<'welcome' | 'shape_selection' | 'calculator'>('welcome');
     const [selectedShape, setSelectedShape] = useState<ShapeType | null>(null);
     const [dimensions, setDimensions] = useState<ShapeDimensions>({});
-    const [calculation, setCalculation] = useState<CalculationResult | null>(null);
+    const [calculationType, setCalculationType] = useState<CalculationType>('volume');
+    const [result, setResult] = useState<CalculationResult>(null);
 
-    const handleSelectShape = (shape: ShapeType) => {
+    const handleShapeSelect = (shape: ShapeType) => {
+        const shapeInfo = SHAPE_DATA[shape];
         setSelectedShape(shape);
-        const defaultDims = SHAPE_DATA[shape].defaultDimensions;
-        setDimensions(defaultDims);
-        setCalculation(null); // Clear previous calculation
-        setGameState('explore');
+        setDimensions(shapeInfo.defaultDimensions);
+        setCalculationType('volume');
+        setResult(null);
+        setAppState('calculator');
     };
-    
+
     const handleDimensionChange = (newDimensions: ShapeDimensions) => {
         setDimensions(newDimensions);
-        setCalculation(null); // Clear calculation when dimensions change
+        setResult(null); // Clear result when dimensions change
+    };
+    
+    const handleCalculationTypeChange = (type: CalculationType) => {
+        setCalculationType(type);
+        setResult(null); // Clear result when type changes
     };
 
-    const handleCalculate = (type: CalculationType) => {
-        if (selectedShape) {
-            const formulaFn = SHAPE_DATA[selectedShape].formulas[type];
-            if (formulaFn) {
-                const result = formulaFn(dimensions);
-                setCalculation(result);
-            }
+    const handleCalculate = () => {
+        if (!selectedShape) return;
+        const shapeInfo = SHAPE_DATA[selectedShape];
+        const calculationFn = shapeInfo.formulas[calculationType];
+        if (calculationFn) {
+            setResult(calculationFn(dimensions));
         }
     };
     
-    const goBackToMenu = useCallback(() => {
+    const goBackToMenu = () => {
+        setAppState('shape_selection');
         setSelectedShape(null);
-        setCalculation(null);
-        setGameState('shape_selection');
-    }, []);
+        setResult(null);
+    };
 
-    const renderMainContent = () => {
-        switch (gameState) {
+    const renderContent = () => {
+        switch (appState) {
             case 'welcome':
-                return <WelcomeScreen onStart={() => setGameState('shape_selection')} title="Combined Solids Workshop" grade="X" />;
+                return <WelcomeScreen onStart={() => setAppState('shape_selection')} title="Combined Solids Workshop" grade="X" />;
             case 'shape_selection':
-                return <ShapeSelector onSelect={handleSelectShape} shapes={CLASS_10_SHAPES} />;
-            case 'explore':
+                return <ShapeSelector onSelect={handleShapeSelect} shapes={CLASS_10_SHAPES} />;
+            case 'calculator':
                 if (!selectedShape) return null;
                 return (
-                    <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                        <div className="lg:sticky top-24">
-                            <Canvas3D shape={selectedShape} dimensions={dimensions} />
+                    <div className="w-full h-full flex flex-col lg:flex-row gap-8 items-start">
+                        <div className="w-full lg:w-3/5 h-[400px] lg:h-[600px] rounded-lg">
+                           <Canvas3D shape={selectedShape} dimensions={dimensions} isUnfolded={false} />
                         </div>
-                        <div className="flex flex-col gap-6">
-                            <InputPanel 
+                        <div className="w-full lg:w-2/5">
+                            <InputPanel
                                 shape={selectedShape}
                                 dimensions={dimensions}
                                 onDimensionChange={handleDimensionChange}
+                                calculationType={calculationType}
+                                onCalculationTypeChange={handleCalculationTypeChange}
                                 onCalculate={handleCalculate}
+                                isUnfolded={false} // Unfolding is a Class 9 concept feature
+                                onToggleUnfold={() => {}} // No-op
+                                isClass10={true}
                             />
-                            {calculation && <SolutionPanel result={calculation} />}
+                            {result && <SolutionPanel result={result} />}
                         </div>
                     </div>
                 );
-            default:
-                return null;
         }
     };
 
     return (
-        <div className="min-h-screen flex flex-col font-sans surface-area-theme">
-             <Header 
-                onHelpClick={() => { /* TODO: Add help modal */ }}
-                currentUser={currentUser} 
+        <div className="geometry-theme min-h-screen flex flex-col font-sans w-full">
+            <Header
+                onHelpClick={() => {}}
+                currentUser={currentUser}
                 onExit={onExit}
-                onBackToModelMenu={gameState === 'explore' ? goBackToMenu : undefined}
-                modelTitle="Surface Area & Volume"
+                onBackToModelMenu={appState === 'calculator' ? goBackToMenu : undefined}
+                modelTitle="Combined Solids Workshop"
                 modelSubtitle="Class X"
             />
-            <main className="flex-grow flex flex-col items-center justify-center p-4">
-                {renderMainContent()}
+            <main className="flex-grow flex items-center justify-center p-4 sm:p-8">
+                {renderContent()}
             </main>
         </div>
     );
