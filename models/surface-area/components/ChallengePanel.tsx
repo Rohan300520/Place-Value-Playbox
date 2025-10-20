@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { SurfaceAreaChallengeQuestion } from '../../../types';
+import { speak, cancelSpeech } from '../../../utils/speech';
 
 const Timer: React.FC<{ onTimeOut: () => void, status: string, duration: number, questionId: number }> = ({ onTimeOut, status, duration, questionId }) => {
     const [timeLeft, setTimeLeft] = useState(duration);
@@ -47,12 +48,26 @@ interface ChallengePanelProps {
     lastCalculatedValue: number | null;
     score: number;
     timeLimit: number;
+    isSpeechEnabled: boolean;
 }
 
-export const ChallengePanel: React.FC<ChallengePanelProps> = ({ status, question, onNext, onTimeOut, onCheckAnswer, lastCalculatedValue, score, timeLimit }) => {
+export const ChallengePanel: React.FC<ChallengePanelProps> = ({ status, question, onNext, onTimeOut, onCheckAnswer, lastCalculatedValue, score, timeLimit, isSpeechEnabled }) => {
     const [part, setPart] = useState<'part1' | 'part2'>('part1');
     const [followUpAnswer, setFollowUpAnswer] = useState('');
     const [followUpStatus, setFollowUpStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
+
+    useEffect(() => {
+        if (isSpeechEnabled && question) {
+            if (part === 'part1') {
+                speak(question.question, 'en-US');
+            } else if (part === 'part2' && question.followUp) {
+                speak(question.followUp.prompt, 'en-US');
+            }
+        }
+        return () => {
+            cancelSpeech();
+        };
+    }, [question, isSpeechEnabled, part]);
 
     useEffect(() => {
         setPart('part1');

@@ -57,20 +57,24 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({ shape, dimensions, isUnfolde
 
         // --- Resize Handler ---
         const handleResize = () => {
-            const width = currentMount.clientWidth;
-            const height = currentMount.clientHeight;
+            if (!mountRef.current) return;
+            const width = mountRef.current.clientWidth;
+            const height = mountRef.current.clientHeight;
             renderer.setSize(width, height);
             camera.aspect = width / height;
             camera.updateProjectionMatrix();
         };
-        window.addEventListener('resize', handleResize);
+        
+        const resizeObserver = new ResizeObserver(handleResize);
+        resizeObserver.observe(currentMount);
+        handleResize(); // Initial call
 
         setIsInitialized(true);
 
         // --- Cleanup ---
         return () => {
             cancelAnimationFrame(animationFrameId);
-            window.removeEventListener('resize', handleResize);
+            resizeObserver.disconnect();
             if (currentMount.contains(renderer.domElement)) {
                  currentMount.removeChild(renderer.domElement);
             }

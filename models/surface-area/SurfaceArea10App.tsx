@@ -16,6 +16,8 @@ import { challenges } from './utils/challenges';
 import { trainingPlan10 } from './utils/training';
 import { logEvent, syncAnalyticsData } from '../../utils/analytics';
 import { Confetti } from '../../components/Confetti';
+import { useAudio } from '../../contexts/AudioContext';
+import { speak, cancelSpeech } from '../../utils/speech';
 
 const DURATION_MAP: Record<Difficulty, number> = { easy: 120, medium: 90, hard: 60 };
 
@@ -40,6 +42,10 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
     const [trainingStep, setTrainingStep] = useState(0);
     const currentTrainingStep = useMemo(() => trainingPlan10.find(s => s.step === trainingStep) || null, [trainingStep]);
     const dimensionChangedRef = useRef(false);
+    
+    // --- Audio State ---
+    const { isSpeechEnabled } = useAudio();
+    const spokenStepsRef = useRef(new Set<number>());
 
     const handleShapeSelect = (shape: ShapeType) => {
         const shapeInfo = SHAPE_DATA[shape];
@@ -65,6 +71,7 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
 
     const handleCalculate = () => {
         if (!selectedShape) return;
+        // Fix: Replaced `shape` with `selectedShape` to correctly reference the currently selected shape from the component's state.
         const shapeInfo = SHAPE_DATA[selectedShape];
         const calculationFn = shapeInfo.formulas[calculationType];
         if (calculationFn) {
@@ -96,7 +103,10 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
             setViewState('challenge_difficulty_selection');
         } else {
             setViewState(mode);
-            if (mode === 'training') setTrainingStep(0);
+            if (mode === 'training') {
+                setTrainingStep(0);
+                spokenStepsRef.current.clear();
+            }
         }
     };
 
@@ -145,23 +155,42 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
     // --- Training Logic ---
     useEffect(() => {
         const step = currentTrainingStep;
-        if (viewState !== 'training' || !step) return;
+        if (viewState !== 'training' || !step) {
+            cancelSpeech();
+            spokenStepsRef.current.clear();
+            return;
+        }
+    
+        const speakStepInstruction = () => {
+            if (isSpeechEnabled && !spokenStepsRef.current.has(step.step)) {
+                cancelSpeech();
+                speak(step.text, 'en-US');
+                spokenStepsRef.current.add(step.step);
+            }
+        };
 
         const advance = () => {
             dimensionChangedRef.current = false;
             setTrainingStep(t => t + 1);
         };
+        
+        speakStepInstruction();
 
         if (step.type === 'intro' || step.type === 'feedback') {
             const timer = setTimeout(advance, step.duration);
             return () => clearTimeout(timer);
         } else if (step.type === 'action') {
-            if (step.requiredAction === 'select_shape' && selectedShape === step.requiredValue) advance();
-            else if (step.requiredAction === 'change_dimension' && dimensionChangedRef.current) advance();
-            else if (step.requiredAction === 'select_calc_type' && calculationType === step.requiredValue) advance();
-            else if (step.requiredAction === 'calculate' && result) advance();
+            let actionCompleted = false;
+            if (step.requiredAction === 'select_shape' && selectedShape === step.requiredValue) actionCompleted = true;
+            else if (step.requiredAction === 'change_dimension' && dimensionChangedRef.current) actionCompleted = true;
+            else if (step.requiredAction === 'select_calc_type' && calculationType === step.requiredValue) actionCompleted = true;
+            else if (step.requiredAction === 'calculate' && result) actionCompleted = true;
+            
+            if (actionCompleted) {
+                advance();
+            }
         }
-    }, [viewState, trainingStep, currentTrainingStep, selectedShape, calculationType, result]);
+    }, [viewState, trainingStep, currentTrainingStep, selectedShape, calculationType, result, isSpeechEnabled]);
 
 
     const renderContent = () => {
@@ -196,6 +225,7 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
                                     lastCalculatedValue={lastCalculatedValue}
                                     score={score}
                                     timeLimit={DURATION_MAP[difficulty]}
+                                    isSpeechEnabled={isSpeechEnabled}
                                 />
                             </div>
                         )}
