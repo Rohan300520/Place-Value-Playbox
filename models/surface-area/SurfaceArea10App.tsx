@@ -71,7 +71,6 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
 
     const handleCalculate = () => {
         if (!selectedShape) return;
-        // Fix: Replaced `shape` with `selectedShape` to correctly reference the currently selected shape from the component's state.
         const shapeInfo = SHAPE_DATA[selectedShape];
         const calculationFn = shapeInfo.formulas[calculationType];
         if (calculationFn) {

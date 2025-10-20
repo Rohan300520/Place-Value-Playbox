@@ -58,6 +58,7 @@ export const ChallengePanel: React.FC<ChallengePanelProps> = ({ status, question
 
     useEffect(() => {
         if (isSpeechEnabled && question) {
+            cancelSpeech();
             if (part === 'part1') {
                 speak(question.question, 'en-US');
             } else if (part === 'part2' && question.followUp) {
