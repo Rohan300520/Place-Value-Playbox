@@ -18,7 +18,9 @@ const createEdges = (geometry: THREE.BufferGeometry) => {
 // --- MESH CREATION FUNCTIONS ---
 
 const createCuboid = (dims: ShapeDimensions) => {
-    const { l = 5, b = 4, h = 3 } = dims;
+    const l = dims.l > 0 ? dims.l : 5;
+    const b = dims.b > 0 ? dims.b : 4;
+    const h = dims.h > 0 ? dims.h : 3;
     const geometry = new THREE.BoxGeometry(l, h, b);
     const mesh = new THREE.Mesh(geometry, MATERIAL);
     mesh.add(createEdges(geometry));
@@ -28,7 +30,7 @@ const createCuboid = (dims: ShapeDimensions) => {
 };
 
 const createCube = (dims: ShapeDimensions) => {
-    const { a = 4 } = dims;
+    const a = dims.a > 0 ? dims.a : 4;
     const geometry = new THREE.BoxGeometry(a, a, a);
     const mesh = new THREE.Mesh(geometry, MATERIAL);
     mesh.add(createEdges(geometry));
@@ -38,7 +40,8 @@ const createCube = (dims: ShapeDimensions) => {
 };
 
 const createCylinder = (dims: ShapeDimensions) => {
-    const { r = 2, h = 5 } = dims;
+    const r = dims.r > 0 ? dims.r : 2;
+    const h = dims.h > 0 ? dims.h : 5;
     const geometry = new THREE.CylinderGeometry(r, r, h, 32);
     const mesh = new THREE.Mesh(geometry, MATERIAL);
     mesh.add(createEdges(geometry));
@@ -48,7 +51,8 @@ const createCylinder = (dims: ShapeDimensions) => {
 };
 
 const createCone = (dims: ShapeDimensions) => {
-    const { r = 3, h = 4 } = dims;
+    const r = dims.r > 0 ? dims.r : 3;
+    const h = dims.h > 0 ? dims.h : 4;
     const geometry = new THREE.ConeGeometry(r, h, 32);
     const mesh = new THREE.Mesh(geometry, MATERIAL);
     mesh.add(createEdges(geometry));
@@ -58,7 +62,7 @@ const createCone = (dims: ShapeDimensions) => {
 };
 
 const createSphere = (dims: ShapeDimensions) => {
-    const { r = 3 } = dims;
+    const r = dims.r > 0 ? dims.r : 3;
     const geometry = new THREE.SphereGeometry(r, 32, 16);
     const mesh = new THREE.Mesh(geometry, MATERIAL);
     const group = new THREE.Group();
@@ -67,7 +71,7 @@ const createSphere = (dims: ShapeDimensions) => {
 };
 
 const createHemisphere = (dims: ShapeDimensions) => {
-    const { r = 3 } = dims;
+    const r = dims.r > 0 ? dims.r : 3;
     const geometry = new THREE.SphereGeometry(r, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
     const mesh = new THREE.Mesh(geometry, MATERIAL);
     const cap = new THREE.Mesh(new THREE.CircleGeometry(r, 32), MATERIAL);
@@ -78,7 +82,8 @@ const createHemisphere = (dims: ShapeDimensions) => {
 };
 
 const createConeOnHemisphere = (dims: ShapeDimensions) => {
-    const { r = 3, h = 4 } = dims;
+    const r = dims.r > 0 ? dims.r : 3;
+    const h = dims.h > 0 ? dims.h : 4;
     const group = new THREE.Group();
 
     const hemiGeom = new THREE.SphereGeometry(r, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
@@ -94,7 +99,8 @@ const createConeOnHemisphere = (dims: ShapeDimensions) => {
 };
 
 const createCapsule = (dims: ShapeDimensions) => {
-    const { r = 2, h = 5 } = dims;
+    const r = dims.r > 0 ? dims.r : 2;
+    const h = dims.h > 0 ? dims.h : 5;
     const group = new THREE.Group();
 
     const cylGeom = new THREE.CylinderGeometry(r, r, h, 32);
@@ -112,7 +118,9 @@ const createCapsule = (dims: ShapeDimensions) => {
 };
 
 const createConeOnCylinder = (dims: ShapeDimensions) => {
-     const { r = 3, hCyl = 4, hCone = 4 } = dims;
+     const r = dims.r > 0 ? dims.r : 3;
+     const hCyl = dims.hCyl > 0 ? dims.hCyl : 4;
+     const hCone = dims.hCone > 0 ? dims.hCone : 4;
      const group = new THREE.Group();
 
      const cylGeom = new THREE.CylinderGeometry(r, r, hCyl, 32);
@@ -128,7 +136,9 @@ const createConeOnCylinder = (dims: ShapeDimensions) => {
 };
 
 const createFrustum = (dims: ShapeDimensions) => {
-    const { r1 = 4, r2 = 2, h = 5 } = dims;
+    const r1 = dims.r1 > 0 ? dims.r1 : 4;
+    const r2 = dims.r2 > 0 ? dims.r2 : 2;
+    const h = dims.h > 0 ? dims.h : 5;
     const geometry = new THREE.CylinderGeometry(r2, r1, h, 32);
     const mesh = new THREE.Mesh(geometry, MATERIAL);
     mesh.add(createEdges(geometry));
@@ -141,7 +151,9 @@ const createFrustum = (dims: ShapeDimensions) => {
 // --- UNFOLDED MESH CREATION FUNCTIONS ---
 
 const createUnfoldedCuboid = (dims: ShapeDimensions) => {
-    const { l=5, b=4, h=3 } = dims;
+    const l = dims.l > 0 ? dims.l : 5;
+    const b = dims.b > 0 ? dims.b : 4;
+    const h = dims.h > 0 ? dims.h : 3;
     const group = new THREE.Group();
     const base = new THREE.Mesh(new THREE.PlaneGeometry(l, b), MATERIAL);
     const top = base.clone();
@@ -162,7 +174,8 @@ const createUnfoldedCuboid = (dims: ShapeDimensions) => {
 };
 
 const createUnfoldedCylinder = (dims: ShapeDimensions) => {
-    const { r = 2, h = 5 } = dims;
+    const r = dims.r > 0 ? dims.r : 2;
+    const h = dims.h > 0 ? dims.h : 5;
     const group = new THREE.Group();
     const body = new THREE.Mesh(new THREE.PlaneGeometry(2 * Math.PI * r, h), MATERIAL);
     const top = new THREE.Mesh(new THREE.CircleGeometry(r, 32), MATERIAL);
@@ -175,9 +188,10 @@ const createUnfoldedCylinder = (dims: ShapeDimensions) => {
 };
 
 const createUnfoldedCone = (dims: ShapeDimensions) => {
-    const { r = 3, h = 4 } = dims;
+    const r = dims.r > 0 ? dims.r : 3;
+    const h = dims.h > 0 ? dims.h : 4;
     const l = Math.sqrt(r * r + h * h);
-    const angle = (2 * Math.PI * r) / l;
+    const angle = l > 0 ? (2 * Math.PI * r) / l : 0;
 
     const group = new THREE.Group();
     
@@ -218,7 +232,10 @@ export const createShapeMesh = (shape: ShapeType, dimensions: ShapeDimensions): 
 export const createUnfoldedMesh = (shape: ShapeType, dimensions: ShapeDimensions): THREE.Group => {
     switch (shape) {
         case 'cuboid': return createUnfoldedCuboid(dimensions);
-        case 'cube': return createUnfoldedCuboid({l: dimensions.a, b: dimensions.a, h: dimensions.a});
+        case 'cube': {
+            const a = dimensions.a > 0 ? dimensions.a : 4;
+            return createUnfoldedCuboid({ l: a, b: a, h: a });
+        }
         case 'cylinder': return createUnfoldedCylinder(dimensions);
         case 'cone': return createUnfoldedCone(dimensions);
         // Sphere and Hemisphere cannot be perfectly unfolded into 2D shapes

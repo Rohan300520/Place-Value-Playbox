@@ -153,6 +153,49 @@ export type CalculationResult = {
   }[];
 } | null;
 
+export type SurfaceAreaState = 'welcome' | 'mode_selection' | 'training' | 'explore' | 'challenge_difficulty_selection' | 'challenge';
+
+export interface SurfaceAreaChallengeQuestion {
+  id: number;
+  level: Difficulty;
+  class: 9 | 10;
+  question: string; // The word problem for the user
+  contextInfo?: string[]; // Extra info like rates, costs etc.
+  shape: ShapeType; // The correct shape to select
+  dimensions: ShapeDimensions; // Correct dimensions to input
+  calculationType: CalculationType; // Correct calculation type
+  answer: number; // The final numeric answer for the main calculation
+  tolerance?: number; 
+  unit?: 'cm' | 'm' | 'mm';
+  followUp?: {
+    prompt: string;
+    answer: number;
+    unit?: string;
+  };
+}
+
+export type TrainingSpotlight = 
+  | 'dimension' 
+  | 'calculation_type' 
+  | 'calculate_button' 
+  | 'unfold_button' 
+  | `shape-${ShapeType}` 
+  | `dimension-${string}` 
+  | `calc_type-${CalculationType}`;
+
+export interface SurfaceAreaTrainingStep {
+  step: number;
+  type: 'intro' | 'action' | 'feedback' | 'complete';
+  text: string;
+  duration?: number;
+  spotlightOn?: TrainingSpotlight;
+  requiredAction?: 'select_shape' | 'change_dimension' | 'select_calc_type' | 'calculate' | 'unfold' | 'continue';
+  requiredValue?: ShapeType | CalculationType;
+  shapeToLoad?: ShapeType;
+  position?: 'center' | 'top-left' | 'input-panel' | 'shape-selector';
+  arrow?: 'up' | 'down' | 'left' | 'right' | 'none';
+}
+
 
 // --- Analytics ---
 export interface AnalyticsEvent {

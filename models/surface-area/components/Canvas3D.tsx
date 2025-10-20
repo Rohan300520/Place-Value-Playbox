@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { ShapeType, ShapeDimensions } from '../../../types';
@@ -15,68 +15,75 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({ shape, dimensions, isUnfolde
     const sceneRef = useRef<THREE.Scene | null>(null);
     const meshRef = useRef<THREE.Group | null>(null);
     const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
         const currentMount = mountRef.current;
-        if (!currentMount) return;
+        if (!currentMount || rendererRef.current) return;
 
         // --- Basic Setup ---
-        sceneRef.current = new THREE.Scene();
-        sceneRef.current.background = new THREE.Color(0x283a4b); // Match theme background
+        const scene = new THREE.Scene();
+        sceneRef.current = scene;
+        scene.background = new THREE.Color(0x283a4b); // Match theme background
 
         const camera = new THREE.PerspectiveCamera(50, currentMount.clientWidth / currentMount.clientHeight, 0.1, 1000);
         camera.position.set(0, 3, 10);
         camera.lookAt(0, 0, 0);
 
-        rendererRef.current = new THREE.WebGLRenderer({ antialias: true });
-        rendererRef.current.setSize(currentMount.clientWidth, currentMount.clientHeight);
-        rendererRef.current.setPixelRatio(window.devicePixelRatio);
-        currentMount.appendChild(rendererRef.current.domElement);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        rendererRef.current = renderer;
+        renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        currentMount.appendChild(renderer.domElement);
         
-        const controls = new OrbitControls(camera, rendererRef.current.domElement);
+        const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
         // --- Lighting ---
         const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
-        sceneRef.current.add(ambientLight);
+        scene.add(ambientLight);
         const directionalLight = new THREE.DirectionalLight(0xffffff, 2.5);
         directionalLight.position.set(5, 10, 7.5);
-        sceneRef.current.add(directionalLight);
+        scene.add(directionalLight);
         
         // --- Animation Loop ---
+        let animationFrameId: number;
         const animate = () => {
-            requestAnimationFrame(animate);
+            animationFrameId = requestAnimationFrame(animate);
             controls.update();
-            rendererRef.current?.render(sceneRef.current!, camera);
+            renderer.render(scene, camera);
         };
         animate();
 
         // --- Resize Handler ---
         const handleResize = () => {
-            if (!rendererRef.current) return;
             const width = currentMount.clientWidth;
             const height = currentMount.clientHeight;
-            rendererRef.current.setSize(width, height);
+            renderer.setSize(width, height);
             camera.aspect = width / height;
             camera.updateProjectionMatrix();
         };
         window.addEventListener('resize', handleResize);
 
+        setIsInitialized(true);
+
         // --- Cleanup ---
         return () => {
+            cancelAnimationFrame(animationFrameId);
             window.removeEventListener('resize', handleResize);
-            if (rendererRef.current) {
-                 currentMount.removeChild(rendererRef.current.domElement);
+            if (currentMount.contains(renderer.domElement)) {
+                 currentMount.removeChild(renderer.domElement);
             }
-            // Dispose of geometries and materials if needed
-            sceneRef.current = null;
+            renderer.dispose();
             rendererRef.current = null;
+            sceneRef.current = null;
+            setIsInitialized(false);
         };
     }, []);
 
     // --- Update Mesh on Prop Change ---
     useEffect(() => {
-        if (!sceneRef.current) return;
+        if (!isInitialized || !sceneRef.current) return;
         
         // Remove old mesh
         if (meshRef.current) {
@@ -102,7 +109,7 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({ shape, dimensions, isUnfolde
         meshRef.current = newMesh;
         sceneRef.current.add(meshRef.current);
 
-    }, [shape, dimensions, isUnfolded]);
+    }, [shape, dimensions, isUnfolded, isInitialized]);
 
     return <div ref={mountRef} className="w-full h-full bg-[var(--blueprint-bg)] rounded-lg" />;
 };
