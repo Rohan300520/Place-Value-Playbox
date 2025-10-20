@@ -67,7 +67,7 @@ export const challenges: SurfaceAreaChallengeQuestion[] = [
     // --- CLASS 10 ---
     {
         id: 1001, level: 'medium', class: 10, shape: 'cone_on_hemisphere',
-        question: 'A toy is a cone (radius 3.5cm) on a hemisphere of the same radius. The total height of the toy is 15.5cm. Find the total surface area of the toy.',
+        question: 'A toy is a cone (height 12cm) mounted on a hemisphere. Both have a radius of 3.5cm. Find the total surface area of the toy.',
         dimensions: { r: 3.5, h: 12 },
         calculationType: 'tsa',
         answer: 214.5,
