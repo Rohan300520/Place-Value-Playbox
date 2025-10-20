@@ -24,7 +24,26 @@ const MODELS_CONFIG = {
             border: 'border-emerald-800'
         }
     ],
-    'High School': []
+    'High School': [
+        { 
+            id: 'surface_area_9' as AppState, 
+            title: 'Solid Shapes Explorer (IX)', 
+            description: 'Visualize and calculate properties of 3D shapes like cubes, cones, and spheres.',
+            imageUrl: '/assets/surface_area_9_thumbnail.png',
+            color: 'from-indigo-400 to-indigo-600',
+            shadow: 'shadow-indigo-500/40',
+            border: 'border-indigo-800'
+        },
+        { 
+            id: 'surface_area_10' as AppState, 
+            title: 'Combined Solids Workshop (X)', 
+            description: 'Explore composite shapes, frustums, and volume conversions in 3D.',
+            imageUrl: '/assets/surface_area_10_thumbnail.png',
+            color: 'from-rose-400 to-rose-600',
+            shadow: 'shadow-rose-500/40',
+            border: 'border-rose-800'
+        }
+    ]
 };
 
 type SchoolLevel = 'Lower School' | 'Middle School' | 'High School';

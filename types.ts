@@ -1,47 +1,41 @@
-import type React from 'react';
+// Fix: Populated with all necessary type definitions for the entire application.
 
-// --- Core App State ---
-export type AppState = 'model_selection' | 'place_value_playbox' | 'fractions';
+import React from 'react';
 
-export type UserInfo = {
-  name: string;
-  school: string;
-  keyId: string;
-};
-
-// --- UI & Theming ---
+// --- General App Types ---
+export type AppState = 'model_selection' | 'place_value_playbox' | 'fractions' | 'surface_area_9' | 'surface_area_10';
 export type Theme = 'light' | 'dark';
 export type Language = 'en' | 'hi' | 'kn';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
-// --- Place Value Playbox Model ---
-export type BlockValue = 1 | 10 | 100 | 1000;
+export interface UserInfo {
+  name: string;
+  school: string;
+  keyId: string;
+}
+
+// --- Place Value Playbox Types ---
 export type PlaceValueCategory = 'ones' | 'tens' | 'hundreds' | 'thousands';
+export type BlockValue = 1 | 10 | 100 | 1000;
+export type PlaceValueState = 'welcome' | 'model_intro' | 'mode_selection' | 'training' | 'playground' | 'challenge' | 'challenge_difficulty_selection' | 'stem_connection';
 
 export interface Block {
   id: string;
   value: BlockValue;
-  isAnimating?: boolean | null; // true for swirl-out, false for poof-out, null/undefined for no animation
+  isAnimating?: boolean;
   isNewlyRegrouped?: boolean;
 }
 
-export type PlaceValueColumns = {
-  [key in PlaceValueCategory]: Block[];
-};
-
-export type PlaceValueState =
-  | 'welcome'
-  | 'model_intro'
-  | 'mode_selection'
-  | 'training'
-  | 'playground'
-  | 'challenge'
-  | 'challenge_difficulty_selection'
-  | 'stem_connection';
+export interface PlaceValueColumns {
+  ones: Block[];
+  tens: Block[];
+  hundreds: Block[];
+  thousands: Block[];
+}
 
 export interface TrainingStep {
   step: number;
-  type: 'action' | 'feedback' | 'action_multi' | 'magic_feedback' | 'complete';
+  type: 'action' | 'action_multi' | 'feedback' | 'magic_feedback' | 'complete';
   text: string;
   source?: BlockValue;
   column?: PlaceValueCategory;
@@ -60,80 +54,87 @@ export interface PlaceValueChallengeQuestion {
   concept: 'place_value' | 'number_word' | 'addition' | 'subtraction';
 }
 
-// --- STEM Connection (Artery) Model ---
+// --- STEM Connection Types ---
 export type StemStage = 'intro' | 'build_epithelial' | 'build_blood' | 'build_muscle' | 'assemble_artery' | 'complete';
 export type CellType = 'epithelial' | 'rbc' | 'wbc' | 'platelet' | 'muscle';
 export type TissueType = 'epithelial' | 'blood' | 'muscle';
 
 export interface StemCell {
-  id: string;
-  type: CellType;
-  state: 'placed' | 'regrouping';
-  style: React.CSSProperties;
+    id: string;
+    type: CellType;
+    state: 'placed' | 'regrouping';
+    style: React.CSSProperties;
 }
 
-// --- Fractions Model ---
+
+// --- Fractions App Types ---
 export interface Fraction {
   numerator: number;
   denominator: number;
 }
 
+export type FractionState = 'welcome' | 'mode_selection' | 'explore' | 'training' | 'challenge' | 'challenge_difficulty_selection';
 export type FractionOperator = '+' | '-';
+export type ExploreView = 'operations' | 'anatomy' | 'number_line';
 
-export type EquationState = {
+export interface EquationState {
   term1: Fraction | null;
   operator: FractionOperator | null;
   term2: Fraction | null;
   result: Fraction | null;
-  unsimplifiedResult?: Fraction | null;
+  unsimplifiedResult: Fraction | null;
   isSolved: boolean;
-};
-
-export type FractionState =
-  | 'welcome'
-  | 'mode_selection'
-  | 'training'
-  | 'explore'
-  | 'challenge'
-  | 'challenge_difficulty_selection';
-
-export type ExploreView = 'operations' | 'anatomy' | 'number_line';
+}
 
 export interface FractionChallengeQuestion {
-  id: number;
-  level: Difficulty;
-  term1: Fraction;
-  operator: FractionOperator;
-  term2: Fraction;
-  type: 'add' | 'subtract';
-  answer: Fraction;
+    id: number;
+    level: Difficulty;
+    type: 'add' | 'subtract';
+    term1: Fraction;
+    operator: FractionOperator;
+    term2: Fraction;
+    answer: Fraction;
 }
 
-export type TrainingAction = 
-  | 'select_term1' 
-  | 'select_operator' 
-  | 'select_term2' 
-  | 'solve' 
-  | 'set_denominator'
-  | 'select_pieces'
-  | 'select_point'
-  | 'continue';
+export type TrainingAction = 'select_term1' | 'select_operator' | 'select_term2' | 'solve' | 'continue' | 'set_denominator' | 'select_pieces' | 'select_point';
 
 export interface FractionTrainingStep {
-  step: number;
-  type: 'intro' | 'action' | 'feedback' | 'complete';
-  ui?: 'concept' | 'number_line' | 'operations';
-  text: string;
-  requiredAction?: TrainingAction;
-  requiredValue?: Fraction | FractionOperator | number;
-  spotlightOn?: Fraction | FractionOperator | 'solve' | `denominator-${number}` | 'pieces' | 'continue_button' | 'number_line_ticks' | `number_line_point-${string}`;
-  duration?: number;
-  clearBoardAfter?: boolean;
-  count?: number;
+    step: number;
+    type: 'intro' | 'feedback' | 'action' | 'complete';
+    ui: 'operations' | 'concept' | 'number_line';
+    text: string;
+    duration?: number;
+    clearBoardAfter?: boolean;
+    requiredAction?: TrainingAction;
+    requiredValue?: Fraction | FractionOperator | number;
+    spotlightOn?: Fraction | FractionOperator | 'solve' | string;
+    count?: number;
 }
 
+// --- Surface Area App Types ---
+export type ShapeType = 
+    // Class 9
+    'cuboid' | 'cube' | 'cylinder' | 'cone' | 'sphere' | 'hemisphere' |
+    // Class 10
+    'cone_on_hemisphere' | 'cylinder_with_hemispheres' | 'cone_on_cylinder' | 'frustum';
+    
+export type CalculationType = 'volume' | 'lsa' | 'tsa';
 
-// --- Analytics ---
+export type ShapeDimensions = { [key: string]: number };
+
+export interface CalculationStep {
+    description: string;
+    calculation: string;
+    result: string;
+}
+
+export interface CalculationResult {
+    value: number;
+    formula: string;
+    steps: CalculationStep[];
+}
+
+// --- Analytics Types ---
 export interface AnalyticsEvent {
   id: string;
   timestamp: number;
@@ -167,11 +168,11 @@ export interface SchoolUserDetails {
 export interface UserChallengeHistory {
   event_timestamp: string;
   question: string;
-  level: Difficulty;
-  status: 'correct' | 'incorrect' | 'timed_out';
+  level: string;
+  status: string;
   duration: number;
-  user_answer: number | string;
-  correct_answer: number | string;
+  user_answer: number;
+  correct_answer: number;
 }
 
 export interface DailyActivity {
