@@ -246,7 +246,6 @@ const SchoolView: React.FC<{
 };
 
 const UserView: React.FC<{ history: UserChallengeHistory[]; }> = ({ history }) => {
-    // Fix: Implemented the UserView component to display user challenge history, resolving the return type error.
     if (history.length === 0) {
         return <NoDataMessage message="This user has not attempted any challenges yet." />;
     }
@@ -373,6 +372,15 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ modelFil
                 useCORS: true,
                 backgroundColor: null,
                 onclone: (clonedDoc) => {
+                    // Find all elements that create a scroll container and make them fully visible
+                    const scrollContainers = clonedDoc.querySelectorAll('.overflow-x-auto, .overflow-y-auto');
+                    scrollContainers.forEach((container) => {
+                        const el = container as HTMLElement;
+                        el.style.overflow = 'visible';
+                        el.style.maxHeight = 'none';
+                    });
+
+                    // Find all sticky headers and make them static
                     const stickyHeaders = clonedDoc.querySelectorAll('.sticky');
                     stickyHeaders.forEach((header) => {
                         (header as HTMLElement).style.position = 'static';
