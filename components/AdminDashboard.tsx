@@ -134,7 +134,6 @@ const KeyTable: React.FC<{ keys: GeneratedKey[]; onDeleteKey: (keyId: string) =>
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ generatedKeys, onGenerateKey, onDeleteKey, onUpdateKey }) => {
     const [activeTab, setActiveTab] = useState('keys');
-    const [modelFilter, setModelFilter] = useState<string | undefined>(undefined);
     const [editingKey, setEditingKey] = useState<GeneratedKey | null>(null);
 
   return (
@@ -151,23 +150,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ generatedKeys, o
         <a href="/" className="font-bold text-lg hover:underline" style={{ color: 'var(--text-secondary)' }}>Back to App</a>
       </div>
 
-      <div className="mb-6 border-b-2 flex justify-between items-center" style={{ borderColor: 'var(--border-primary)' }}>
+      <div className="mb-6 border-b-2" style={{ borderColor: 'var(--border-primary)' }}>
           <div>
             <button onClick={() => setActiveTab('keys')} className={`px-4 py-2 text-xl font-bold ${activeTab === 'keys' ? 'border-b-4 border-orange-500' : ''}`} style={{ color: 'var(--text-primary)' }}>Key Management</button>
             <button onClick={() => setActiveTab('analytics')} className={`px-4 py-2 text-xl font-bold ${activeTab === 'analytics' ? 'border-b-4 border-orange-500' : ''}`} style={{ color: 'var(--text-primary)' }}>Analytics</button>
           </div>
-          {activeTab === 'analytics' && (
-            <select
-                value={modelFilter || 'all'}
-                onChange={(e) => setModelFilter(e.target.value === 'all' ? undefined : e.target.value)}
-                className="p-2 text-base rounded-lg border-2 focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition"
-                style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
-            >
-                <option value="all">All Models</option>
-                <option value="place-value-playbox">Place Value Playbox</option>
-                <option value="fractions">Fractions</option>
-            </select>
-          )}
       </div>
       
       {activeTab === 'keys' ? (
@@ -176,7 +163,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ generatedKeys, o
             <KeyTable keys={generatedKeys} onDeleteKey={onDeleteKey} onEditKey={setEditingKey} />
           </>
       ) : (
-          <AnalyticsDashboard modelFilter={modelFilter} />
+          <AnalyticsDashboard />
       )}
     </div>
   );
