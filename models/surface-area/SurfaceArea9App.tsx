@@ -38,6 +38,7 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
     const [challengeStatus, setChallengeStatus] = useState<'playing' | 'correct' | 'incorrect' | 'timed_out'>('playing');
     const [score, setScore] = useState(0);
     const [lastCalculatedValue, setLastCalculatedValue] = useState<number | null>(null);
+    const challengeStartTimeRef = useRef<number | null>(null);
 
     // --- Training State ---
     const [trainingStep, setTrainingStep] = useState(0);
@@ -99,8 +100,10 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
         }
     }, [viewState, resetCalculator]);
 
-    const handleModeSelect = (mode: 'training' | 'explore' | 'challenge') => {
+    const handleModeSelect = async (mode: 'training' | 'explore' | 'challenge') => {
         resetCalculator();
+        await logEvent('mode_start', currentUser, { model: 'surface_area_9', mode });
+        syncAnalyticsData();
         if (mode === 'challenge') {
             setViewState('challenge_difficulty_selection');
         } else {
@@ -122,9 +125,10 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
         setChallengeStatus('playing');
         resetCalculator();
         setViewState('challenge');
+        challengeStartTimeRef.current = Date.now();
     };
 
-    const handleChallengeCheck = () => {
+    const handleChallengeCheck = async () => {
         const question = questions[questionIndex];
         if (!question || !selectedShape || lastCalculatedValue === null) return;
 
@@ -135,6 +139,19 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
 
         const isCorrect = isCorrectShape && isCorrectCalcType && isCorrectAnswer;
         
+        const durationSeconds = challengeStartTimeRef.current ? (Date.now() - challengeStartTimeRef.current) / 1000 : 0;
+        await logEvent('challenge_attempt', currentUser, {
+            model: 'surface_area_9',
+            questionId: question.id,
+            questionText: question.question,
+            level: difficulty,
+            status: isCorrect ? 'correct' : 'incorrect',
+            durationSeconds,
+            userAnswer: lastCalculatedValue,
+            correctAnswer: question.answer,
+        });
+        syncAnalyticsData();
+
         if (isCorrect) {
             setChallengeStatus('correct');
             setScore(s => s + 10);
@@ -143,12 +160,31 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
             setChallengeStatus('incorrect');
         }
     };
+    
+    const handleChallengeTimeout = async () => {
+        const question = questions[questionIndex];
+        if (!question) return;
+
+        await logEvent('challenge_attempt', currentUser, {
+            model: 'surface_area_9',
+            questionId: question.id,
+            questionText: question.question,
+            level: difficulty,
+            status: 'timed_out',
+            durationSeconds: DURATION_MAP[difficulty],
+            userAnswer: lastCalculatedValue,
+            correctAnswer: question.answer,
+        });
+        syncAnalyticsData();
+        setChallengeStatus('timed_out');
+    };
 
     const handleNextChallenge = () => {
         if (questionIndex < questions.length - 1) {
             setQuestionIndex(i => i + 1);
             setChallengeStatus('playing');
             resetCalculator();
+            challengeStartTimeRef.current = Date.now();
         } else {
             goBackToMenu(); // End of challenges
         }
@@ -163,25 +199,41 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
             return;
         }
 
-        const speakStepInstruction = () => {
+        let isComponentMounted = true;
+
+        const advance = () => {
+            if (!isComponentMounted) return;
+            dimensionChangedRef.current = false;
+            setTrainingStep(t => t + 1);
+        };
+
+        // --- Handle auto-advancing steps ('intro' and 'feedback') ---
+        if (step.type === 'intro' || step.type === 'feedback') {
+            const performAdvance = async () => {
+                if (isSpeechEnabled) {
+                    if (!spokenStepsRef.current.has(step.step)) {
+                        cancelSpeech();
+                        spokenStepsRef.current.add(step.step);
+                        await speak(step.text, 'en-US');
+                        if (isComponentMounted) await new Promise(resolve => setTimeout(resolve, 500)); // Pause after speech
+                    } else {
+                        if (isComponentMounted) await new Promise(resolve => setTimeout(resolve, step.duration));
+                    }
+                } else {
+                    if (isComponentMounted) await new Promise(resolve => setTimeout(resolve, step.duration));
+                }
+                advance();
+            };
+            performAdvance();
+        
+        // --- Handle action-based steps ---
+        } else if (step.type === 'action') {
             if (isSpeechEnabled && !spokenStepsRef.current.has(step.step)) {
                 cancelSpeech();
                 speak(step.text, 'en-US');
                 spokenStepsRef.current.add(step.step);
             }
-        };
 
-        const advance = () => {
-            dimensionChangedRef.current = false;
-            setTrainingStep(t => t + 1);
-        };
-
-        speakStepInstruction();
-
-        if (step.type === 'intro' || step.type === 'feedback') {
-            const timer = setTimeout(advance, step.duration);
-            return () => clearTimeout(timer);
-        } else if (step.type === 'action') {
             let actionCompleted = false;
             if (step.requiredAction === 'select_shape' && selectedShape === step.requiredValue) actionCompleted = true;
             else if (step.requiredAction === 'change_dimension' && dimensionChangedRef.current) actionCompleted = true;
@@ -192,7 +244,17 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
             if(actionCompleted) {
                 advance();
             }
+        } else if (step.type === 'complete') {
+             if (isSpeechEnabled && !spokenStepsRef.current.has(step.step)) {
+                cancelSpeech();
+                speak(step.text, 'en-US');
+                spokenStepsRef.current.add(step.step);
+            }
         }
+        
+        return () => {
+            isComponentMounted = false;
+        };
     }, [viewState, trainingStep, currentTrainingStep, selectedShape, calculationType, result, isUnfolded, isSpeechEnabled]);
 
 
@@ -223,7 +285,7 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
                                     question={currentQuestion}
                                     status={challengeStatus}
                                     onNext={handleNextChallenge}
-                                    onTimeOut={() => setChallengeStatus('timed_out')}
+                                    onTimeOut={handleChallengeTimeout}
                                     onCheckAnswer={handleChallengeCheck}
                                     lastCalculatedValue={lastCalculatedValue}
                                     score={score}

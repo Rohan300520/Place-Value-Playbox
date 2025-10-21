@@ -101,7 +101,7 @@ export const AdminPage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col font-sans p-4 sm:p-8">
       <BackgroundManager />
-      <div className="relative z-10 w-full flex flex-col flex-grow items-center justify-start pt-16 sm:justify-center sm:pt-0">
+      <div className="relative z-10 w-full flex flex-col flex-grow items-center justify-center">
         {!isAuthenticated ? (
           <AdminLogin onLogin={handleLogin} />
         ) : isLoading ? (
