@@ -304,8 +304,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ modelFil
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
-    const [isExporting, setIsExporting] = useState(false);
-    const contentRef = useRef<HTMLDivElement>(null);
 
     // State for all data
     const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
@@ -353,87 +351,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ modelFil
         fetchData(path, modelFilter);
     }, [path, modelFilter, fetchData]);
     
-    const handleExportPDF = async () => {
-        if (isExporting || !contentRef.current) return;
-        setIsExporting(true);
-
-        try {
-            const { jsPDF } = (window as any).jspdf;
-            const html2canvas = (window as any).html2canvas;
-
-            if (!jsPDF || !html2canvas) {
-                alert("PDF export library not loaded. Please try again.");
-                setIsExporting(false);
-                return;
-            }
-
-            const canvas = await html2canvas(contentRef.current, {
-                scale: 4, // Increased render scale for better clarity
-                useCORS: true,
-                backgroundColor: null,
-                onclone: (clonedDoc) => {
-                    // Redefined approach: Simplify the layout for capture.
-                    // 1. Force grid layouts that have columns to stack vertically.
-                    // This prevents elements in one column from overlapping another during rendering.
-                    const gridContainers = clonedDoc.querySelectorAll('[class*="lg:grid-cols-"], [class*="md:grid-cols-"]');
-                    gridContainers.forEach((container) => {
-                        (container as HTMLElement).style.display = 'block';
-                    });
-
-                    // 2. Expand all scrollable containers to their full height.
-                    const scrollContainers = clonedDoc.querySelectorAll('.overflow-x-auto, .overflow-y-auto');
-                    scrollContainers.forEach((container) => {
-                        const el = container as HTMLElement;
-                        el.style.overflow = 'visible';
-                        el.style.maxHeight = 'none';
-                        el.style.height = 'auto';
-                    });
-
-                    // 3. Make all sticky headers static so they don't get misplaced.
-                    const stickyHeaders = clonedDoc.querySelectorAll('.sticky');
-                    stickyHeaders.forEach((header) => {
-                        (header as HTMLElement).style.position = 'static';
-                    });
-                }
-            });
-
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
-            const ratio = canvasWidth / canvasHeight;
-
-            const imgWidth = pdfWidth - 20;
-            const imgHeight = imgWidth / ratio;
-            let heightLeft = imgHeight;
-            let position = 10;
-
-            pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-            heightLeft -= (pdfHeight - 20);
-
-            while (heightLeft > 0) {
-                position -= (pdfHeight - 20);
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-                heightLeft -= (pdfHeight - 20);
-            }
-            
-            let filename = 'analytics_export.pdf';
-            if (path.length === 0) filename = 'global_analytics.pdf';
-            if (path.length === 1) filename = `school_${path[0].replace(/\s/g, '_')}_analytics.pdf`;
-            if (path.length === 2) filename = `user_${path[1].replace(/\s/g, '_')}_analytics.pdf`;
-
-            pdf.save(filename);
-        } catch (error) {
-            console.error("Error exporting to PDF:", error);
-            alert("Failed to export PDF. See console for details.");
-        } finally {
-            setIsExporting(false);
-        }
-    };
-    
     const renderContent = () => {
         if (isLoading) return <div className="text-center py-10">Loading analytics...</div>;
         if (error) return <div className="text-red-500 text-center py-10">Error: {error}</div>;
@@ -457,7 +374,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ modelFil
                  <div className="flex items-center gap-2">
                      <button 
                         onClick={() => fetchData(path, modelFilter)} 
-                        disabled={isLoading || isExporting}
+                        disabled={isLoading}
                         className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-400 text-white font-bold py-2 px-4 rounded-lg shadow-md transform hover:scale-105 transition-all duration-200 border-b-4 border-indigo-700 active:border-b-2"
                      >
                          <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -465,20 +382,12 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ modelFil
                         </svg>
                         <span>{isLoading ? 'Refreshing...' : 'Refresh'}</span>
                      </button>
-                      <button 
-                        onClick={handleExportPDF} 
-                        disabled={isLoading || isExporting}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-400 text-white font-bold py-2 px-4 rounded-lg shadow-md transform hover:scale-105 transition-all duration-200 border-b-4 border-green-800 active:border-b-2"
-                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" /></svg>
-                        <span>{isExporting ? 'Exporting...' : 'Export PDF'}</span>
-                     </button>
                  </div>
             </div>
             <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)'}}>Last updated: {lastRefreshed.toLocaleTimeString()}</p>
 
             <Breadcrumbs path={path} setPath={setPath} />
-            <div className="mt-4" ref={contentRef}>
+            <div className="mt-4">
                 {renderContent()}
             </div>
         </div>
