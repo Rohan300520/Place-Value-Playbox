@@ -368,19 +368,28 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ modelFil
             }
 
             const canvas = await html2canvas(contentRef.current, {
-                scale: 3,
+                scale: 4, // Increased render scale for better clarity
                 useCORS: true,
                 backgroundColor: null,
                 onclone: (clonedDoc) => {
-                    // Find all elements that create a scroll container and make them fully visible
+                    // Redefined approach: Simplify the layout for capture.
+                    // 1. Force grid layouts that have columns to stack vertically.
+                    // This prevents elements in one column from overlapping another during rendering.
+                    const gridContainers = clonedDoc.querySelectorAll('[class*="lg:grid-cols-"], [class*="md:grid-cols-"]');
+                    gridContainers.forEach((container) => {
+                        (container as HTMLElement).style.display = 'block';
+                    });
+
+                    // 2. Expand all scrollable containers to their full height.
                     const scrollContainers = clonedDoc.querySelectorAll('.overflow-x-auto, .overflow-y-auto');
                     scrollContainers.forEach((container) => {
                         const el = container as HTMLElement;
                         el.style.overflow = 'visible';
                         el.style.maxHeight = 'none';
+                        el.style.height = 'auto';
                     });
 
-                    // Find all sticky headers and make them static
+                    // 3. Make all sticky headers static so they don't get misplaced.
                     const stickyHeaders = clonedDoc.querySelectorAll('.sticky');
                     stickyHeaders.forEach((header) => {
                         (header as HTMLElement).style.position = 'static';
@@ -405,7 +414,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ modelFil
             heightLeft -= (pdfHeight - 20);
 
             while (heightLeft > 0) {
-                position = -pdfHeight + 20;
+                position -= (pdfHeight - 20);
                 pdf.addPage();
                 pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
                 heightLeft -= (pdfHeight - 20);
