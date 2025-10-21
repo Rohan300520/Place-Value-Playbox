@@ -98,18 +98,18 @@ export const AdminPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen font-sans relative">
+    <div className="h-screen font-sans relative flex flex-col overflow-hidden">
       <div className="absolute inset-0 z-0">
         <BackgroundManager />
       </div>
 
-      <div className="relative z-10 flex flex-col min-h-screen">
+      <div className="relative z-10 flex flex-col flex-1 min-h-0">
         {!isAuthenticated ? (
           <div className="flex-grow flex items-center justify-center p-4">
             <AdminLogin onLogin={handleLogin} />
           </div>
         ) : (
-          <div className="p-4 sm:p-8 flex justify-center">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-8 flex justify-center">
             {isLoading ? (
               <div className="text-xl font-bold mt-8">Loading Key Data...</div>
             ) : (
