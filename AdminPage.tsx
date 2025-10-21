@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AdminLogin } from './components/AdminLogin';
 import { AdminDashboard } from './components/AdminDashboard';
-import { fetchKeys, createKeyInDB, deleteKeyFromDB, GeneratedKey } from './utils/license';
+import { fetchKeys, createKeyInDB, deleteKeyFromDB, updateKeyInDB, GeneratedKey } from './utils/license';
 import { BackgroundManager } from './components/Starfield';
 
 // A simple utility to generate the random part of a key.
@@ -96,6 +96,20 @@ export const AdminPage: React.FC = () => {
       }
     }
   }, []);
+  
+  // Handle key updates.
+  const handleUpdateKey = useCallback(async (keyId: string, updates: { usageLimit: number; validityInMs: number }) => {
+    const updatedKey = await updateKeyInDB(keyId, {
+      usage_limit: updates.usageLimit,
+      validity_in_ms: updates.validityInMs,
+    });
+    if (updatedKey) {
+      setKeys(prevKeys => prevKeys.map(k => (k.id === keyId ? updatedKey : k)));
+      return true; // Indicate success
+    }
+    alert('Failed to update the key. Please check the console for errors.');
+    return false; // Indicate failure
+  }, []);
 
   return (
     <div className="h-screen font-sans relative flex flex-col overflow-hidden">
@@ -117,6 +131,7 @@ export const AdminPage: React.FC = () => {
                 generatedKeys={keys}
                 onGenerateKey={handleGenerateKey}
                 onDeleteKey={handleDeleteKey}
+                onUpdateKey={handleUpdateKey}
               />
             )}
           </div>

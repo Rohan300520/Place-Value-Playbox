@@ -78,6 +78,30 @@ export const createKeyInDB = async (details: {
   return data;
 };
 
+/**
+ * Updates an existing key in the Supabase database.
+ * @param keyId The UUID of the key to update.
+ * @param updates An object containing the properties to update.
+ * @returns A promise that resolves to the updated key or null on failure.
+ */
+export const updateKeyInDB = async (
+  keyId: string,
+  updates: { usage_limit?: number; validity_in_ms?: number }
+): Promise<GeneratedKey | null> => {
+  const { data, error } = await supabase
+    .from('keys')
+    .update(updates)
+    .eq('id', keyId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating key:', error);
+    return null;
+  }
+  return data;
+};
+
 
 /**
  * Formats a duration in milliseconds into a human-readable string (e.g., "15 days, 4 hours").

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { GeneratedKey } from '../utils/license';
 import { formatDuration } from '../utils/license';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
+import { EditKeyModal } from './EditKeyModal';
 
 interface AdminDashboardProps {
   generatedKeys: GeneratedKey[];
@@ -13,6 +14,7 @@ interface AdminDashboardProps {
     validityMinutes: number;
   }) => void;
   onDeleteKey: (keyId: string) => void;
+  onUpdateKey: (keyId: string, updates: { usageLimit: number; validityInMs: number }) => Promise<boolean>;
 }
 
 const NewKeyForm: React.FC<{ onGenerateKey: AdminDashboardProps['onGenerateKey'] }> = ({ onGenerateKey }) => {
@@ -79,7 +81,7 @@ const NewKeyForm: React.FC<{ onGenerateKey: AdminDashboardProps['onGenerateKey']
   );
 };
 
-const KeyTable: React.FC<{ keys: GeneratedKey[]; onDeleteKey: (keyId: string) => void }> = ({ keys, onDeleteKey }) => {
+const KeyTable: React.FC<{ keys: GeneratedKey[]; onDeleteKey: (keyId: string) => void; onEditKey: (key: GeneratedKey) => void }> = ({ keys, onDeleteKey, onEditKey }) => {
   const [copySuccess, setCopySuccess] = useState('');
 
   const handleCopy = (key: string) => {
@@ -117,7 +119,8 @@ const KeyTable: React.FC<{ keys: GeneratedKey[]; onDeleteKey: (keyId: string) =>
                 <td className="p-2">{key.current_usage} / {key.usage_limit}</td>
                 <td className="p-2">{formatDuration(key.validity_in_ms)}</td>
                 <td className="p-2">{new Date(key.created_at).toLocaleDateString()}</td>
-                <td className="p-2">
+                <td className="p-2 space-x-2">
+                  <button onClick={() => onEditKey(key)} className="text-blue-400 hover:text-blue-600 font-bold p-1 rounded">Edit</button>
                   <button onClick={() => onDeleteKey(key.id)} className="text-red-400 hover:text-red-600 font-bold p-1 rounded">Delete</button>
                 </td>
               </tr>
@@ -129,12 +132,20 @@ const KeyTable: React.FC<{ keys: GeneratedKey[]; onDeleteKey: (keyId: string) =>
   );
 };
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ generatedKeys, onGenerateKey, onDeleteKey }) => {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ generatedKeys, onGenerateKey, onDeleteKey, onUpdateKey }) => {
     const [activeTab, setActiveTab] = useState('keys');
     const [modelFilter, setModelFilter] = useState<string | undefined>(undefined);
+    const [editingKey, setEditingKey] = useState<GeneratedKey | null>(null);
 
   return (
     <div className="w-full max-w-7xl animate-pop-in">
+      {editingKey && (
+        <EditKeyModal
+            keyToEdit={editingKey}
+            onClose={() => setEditingKey(null)}
+            onSaveKey={onUpdateKey}
+        />
+      )}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-black font-display" style={{ color: 'var(--text-accent)' }}>Admin Dashboard</h1>
         <a href="/" className="font-bold text-lg hover:underline" style={{ color: 'var(--text-secondary)' }}>Back to App</a>
@@ -162,7 +173,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ generatedKeys, o
       {activeTab === 'keys' ? (
           <>
             <NewKeyForm onGenerateKey={onGenerateKey} />
-            <KeyTable keys={generatedKeys} onDeleteKey={onDeleteKey} />
+            <KeyTable keys={generatedKeys} onDeleteKey={onDeleteKey} onEditKey={setEditingKey} />
           </>
       ) : (
           <AnalyticsDashboard modelFilter={modelFilter} />
