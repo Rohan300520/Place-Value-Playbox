@@ -95,7 +95,8 @@ const GlobalView: React.FC<{
     schools: SchoolSummary[]; 
     dailyActivity: DailyActivity[];
     onSelectSchool: (school: string) => void; 
-}> = ({ stats, schools, dailyActivity, onSelectSchool }) => {
+    isExporting: boolean;
+}> = ({ stats, schools, dailyActivity, onSelectSchool, isExporting }) => {
 
     const activityChartConfig: ChartConfiguration = {
         type: 'line',
@@ -160,7 +161,7 @@ const GlobalView: React.FC<{
             <div className="overflow-x-auto p-4 rounded-lg shadow-md border" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)' }}>
                 <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>All Schools</h3>
                 <table className="w-full text-left">
-                    <thead className="sticky top-0" style={{ backgroundColor: 'var(--panel-bg)'}}>
+                    <thead className={`${isExporting ? 'static' : 'sticky'} top-0`} style={{ backgroundColor: 'var(--modal-bg)'}}>
                         <tr className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
                             <th className="p-2">School Name</th>
                             <th className="p-2">Users</th>
@@ -188,7 +189,8 @@ const SchoolView: React.FC<{
     users: SchoolUserDetails[]; 
     challengeStats: SchoolChallengeStats;
     onSelectUser: (user: string) => void; 
-}> = ({ users, challengeStats, onSelectUser }) => {
+    isExporting: boolean;
+}> = ({ users, challengeStats, onSelectUser, isExporting }) => {
     
     const challengeChartConfig: ChartConfiguration = {
         type: 'doughnut',
@@ -215,7 +217,7 @@ const SchoolView: React.FC<{
                 <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>User Details</h3>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="sticky top-0" style={{ backgroundColor: 'var(--panel-bg)' }}>
+                        <thead className={`${isExporting ? 'static' : 'sticky'} top-0`} style={{ backgroundColor: 'var(--modal-bg)' }}>
                             <tr className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
                                 <th className="p-2">User Name</th>
                                 <th className="p-2">Sessions</th>
@@ -245,7 +247,7 @@ const SchoolView: React.FC<{
     );
 };
 
-const UserView: React.FC<{ history: UserChallengeHistory[] }> = ({ history }) => {
+const UserView: React.FC<{ history: UserChallengeHistory[]; isExporting: boolean; }> = ({ history, isExporting }) => {
     // Fix: Implemented the UserView component to display user challenge history, resolving the return type error.
     if (history.length === 0) {
         return <NoDataMessage message="This user has not attempted any challenges yet." />;
@@ -265,7 +267,7 @@ const UserView: React.FC<{ history: UserChallengeHistory[] }> = ({ history }) =>
             <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>User Challenge History</h3>
             <div className="overflow-x-auto max-h-[60vh]">
                 <table className="w-full text-left">
-                    <thead className="sticky top-0" style={{ backgroundColor: 'var(--modal-bg)'}}>
+                    <thead className={`${isExporting ? 'static' : 'sticky'} top-0`} style={{ backgroundColor: 'var(--modal-bg)'}}>
                         <tr className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
                             <th className="p-2">Timestamp</th>
                             <th className="p-2">Question</th>
@@ -358,6 +360,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ modelFil
         if (isExporting || !contentRef.current) return;
         setIsExporting(true);
 
+        // A short delay to allow the UI to update with `isExporting` state
+        await new Promise(resolve => setTimeout(resolve, 50));
+
         const { jsPDF } = (window as any).jspdf;
         const html2canvas = (window as any).html2canvas;
 
@@ -412,13 +417,13 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ modelFil
         if (error) return <div className="text-red-500 text-center py-10">Error: {error}</div>;
 
         if (path.length === 0) {
-            return globalStats ? <GlobalView stats={globalStats} schools={schoolSummary} dailyActivity={dailyActivity} onSelectSchool={(school) => setPath([school])} /> : <NoDataMessage message="No global stats available." />;
+            return globalStats ? <GlobalView stats={globalStats} schools={schoolSummary} dailyActivity={dailyActivity} onSelectSchool={(school) => setPath([school])} isExporting={isExporting} /> : <NoDataMessage message="No global stats available." />;
         }
         if (path.length === 1) {
-            return schoolChallengeStats ? <SchoolView users={schoolDetails} challengeStats={schoolChallengeStats} onSelectUser={(user) => setPath([path[0], user])} /> : <NoDataMessage message="No data for this school."/>;
+            return schoolChallengeStats ? <SchoolView users={schoolDetails} challengeStats={schoolChallengeStats} onSelectUser={(user) => setPath([path[0], user])} isExporting={isExporting} /> : <NoDataMessage message="No data for this school."/>;
         }
         if (path.length === 2) {
-            return <UserView history={userHistory} />;
+            return <UserView history={userHistory} isExporting={isExporting} />;
         }
         return null;
     }
