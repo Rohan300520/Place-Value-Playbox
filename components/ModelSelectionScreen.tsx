@@ -124,10 +124,10 @@ export const ModelSelectionScreen: React.FC<{ onSelectModel: (model: AppState) =
     const modelsToDisplay = MODELS_CONFIG[activeLevel];
 
     return (
-        <div className="w-full">
+        <div className="w-full flex flex-row flex-grow">
             {/* --- Sidebar --- */}
             <aside 
-                className="fixed top-0 left-0 w-72 h-screen flex flex-col p-6 shadow-2xl z-10 border-r"
+                className="w-72 h-full flex flex-col p-6 shadow-2xl z-10 border-r flex-shrink-0"
                 style={{ backgroundColor: 'var(--modal-bg)', borderColor: 'var(--border-primary)' }}
             >
                 <img src="/assets/logo.svg" alt="SMART C Logo" className="h-16 mb-8" />
@@ -169,7 +169,7 @@ export const ModelSelectionScreen: React.FC<{ onSelectModel: (model: AppState) =
             </aside>
 
             {/* --- Main Content --- */}
-            <main className="ml-72 p-10">
+            <main className="flex-1 p-10 overflow-y-auto">
                 <div className="w-full max-w-7xl mx-auto">
                     <h1 className="text-6xl font-black font-display mb-10" style={{ color: 'var(--text-primary)'}}>
                         {activeLevel} Models
