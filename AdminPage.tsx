@@ -98,10 +98,16 @@ export const AdminPage: React.FC = () => {
     }
   }, []);
 
+  // Conditionally apply classes to the content wrapper to handle centering for login
+  // and top-alignment for the dashboard.
+  const contentWrapperClasses = !isAuthenticated
+    ? "relative z-10 w-full flex-grow flex flex-col items-center justify-center"
+    : "relative z-10 w-full flex flex-col items-center";
+
   return (
     <div className="min-h-screen flex flex-col font-sans p-4 sm:p-8">
       <BackgroundManager />
-      <div className="relative z-10 w-full flex flex-col items-center">
+      <div className={contentWrapperClasses}>
         {!isAuthenticated ? (
           <AdminLogin onLogin={handleLogin} />
         ) : isLoading ? (
