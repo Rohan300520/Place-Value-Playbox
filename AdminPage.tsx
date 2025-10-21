@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AdminLogin } from './components/AdminLogin';
-// Fix: Corrected import path for AdminDashboard
 import { AdminDashboard } from './components/AdminDashboard';
 import { fetchKeys, createKeyInDB, deleteKeyFromDB, GeneratedKey } from './utils/license';
 import { BackgroundManager } from './components/Starfield';
@@ -98,26 +97,29 @@ export const AdminPage: React.FC = () => {
     }
   }, []);
 
-  // Conditionally apply classes to the content wrapper to handle centering for login
-  // and top-alignment for the dashboard.
-  const contentWrapperClasses = !isAuthenticated
-    ? "relative z-10 w-full flex-grow flex flex-col items-center justify-center"
-    : "relative z-10 w-full flex flex-col items-center";
-
   return (
-    <div className="min-h-screen flex flex-col font-sans p-4 sm:p-8">
-      <BackgroundManager />
-      <div className={contentWrapperClasses}>
+    <div className="min-h-screen font-sans relative">
+      <div className="absolute inset-0 z-0">
+        <BackgroundManager />
+      </div>
+
+      <div className="relative z-10 flex flex-col min-h-screen">
         {!isAuthenticated ? (
-          <AdminLogin onLogin={handleLogin} />
-        ) : isLoading ? (
-          <div className="text-xl font-bold">Loading Key Data...</div>
+          <div className="flex-grow flex items-center justify-center p-4">
+            <AdminLogin onLogin={handleLogin} />
+          </div>
         ) : (
-          <AdminDashboard
-            generatedKeys={keys}
-            onGenerateKey={handleGenerateKey}
-            onDeleteKey={handleDeleteKey}
-          />
+          <div className="p-4 sm:p-8 flex justify-center">
+            {isLoading ? (
+              <div className="text-xl font-bold mt-8">Loading Key Data...</div>
+            ) : (
+              <AdminDashboard
+                generatedKeys={keys}
+                onGenerateKey={handleGenerateKey}
+                onDeleteKey={handleDeleteKey}
+              />
+            )}
+          </div>
         )}
       </div>
     </div>
