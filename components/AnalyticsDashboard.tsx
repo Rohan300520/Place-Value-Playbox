@@ -265,7 +265,7 @@ const UserView: React.FC<{ history: UserChallengeHistory[] }> = ({ history }) =>
             <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>User Challenge History</h3>
             <div className="overflow-x-auto max-h-[60vh]">
                 <table className="w-full text-left">
-                    <thead className="sticky top-0" style={{ backgroundColor: 'var(--panel-bg)'}}>
+                    <thead className="sticky top-0" style={{ backgroundColor: 'var(--modal-bg)'}}>
                         <tr className="border-b" style={{ borderColor: 'var(--border-primary)' }}>
                             <th className="p-2">Timestamp</th>
                             <th className="p-2">Question</th>
@@ -368,7 +368,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ modelFil
         }
 
         try {
-            const canvas = await html2canvas(contentRef.current, { scale: 2, useCORS: true, backgroundColor: null });
+            const canvas = await html2canvas(contentRef.current, { scale: 3, useCORS: true, backgroundColor: null });
             const imgData = canvas.toDataURL('image/png');
 
             const pdf = new jsPDF('p', 'mm', 'a4');
