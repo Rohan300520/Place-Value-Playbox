@@ -127,7 +127,7 @@ export const ModelSelectionScreen: React.FC<{ onSelectModel: (model: AppState) =
         <div className="w-full flex flex-row flex-grow">
             {/* --- Sidebar --- */}
             <aside 
-                className="w-72 h-full flex flex-col p-6 shadow-2xl z-10 border-r flex-shrink-0"
+                className="w-72 flex flex-col p-6 shadow-2xl z-10 border-r flex-shrink-0"
                 style={{ backgroundColor: 'var(--modal-bg)', borderColor: 'var(--border-primary)' }}
             >
                 <img src="/assets/logo.svg" alt="SMART C Logo" className="h-16 mb-8" />
