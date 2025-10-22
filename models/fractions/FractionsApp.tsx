@@ -410,12 +410,20 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                                     </div>
                                     <div className="flex flex-col gap-4">
                                         <CalculationCanvas equation={equation} />
-                                        <FractionControls 
+                                        {/* Fix: Narrow the type of spotlightOn to only pass values expected by FractionControls. */}
+                                        <FractionControls
                                             onOperatorSelect={handleSelectOperator}
                                             onSolve={handleSolve}
                                             onClear={clearEquation}
                                             equation={equation}
-                                            spotlightOn={currentTrainingStep?.spotlightOn && typeof currentTrainingStep.spotlightOn === 'string' ? currentTrainingStep.spotlightOn : undefined}
+                                            spotlightOn={
+                                                typeof currentTrainingStep?.spotlightOn === 'string' &&
+                                                (currentTrainingStep.spotlightOn === '+' ||
+                                                    currentTrainingStep.spotlightOn === '-' ||
+                                                    currentTrainingStep.spotlightOn === 'solve')
+                                                    ? currentTrainingStep.spotlightOn
+                                                    : undefined
+                                            }
                                         />
                                         <CalculationStepsPanel equation={equation} />
                                     </div>

@@ -35,8 +35,10 @@ export const NumberLine: React.FC<NumberLineProps> = ({
         }
     };
 
-    const spotlightPoint = currentStep?.spotlightOn?.startsWith('number_line_point-') 
-        ? currentStep.spotlightOn.split('-')[1]
+    // Fix: Ensure spotlightOn is a string before calling string methods.
+    const spotlightOn = currentStep?.spotlightOn;
+    const spotlightPoint = typeof spotlightOn === 'string' && spotlightOn.startsWith('number_line_point-') 
+        ? spotlightOn.split('-')[1]
         : null;
     
     const getFractionFromSpotlight = (): Fraction | null => {
