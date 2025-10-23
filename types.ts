@@ -2,6 +2,7 @@ import type React from 'react';
 
 // --- Core App State ---
 export type AppState = 'model_selection' | 'place_value_playbox' | 'fractions' | 'surface_area_9' | 'surface_area_10';
+export type SchoolLevel = 'Lower School' | 'Middle School' | 'High School';
 
 export type UserInfo = {
   name: string;

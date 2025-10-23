@@ -76,8 +76,8 @@ export const ConceptIntro: React.FC<ConceptIntroProps> = ({
                     ))}
                 </div>
 
-                <div className="flex justify-center items-center gap-8">
-                    <div className="text-center w-64">
+                <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8">
+                    <div className="text-center w-full md:w-64">
                         <p className="text-xl font-chalk text-chalk-cyan">Numerator</p>
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mx-auto text-chalk-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l3-3m0 0l3 3m-3-3v8m0-13a9 9 0 110 18 9 9 0 010-18z" />
@@ -91,7 +91,7 @@ export const ConceptIntro: React.FC<ConceptIntroProps> = ({
                         <div className="text-8xl text-chalk-yellow">{denominator}</div>
                     </div>
 
-                    <div className="text-center w-64">
+                    <div className="text-center w-full md:w-64">
                          <p className="text-xl font-chalk text-chalk-yellow">Denominator</p>
                          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mx-auto text-chalk-yellow" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 13l-3 3m0 0l-3-3m3 3V8m0 13a9 9 0 110 18 9 9 0 010-18z" />

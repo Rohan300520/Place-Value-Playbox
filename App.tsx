@@ -139,7 +139,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="h-screen font-sans relative flex flex-col overflow-hidden">
+    <div className="min-h-screen font-sans relative flex flex-col">
       <div className="absolute inset-0 z-0">
           <BackgroundManager />
       </div>

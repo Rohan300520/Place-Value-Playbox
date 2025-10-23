@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
-import type { AppState, UserInfo } from '../types';
+import type { AppState, UserInfo, SchoolLevel } from '../types';
+import { Sidebar } from './Sidebar';
 
-const MODELS_CONFIG = {
+const MODELS_CONFIG: Record<SchoolLevel, { 
+    id: AppState; 
+    title: string; 
+    description: string;
+    imageUrl: string;
+    color: string;
+    shadow: string;
+    border: string;
+}[]> = {
     'Lower School': [
         { 
             id: 'place_value_playbox' as AppState, 
@@ -45,8 +54,6 @@ const MODELS_CONFIG = {
         }
     ]
 };
-
-type SchoolLevel = 'Lower School' | 'Middle School' | 'High School';
 
 // --- UI COMPONENTS ---
 
@@ -101,7 +108,7 @@ const NavButton: React.FC<{
     </button>
 );
 
-const NAV_ICONS = {
+const NAV_ICONS: Record<SchoolLevel, React.ReactNode> = {
     'Lower School': <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
     'Middle School': <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>,
     'High School': <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" /></svg>,
@@ -112,6 +119,7 @@ const NAV_ICONS = {
 
 export const ModelSelectionScreen: React.FC<{ onSelectModel: (model: AppState) => void, currentUser: UserInfo | null }> = ({ onSelectModel, currentUser }) => {
     const [activeLevel, setActiveLevel] = useState<SchoolLevel>('Lower School');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const handleLogout = () => {
         if (window.confirm('Are you sure you want to log out? This will end your current session.')) {
@@ -124,10 +132,25 @@ export const ModelSelectionScreen: React.FC<{ onSelectModel: (model: AppState) =
     const modelsToDisplay = MODELS_CONFIG[activeLevel];
 
     return (
-        <div className="w-full flex flex-row flex-grow">
-            {/* --- Sidebar --- */}
+        <div className="w-full h-full flex flex-col lg:flex-row">
+            <Sidebar
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
+                activeLevel={activeLevel}
+                onSelectLevel={(level) => {
+                    setActiveLevel(level);
+                    setIsSidebarOpen(false);
+                }}
+                currentUser={currentUser}
+                onLogout={() => {
+                    handleLogout();
+                    setIsSidebarOpen(false);
+                }}
+            />
+            
+            {/* --- Desktop Sidebar --- */}
             <aside 
-                className="w-72 flex flex-col p-6 shadow-2xl z-10 border-r flex-shrink-0"
+                className="hidden lg:flex w-72 flex-col p-6 shadow-2xl z-10 border-r flex-shrink-0"
                 style={{ backgroundColor: 'var(--modal-bg)', borderColor: 'var(--border-primary)' }}
             >
                 <img src="/assets/logo.jpeg" alt="SMART C Logo" className="h-16 mb-8" />
@@ -168,18 +191,28 @@ export const ModelSelectionScreen: React.FC<{ onSelectModel: (model: AppState) =
                 </div>
             </aside>
 
-            {/* --- Main Content --- */}
-            <main className="flex-1 p-10 overflow-y-auto">
-                <div className="w-full max-w-7xl mx-auto">
-                    <h1 className="text-6xl font-black font-display mb-10" style={{ color: 'var(--text-primary)'}}>
-                        {activeLevel} Models
-                    </h1>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                        {modelsToDisplay.map(model => <ModelCard key={model.id} {...model} onSelect={onSelectModel} />)}
-                        {modelsToDisplay.length === 0 && <ComingSoonCard />}
+            {/* --- Main Content Area --- */}
+            <div className="flex-1 flex flex-col">
+                {/* Mobile Header */}
+                <header className="lg:hidden flex items-center justify-between p-4 shadow-md z-10" style={{ backgroundColor: 'var(--modal-bg)', borderBottom: '1px solid var(--border-primary)'}}>
+                    <button onClick={() => setIsSidebarOpen(true)} className="p-2" aria-label="Open navigation menu">
+                        <svg className="h-8 w-8" style={{ color: 'var(--text-secondary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    </button>
+                    <img src="/assets/logo.jpeg" alt="SMART C Logo" className="h-10" />
+                </header>
+
+                <main className="flex-1 p-4 sm:p-10">
+                    <div className="w-full max-w-7xl mx-auto">
+                        <h1 className="text-4xl sm:text-6xl font-black font-display mb-10" style={{ color: 'var(--text-primary)'}}>
+                            {activeLevel} Models
+                        </h1>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+                            {modelsToDisplay.map(model => <ModelCard key={model.id} {...model} onSelect={onSelectModel} />)}
+                            {modelsToDisplay.length === 0 && <ComingSoonCard />}
+                        </div>
                     </div>
-                </div>
-            </main>
+                </main>
+            </div>
         </div>
     );
 };
