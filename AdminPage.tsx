@@ -114,7 +114,8 @@ export const AdminPage: React.FC = () => {
   return (
     <div className="h-screen font-sans relative flex flex-col overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <BackgroundManager />
+        {/* FIX: Provide the activeState prop required by BackgroundManager. */}
+        <BackgroundManager activeState="model_selection" />
       </div>
 
       <div className="relative z-10 flex flex-col flex-1 min-h-0">

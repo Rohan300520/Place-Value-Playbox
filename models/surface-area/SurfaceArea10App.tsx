@@ -302,7 +302,7 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
                         )}
                         {showTrainingGuide && (
                             <div className="w-full max-w-6xl mb-6">
-                                <TrainingGuide currentStep={currentTrainingStep} title={currentTrainingStep?.title || null} onComplete={goBackToMenu} onContinue={() => setTrainingStep(t => t + 1)} />
+                                <TrainingGuide currentStep={currentTrainingStep} onComplete={goBackToMenu} onContinue={() => setTrainingStep(t => t + 1)} />
                             </div>
                         )}
                         {isShapeSelectionPhase ? (

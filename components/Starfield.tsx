@@ -1,8 +1,25 @@
 import React, { useMemo } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import type { AppState } from '../types';
 
-export const BackgroundManager: React.FC = () => {
+interface BackgroundManagerProps {
+    activeState: AppState;
+}
+
+// These models provide their own opaque, full-screen background,
+// so the global animated background is not needed.
+const MODELS_WITH_OWN_BACKGROUND: AppState[] = [
+    'surface_area_9',
+    'surface_area_10',
+];
+
+export const BackgroundManager: React.FC<BackgroundManagerProps> = ({ activeState }) => {
     const { theme } = useTheme();
+
+    // Do not render if the active model has its own background theme.
+    if (MODELS_WITH_OWN_BACKGROUND.includes(activeState)) {
+        return null;
+    }
 
     const backgroundElements = useMemo(() => {
         if (theme === 'light') {

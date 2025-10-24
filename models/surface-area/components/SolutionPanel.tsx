@@ -4,14 +4,16 @@ import type { CalculationResult } from '../../../types';
 interface SolutionPanelProps {
     result: CalculationResult;
     unit: string;
-    onHighlightPart: (partId: string | null) => void;
+    // FIX: Broaden the type to accept string array, matching the data structure.
+    onHighlightPart: (partId: string | string[] | null) => void;
     isComparisonView?: boolean;
     comparisonResult?: CalculationResult;
 }
 
 const FormulaDerivation: React.FC<{ 
     derivation: Required<CalculationResult>['derivation'], 
-    onHighlightPart: (partId: string | null) => void 
+    // FIX: Broaden the type to accept string array.
+    onHighlightPart: (partId: string | string[] | null) => void 
 }> = ({ derivation, onHighlightPart }) => {
     if (!derivation) return null;
 

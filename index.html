@@ -267,7 +267,37 @@
         .guide-box-arrow-up::after { content: ''; position: absolute; width: 0; height: 0; border: 20px solid transparent; border-bottom-color: var(--blueprint-panel-bg); top: -40px; left: 50%; transform: translateX(-50%); }
         .guide-box-arrow-left::after { content: ''; position: absolute; width: 0; height: 0; border: 20px solid transparent; border-right-color: var(--blueprint-panel-bg); left: -40px; top: 50%; transform: translateY(-50%); }
         .guide-box-arrow-right::after { content: ''; position: absolute; width: 0; height: 0; border: 20px solid transparent; border-left-color: var(--blueprint-panel-bg); right: -40px; top: 50%; transform: translateY(-50%); }
-
+        
+        /* --- BACKGROUND ANIMATIONS --- */
+        .background-container {
+            width: 100%;
+            height: 100%;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        .star {
+            position: absolute;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+            animation-name: twinkle;
+            animation-timing-function: ease-in-out;
+            animation-iteration-count: infinite;
+        }
+        @keyframes drift {
+            from { transform: translateX(-20vw); }
+            to { transform: translateX(120vw); }
+        }
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            filter: blur(25px);
+            animation-name: drift;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
 
     </style>
 </head>

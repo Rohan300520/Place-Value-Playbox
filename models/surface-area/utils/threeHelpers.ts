@@ -22,7 +22,8 @@ function createTextSprite(text: string, options: { color?: string, fontSize?: nu
     const { color = 'rgba(224, 242, 254, 1)', fontSize = 48 } = options;
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
-    if (!context) return new THREE.Sprite();
+    // FIX: Provide a default material to the Sprite constructor. Some versions of Three.js might require an argument.
+    if (!context) return new THREE.Sprite(new THREE.SpriteMaterial());
 
     context.font = `Bold ${fontSize}px Arial`;
     const textMetrics = context.measureText(text);

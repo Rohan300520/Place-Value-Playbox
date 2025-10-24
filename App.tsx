@@ -140,9 +140,9 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen font-sans relative flex flex-col">
-      {/* <div className="absolute inset-0 z-0">
-          <BackgroundManager />
-      </div> */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+          <BackgroundManager activeState={appState} />
+      </div>
       <div className="relative z-10 flex flex-col flex-1 min-h-0">
           {renderContent()}
       </div>
