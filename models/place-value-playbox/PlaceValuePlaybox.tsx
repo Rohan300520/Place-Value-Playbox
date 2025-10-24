@@ -434,7 +434,7 @@ export const PlaceValuePlaybox: React.FC<{ onExit: () => void, currentUser: User
       case 'challenge':
         const currentQuestion = filteredQuestions[currentQuestionIndex];
         return (
-          <div className="flex flex-col items-center w-full max-w-7xl flex-1 animate-pop-in">
+          <div className="flex flex-col items-center w-full max-w-7xl animate-pop-in">
             {gameState === 'training' && (
               <TrainingGuide
                 currentStepConfig={currentStepConfig}
@@ -454,20 +454,20 @@ export const PlaceValuePlaybox: React.FC<{ onExit: () => void, currentUser: User
                 timeLimit={timeLimit}
               />
             )}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 w-full flex-1">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 w-full">
               <PlaceValueColumn title="Thousands" category="thousands" blocks={columns.thousands} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('thousands', draggedValue)} isDragging={!!draggedValue} color="purple" isTouchTarget={touchTarget === 'thousands'} appState={gameState} isSpotlighted={currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi') && currentStepConfig.column === 'thousands'} />
               <PlaceValueColumn title="Hundreds" category="hundreds" blocks={columns.hundreds} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={columns.tens.length >= 10} isDropAllowed={isDropAllowedForValue('hundreds', draggedValue)} isDragging={!!draggedValue} color="yellow" isTouchTarget={touchTarget === 'hundreds'} appState={gameState} isSpotlighted={currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi') && currentStepConfig.column === 'hundreds'}/>
               <PlaceValueColumn title="Tens" category="tens" blocks={columns.tens} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={columns.ones.length >= 10} isDropAllowed={isDropAllowedForValue('tens', draggedValue)} isDragging={!!draggedValue} color="green" isTouchTarget={touchTarget === 'tens'} appState={gameState} isSpotlighted={currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi') && currentStepConfig.column === 'tens'} />
               <PlaceValueColumn title="Ones" category="ones" blocks={columns.ones} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('ones', draggedValue)} isDragging={!!draggedValue} color="blue" isTouchTarget={touchTarget === 'ones'} appState={gameState} isSpotlighted={currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi') && currentStepConfig.column === 'ones'} />
             </div>
             <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row items-center justify-between w-full gap-4">
-              <div className="w-full sm:w-1/3 flex justify-center sm:justify-start">
+              <div className="flex-1">
                 {(gameState === 'playground' || gameState === 'challenge') && <ResetButton onClick={() => resetBoard(true)} />}
               </div>
-              <div className="w-full sm:w-1/3">
+              <div className="flex-1">
                 <BlockSource onDragStart={handleDragStart} onTouchStart={handleTouchStart} onBlockClick={handleClickToAddBlock} isTraining={gameState === 'training'} spotlightOn={currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi') ? currentStepConfig.source : undefined}/>
               </div>
-              <div className="w-full sm:w-1/3"></div>
+              <div className="flex-1"></div>
             </div>
           </div>
         );
@@ -492,7 +492,7 @@ export const PlaceValuePlaybox: React.FC<{ onExit: () => void, currentUser: User
   };
 
   return (
-    <div className="flex-1 flex flex-col font-sans bg-sky-50 dark:bg-slate-800/50">
+    <div className="min-h-screen flex flex-col font-sans">
         <Header 
             onHelpClick={() => setShowHelpModal(true)}
             currentUser={currentUser}
@@ -504,7 +504,7 @@ export const PlaceValuePlaybox: React.FC<{ onExit: () => void, currentUser: User
             score={total}
             scoreInWords={totalInWords}
         />
-        <main className="flex-1 w-full flex items-center justify-center py-4 px-2 sm:px-4" onDrop={handleDropOnBackground} onDragOver={handleGenericDragOver}>
+        <main className="flex-grow w-full flex items-center justify-center py-4 px-2 sm:px-4" onDrop={handleDropOnBackground} onDragOver={handleGenericDragOver}>
             {renderGameState()}
         </main>
         

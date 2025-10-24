@@ -99,8 +99,6 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
         resetCalculator();
         if (viewState === 'explore' || viewState === 'training' || viewState === 'challenge') {
             setViewState('mode_selection');
-        } else {
-            setViewState('welcome');
         }
     }, [viewState, resetCalculator]);
 
@@ -286,7 +284,7 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
                 const showChallengePanel = viewState === 'challenge' && currentQuestion;
 
                 return (
-                    <div className="w-full flex-1 flex flex-col items-center">
+                    <div className="w-full h-full flex flex-col items-center">
                         {showChallengePanel && (
                              <div className="w-full max-w-4xl mb-6">
                                 <ChallengePanel 
@@ -310,8 +308,8 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
                         {isShapeSelectionPhase ? (
                             <ShapeSelector onSelect={handleShapeSelect} shapes={CLASS_10_SHAPES} spotlightOn={currentTrainingStep?.spotlightOn} />
                         ) : selectedShape ? (
-                            <div className="w-full flex-1 flex flex-col lg:flex-row gap-8 items-start">
-                                <div className="w-full lg:flex-1 h-96 lg:h-auto rounded-lg">
+                            <div className="w-full h-full flex flex-col lg:flex-row gap-8 items-start">
+                                <div className="w-full lg:w-3/5 h-[400px] lg:h-[600px] rounded-lg">
                                    <Canvas3D shape={selectedShape} dimensions={dimensions} isUnfolded={false} highlightedPartId={highlightedPart} />
                                 </div>
                                 <div className="w-full lg:w-2/5">
@@ -349,14 +347,7 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
     };
 
     return (
-        <div className="flex-1 flex flex-col font-sans geometry-theme" style={{
-            backgroundColor: 'var(--blueprint-bg)',
-            backgroundImage: `
-                linear-gradient(var(--blueprint-grid) 1px, transparent 1px),
-                linear-gradient(90deg, var(--blueprint-grid) 1px, transparent 1px)
-            `,
-            backgroundSize: '20px 20px',
-        }}>
+        <div className="geometry-theme min-h-screen flex flex-col font-sans w-full">
             <Header
                 onHelpClick={() => setShowHelp(true)}
                 currentUser={currentUser}
@@ -365,7 +356,7 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
                 modelTitle="Combined Solids Workshop"
                 modelSubtitle={getSubtitle()}
             />
-            <main className="flex-1 flex items-center justify-center p-4 sm:p-8">
+            <main className="flex-grow flex items-center justify-center p-4 sm:p-8">
                 {renderContent()}
             </main>
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}

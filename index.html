@@ -32,8 +32,8 @@
     <style>
         /* --- THEME SYSTEM --- */
         :root, .light-theme {
-            --bg-gradient-start: #f1f5f9; /* slate-100 */
-            --bg-gradient-end: #e2e8f0;   /* slate-200 */
+            --bg-gradient-start: #87CEEB;
+            --bg-gradient-end: #FFD700;
             --text-primary: #1e293b; /* slate-800 */
             --text-secondary: #475569; /* slate-600 */
             --text-tertiary: #0c4a6e; /* sky-900 */
@@ -71,8 +71,8 @@
         }
 
         .dark-theme {
-            --bg-gradient-start: #0f172a; /* slate-900 */
-            --bg-gradient-end: #1e293b; /* slate-800 */
+            --bg-gradient-start: #0f172a;
+            --bg-gradient-end: #312e81;
             --text-primary: #e2e8f0; /* slate-200 */
             --text-secondary: #94a3b8; /* slate-400 */
             --text-tertiary: #e0f2fe; /* sky-100 */
@@ -157,7 +157,7 @@
         @keyframes form-from-center { from { top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); opacity: 0; } to { top: var(--target-top); left: var(--target-left); transform: translate(0, 0) scale(1); opacity: 1; } }
         .animate-form-from-center { animation: form-from-center 0.5s forwards cubic-bezier(0.4, 0, 0.2, 1); animation-delay: 0.7s; }
         
-        /* Model-specific theme classes that can be applied to containers */
+        /* --- FRACTIONS THEME --- */
         .fractions-theme {
             --chalk-bg: #3c4150;
             --chalk-bg-light: #4a5061;
@@ -169,6 +169,52 @@
             --chalk-red: #f87171;
         }
 
+        .fractions-theme .chalk-bg { background-color: var(--chalk-bg); }
+        .fractions-theme .chalk-bg-light { background-color: var(--chalk-bg-light); }
+        .fractions-theme .chalk-border {
+            border: 4px solid var(--chalk-border);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.4);
+            background-color: var(--chalk-bg);
+        }
+        .fractions-theme .font-chalk { font-family: 'Fredoka One', cursive; }
+        .fractions-theme .text-chalk-light { color: var(--chalk-text); }
+        .fractions-theme .text-chalk-cyan { color: var(--chalk-cyan); }
+        .fractions-theme .text-chalk-yellow { color: var(--chalk-yellow); }
+        .fractions-theme .text-chalk-green { color: var(--chalk-green); }
+        .fractions-theme .text-chalk-red { color: var(--chalk-red); }
+
+        .fractions-theme .control-button {
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.5rem; /* 2xl */
+            color: white;
+            padding: 0.75rem 1.5rem; /* py-3 px-6 */
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); /* shadow-lg */
+            border-bottom-width: 8px;
+            transition: all 150ms;
+            transform: translateY(0);
+        }
+        .fractions-theme .control-button:hover { transform: translateY(-0.25rem); }
+        .fractions-theme .control-button:active { border-bottom-width: 4px; }
+        
+        /* Fraction animations */
+        @keyframes subdivide-bar {
+            from { background-size: 100% 100%, 100% 100%; }
+            to { background-size: var(--subdivide-size, 100%) 100%, 100% 100%; }
+        }
+        .animate-subdivide {
+            animation: subdivide-bar 0.5s forwards ease-in-out;
+        }
+
+        @keyframes merge-bar {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-merge {
+            animation: merge-bar 0.5s 0.5s forwards cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        /* --- GEOMETRY THEME (SURFACE AREA & VOLUMES) --- */
         .geometry-theme {
             --blueprint-bg: #283a4b;
             --blueprint-grid: rgba(255, 255, 255, 0.1);
@@ -179,8 +225,13 @@
             --blueprint-panel-bg: rgba(51, 65, 85, 0.7);
             --blueprint-border: rgba(125, 211, 252, 0.4);
             --blueprint-input-bg: rgba(15, 23, 42, 0.5);
+            background-color: var(--blueprint-bg);
+            background-image:
+                linear-gradient(var(--blueprint-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--blueprint-grid) 1px, transparent 1px);
+            background-size: 20px 20px;
         }
-        
+
         .geometry-theme input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
@@ -212,11 +263,12 @@
             border: 4px solid var(--blueprint-bg);
         }
         
-        /* Model-specific Arrow styles for guide boxes */
-        .guide-box-arrow-down::after { content: ''; position: absolute; width: 0; height: 0; border: 20px solid transparent; border-top-color: var(--blueprint-panel-bg, rgba(30, 41, 59, 0.95)); bottom: -40px; left: 50%; transform: translateX(-50%); }
-        .guide-box-arrow-up::after { content: ''; position: absolute; width: 0; height: 0; border: 20px solid transparent; border-bottom-color: var(--blueprint-panel-bg, rgba(30, 41, 59, 0.95)); top: -40px; left: 50%; transform: translateX(-50%); }
-        .guide-box-arrow-left::after { content: ''; position: absolute; width: 0; height: 0; border: 20px solid transparent; border-right-color: var(--blueprint-panel-bg, rgba(30, 41, 59, 0.95)); left: -40px; top: 50%; transform: translateY(-50%); }
-        .guide-box-arrow-right::after { content: ''; position: absolute; width: 0; height: 0; border: 20px solid transparent; border-left-color: var(--blueprint-panel-bg, rgba(30, 41, 59, 0.95)); right: -40px; top: 50%; transform: translateY(-50%); }
+        .guide-box-arrow-down::after { content: ''; position: absolute; width: 0; height: 0; border: 20px solid transparent; border-top-color: var(--blueprint-panel-bg); bottom: -40px; left: 50%; transform: translateX(-50%); }
+        .guide-box-arrow-up::after { content: ''; position: absolute; width: 0; height: 0; border: 20px solid transparent; border-bottom-color: var(--blueprint-panel-bg); top: -40px; left: 50%; transform: translateX(-50%); }
+        .guide-box-arrow-left::after { content: ''; position: absolute; width: 0; height: 0; border: 20px solid transparent; border-right-color: var(--blueprint-panel-bg); left: -40px; top: 50%; transform: translateY(-50%); }
+        .guide-box-arrow-right::after { content: ''; position: absolute; width: 0; height: 0; border: 20px solid transparent; border-left-color: var(--blueprint-panel-bg); right: -40px; top: 50%; transform: translateY(-50%); }
+
+
     </style>
 </head>
 <body class="light-theme">

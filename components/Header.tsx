@@ -43,14 +43,12 @@ export const Header: React.FC<HeaderProps> = ({
         backgroundColor: 'var(--header-bg)',
         borderBottom: '1px solid var(--border-primary)',
     }}>
-      <div className="max-w-8xl mx-auto px-2 sm:px-6 lg:px-8">
-        <div className="relative flex items-center justify-between h-16 md:h-20">
-          
-          {/* Left Section */}
-          <div className="flex items-center gap-1 sm:gap-2">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 md:h-20">
+          <div className="flex items-center gap-2">
             <button
                 onClick={onExit}
-                className="flex items-center gap-1 sm:gap-2 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-inset"
+                className="flex items-center gap-2 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-inset"
                 style={{ color: 'var(--text-secondary)' }}
                 aria-label="Exit to model selection"
               >
@@ -62,7 +60,7 @@ export const Header: React.FC<HeaderProps> = ({
             {onBackToModelMenu && (
                <button
                   onClick={onBackToModelMenu}
-                  className="flex items-center gap-1 sm:gap-2 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-inset"
+                  className="flex items-center gap-2 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-inset"
                   style={{ color: 'var(--text-secondary)' }}
                   aria-label="Go back to mode selection"
                 >
@@ -74,25 +72,21 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Center Section (Title) */}
-          <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-center px-24 pointer-events-none">
-            <div className="text-center truncate">
-              {modelTitle && <h1 className="text-xl sm:text-3xl lg:text-4xl font-black tracking-tight font-display truncate" style={{ color: 'var(--text-primary)' }}>{modelTitle}</h1>}
-              {modelSubtitle && <h2 className="text-md sm:text-xl lg:text-2xl font-bold tracking-tight -mt-1 sm:-mt-2 truncate" style={{ color: 'var(--text-accent)'}}>{modelSubtitle}</h2>}
-            </div>
+          <div className="absolute left-1/2 -translate-x-1/2 text-center">
+            {modelTitle && <h1 className="text-2xl sm:text-4xl font-black tracking-tight font-display" style={{ color: 'var(--text-primary)' }}>{modelTitle}</h1>}
+            {modelSubtitle && <h2 className="text-lg sm:text-2xl font-bold tracking-tight -mt-1 sm:-mt-2" style={{ color: 'var(--text-accent)'}}>{modelSubtitle}</h2>}
           </div>
 
-          {/* Right Section */}
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-4">
               {showScore && (
-                 <div className={`text-center rounded-2xl px-2 sm:px-4 py-1 shadow-inner ${isAnimating ? 'animate-tada' : ''}`} style={{
+                 <div className={`text-center rounded-2xl px-3 sm:px-6 py-1 sm:py-2 shadow-inner ${isAnimating ? 'animate-tada' : ''}`} style={{
                     backgroundColor: 'var(--panel-bg)',
                     border: '1px solid var(--border-primary)',
                 }}>
-                  <div className="text-2xl sm:text-4xl lg:text-5xl font-black text-green-600 tabular-nums tracking-tighter" style={{ textShadow: '0 0 10px rgba(22, 163, 74, 0.3)' }}>
+                  <div className="text-4xl sm:text-6xl font-black text-green-600 tabular-nums tracking-tighter" style={{ textShadow: '0 0 10px rgba(22, 163, 74, 0.3)' }}>
                     {new Intl.NumberFormat().format(score || 0)}
                   </div>
-                  <div className="text-xs sm:text-base font-bold capitalize min-h-[1rem] sm:min-h-[1.5rem] flex items-center justify-center" style={{ color: 'var(--text-secondary)'}}>
+                  <div className="text-xs sm:text-lg font-bold capitalize min-h-[1.25rem] sm:min-h-[1.75rem] flex items-center justify-center" style={{ color: 'var(--text-secondary)'}}>
                       {(score || 0) > 0 ? scoreInWords : '\u00A0'}
                   </div>
                 </div>

@@ -2,7 +2,7 @@ import React from 'react';
 
 export const WelcomeScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => {
   return (
-    <div className="flex-grow flex flex-col items-center justify-center p-4 text-center">
+    <div className="flex flex-col items-center p-4 text-center">
       <div className="backdrop-blur-sm border p-6 sm:p-8 rounded-3xl shadow-xl animate-pop-in" style={{
           backgroundColor: 'var(--backdrop-bg)',
           borderColor: 'var(--border-primary)',
