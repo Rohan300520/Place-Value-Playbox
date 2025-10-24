@@ -355,109 +355,102 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
             case 'challenge_difficulty_selection': return <DifficultySelector onSelectDifficulty={startChallenge} onBack={goBackToMenu} />;
             case 'explore':
                 return (
-                    <div className="fractions-theme w-full flex-grow flex flex-col items-center justify-center">
-                        <div className="w-full max-w-7xl flex flex-col items-center animate-pop-in p-4 rounded-2xl bg-slate-900/20">
-                            <ExploreViewSwitcher activeView={exploreView} onSelectView={setExploreView} />
-                            {exploreView === 'operations' && (
-                                <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mt-4">
-                                    <div className="lg:sticky top-24"><FractionWall onSelect={handleSelectFraction} pulseOn={wallPulse} /></div>
-                                    <div className="flex flex-col gap-4">
-                                        <CalculationCanvas equation={equation} />
-                                        <FractionControls onOperatorSelect={handleSelectOperator} onSolve={handleSolve} onClear={clearEquation} equation={equation} />
-                                        <CalculationStepsPanel equation={equation} />
-                                    </div>
+                    <div className="w-full max-w-7xl flex flex-col items-center animate-pop-in p-4 rounded-2xl bg-slate-900/20">
+                        <ExploreViewSwitcher activeView={exploreView} onSelectView={setExploreView} />
+                        {exploreView === 'operations' && (
+                            <div className="w-full flex flex-col lg:flex-row gap-6 items-start mt-4">
+                                <div className="w-full lg:w-1/3"><FractionWall onSelect={handleSelectFraction} pulseOn={wallPulse} /></div>
+                                <div className="w-full lg:w-2/3 flex flex-col gap-4">
+                                    <CalculationCanvas equation={equation} />
+                                    <FractionControls onOperatorSelect={handleSelectOperator} onSolve={handleSolve} onClear={clearEquation} equation={equation} />
+                                    <CalculationStepsPanel equation={equation} />
                                 </div>
-                            )}
-                            {exploreView === 'anatomy' && <div className="mt-6"><ConceptIntro isTrainingMode={false} /></div>}
-                            {exploreView === 'number_line' && <div className="mt-6"><NumberLine isExploreMode={true} /></div>}
-                        </div>
+                            </div>
+                        )}
+                        {exploreView === 'anatomy' && <div className="mt-6"><ConceptIntro isTrainingMode={false} /></div>}
+                        {exploreView === 'number_line' && <div className="mt-6"><NumberLine isExploreMode={true} /></div>}
                     </div>
                 );
             case 'training':
                 const trainingUI = currentTrainingStep?.ui || 'operations';
                 return (
-                     <div className="fractions-theme w-full flex-grow flex flex-col items-center justify-center">
-                        <div className="w-full max-w-7xl flex flex-col items-center animate-pop-in p-4 rounded-2xl bg-slate-900/20">
-                            <TrainingGuide 
-                                currentStep={currentTrainingStep} 
-                                onComplete={goBackToMenu} 
-                                feedback={trainingFeedback}
-                                onContinue={() => setTrainingStep(prev => prev + 1)}
+                     <div className="w-full max-w-7xl flex flex-col items-center animate-pop-in p-4 rounded-2xl bg-slate-900/20">
+                        <TrainingGuide 
+                            currentStep={currentTrainingStep} 
+                            onComplete={goBackToMenu} 
+                            feedback={trainingFeedback}
+                            onContinue={() => setTrainingStep(prev => prev + 1)}
+                        />
+                        
+                        {trainingUI === 'concept' ? (
+                            <ConceptIntro 
+                                isTrainingMode={true}
+                                onAction={handleConceptAction}
+                                currentStep={currentTrainingStep}
+                                denominator={conceptDenominator}
+                                selectedPieces={conceptSelectedPieces}
                             />
-                            
-                            {trainingUI === 'concept' ? (
-                                <ConceptIntro 
-                                    isTrainingMode={true}
-                                    onAction={handleConceptAction}
-                                    currentStep={currentTrainingStep}
-                                    denominator={conceptDenominator}
-                                    selectedPieces={conceptSelectedPieces}
-                                />
-                            ) : trainingUI === 'number_line' ? (
-                                <NumberLine
-                                    denominator={numberLineDenominator}
-                                    onSelectPoint={setSelectedNumberLinePoint}
-                                    currentStep={currentTrainingStep}
-                                />
-                            ) : (
-                                <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mt-4">
-                                    <div className="lg:sticky top-24">
-                                        <FractionWall 
-                                            onSelect={handleSelectFraction} 
-                                            pulseOn={wallPulse}
-                                            spotlightOn={currentTrainingStep?.spotlightOn && typeof currentTrainingStep.spotlightOn === 'object' ? currentTrainingStep.spotlightOn : undefined}
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-4">
-                                        <CalculationCanvas equation={equation} />
-                                        {/* Fix: Narrow the type of spotlightOn to only pass values expected by FractionControls. */}
-                                        <FractionControls
-                                            onOperatorSelect={handleSelectOperator}
-                                            onSolve={handleSolve}
-                                            onClear={clearEquation}
-                                            equation={equation}
-                                            spotlightOn={
-                                                typeof currentTrainingStep?.spotlightOn === 'string' &&
-                                                (currentTrainingStep.spotlightOn === '+' ||
-                                                    currentTrainingStep.spotlightOn === '-' ||
-                                                    currentTrainingStep.spotlightOn === 'solve')
-                                                    ? currentTrainingStep.spotlightOn
-                                                    : undefined
-                                            }
-                                        />
-                                        <CalculationStepsPanel equation={equation} />
-                                    </div>
+                        ) : trainingUI === 'number_line' ? (
+                            <NumberLine
+                                denominator={numberLineDenominator}
+                                onSelectPoint={setSelectedNumberLinePoint}
+                                currentStep={currentTrainingStep}
+                            />
+                        ) : (
+                            <div className="w-full flex flex-col lg:flex-row gap-6 items-start mt-4">
+                                <div className="w-full lg:w-1/3">
+                                    <FractionWall 
+                                        onSelect={handleSelectFraction} 
+                                        pulseOn={wallPulse}
+                                        spotlightOn={currentTrainingStep?.spotlightOn && typeof currentTrainingStep.spotlightOn === 'object' ? currentTrainingStep.spotlightOn : undefined}
+                                    />
                                 </div>
-                            )}
-                        </div>
-                     </div>
+                                <div className="w-full lg:w-2/3 flex flex-col gap-4">
+                                    <CalculationCanvas equation={equation} />
+                                    <FractionControls
+                                        onOperatorSelect={handleSelectOperator}
+                                        onSolve={handleSolve}
+                                        onClear={clearEquation}
+                                        equation={equation}
+                                        spotlightOn={
+                                            typeof currentTrainingStep?.spotlightOn === 'string' &&
+                                            (currentTrainingStep.spotlightOn === '+' ||
+                                                currentTrainingStep.spotlightOn === '-' ||
+                                                currentTrainingStep.spotlightOn === 'solve')
+                                                ? currentTrainingStep.spotlightOn
+                                                : undefined
+                                        }
+                                    />
+                                    <CalculationStepsPanel equation={equation} />
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 );
             default: // Challenge Mode
                 const currentQuestion = filteredQuestions[currentQuestionIndex];
                 return (
-                    <div className="fractions-theme w-full flex-grow flex flex-col items-center justify-center">
-                        <div className="w-full max-w-7xl flex flex-col items-center animate-pop-in p-4 rounded-2xl bg-slate-900/20">
-                            {gameState === 'challenge' && currentQuestion && (
-                                <FractionChallengePanel 
-                                    status={challengeStatus}
-                                    question={currentQuestion}
-                                    onCheckAnswer={handleCheckAnswer}
-                                    onClearAnswer={clearEquation}
-                                    onNext={handleNextChallenge}
-                                    onTimeOut={handleTimeOut}
-                                    score={score}
-                                    timeLimit={DURATION_MAP[difficulty]}
-                                />
-                            )}
+                     <div className="w-full max-w-7xl flex flex-col items-center animate-pop-in p-4 rounded-2xl bg-slate-900/20">
+                        {gameState === 'challenge' && currentQuestion && (
+                            <FractionChallengePanel 
+                                status={challengeStatus}
+                                question={currentQuestion}
+                                onCheckAnswer={handleCheckAnswer}
+                                onClearAnswer={clearEquation}
+                                onNext={handleNextChallenge}
+                                onTimeOut={handleTimeOut}
+                                score={score}
+                                timeLimit={DURATION_MAP[difficulty]}
+                            />
+                        )}
 
-                            <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mt-4">
-                                <div className="lg:sticky top-24">
-                                    <FractionWall onSelect={handleSelectFraction} pulseOn={wallPulse} />
-                                </div>
+                        <div className="w-full flex flex-col lg:flex-row gap-6 items-start mt-4">
+                            <div className="w-full lg:w-1/3">
+                                <FractionWall onSelect={handleSelectFraction} pulseOn={wallPulse} />
+                            </div>
 
-                                <div className="flex flex-col gap-4">
-                                    <CalculationCanvas equation={{...initialEquationState, term1: challengeAnswer}} isChallengeMode={true} />
-                                </div>
+                            <div className="w-full lg:w-2/3 flex flex-col gap-4">
+                                <CalculationCanvas equation={{...initialEquationState, term1: challengeAnswer}} isChallengeMode={true} />
                             </div>
                         </div>
                     </div>
@@ -466,7 +459,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
     };
 
     return (
-        <div className="min-h-screen flex flex-col font-sans">
+        <div className="flex-1 flex flex-col font-sans fractions-theme" style={{ backgroundColor: 'var(--chalk-bg)'}}>
             <Header 
                 onHelpClick={() => setShowHelp(true)} 
                 currentUser={currentUser} 
@@ -477,7 +470,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                 showScore={gameState === 'challenge'}
                 score={score}
             />
-            <main className="flex-grow flex flex-col items-center justify-center p-2 sm:p-4">
+            <main className="flex-1 flex flex-col items-center justify-center p-2 sm:p-4">
                 {renderMainContent()}
             </main>
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}

@@ -148,6 +148,8 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
         resetCalculator(true);
         if (viewState === 'explore' || viewState === 'training' || viewState === 'challenge') {
             setViewState('mode_selection');
+        } else {
+            setViewState('welcome');
         }
     }, [viewState, resetCalculator]);
 
@@ -298,6 +300,72 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
         const currentQuestion = questions[questionIndex];
         const unit = (viewState === 'challenge' && currentQuestion?.unit) ? currentQuestion.unit : 'units';
         
+        const mainContent = (
+            <>
+                { (selectedShape || isComparisonView) ? (
+                    <div className="flex flex-col lg:flex-row gap-6 w-full flex-1">
+                        <div className="w-full lg:w-1/4">
+                             <ControlPanel
+                                shapes={CLASS_9_SHAPES}
+                                selectedShape={selectedShape}
+                                onShapeSelect={handleShapeSelect}
+                                dimensions={dimensions}
+                                onDimensionChange={handleDimensionChange}
+                                calculationType={calculationType}
+                                onCalculationTypeChange={handleCalculationTypeChange}
+                                onCalculate={handleCalculate}
+                                isUnfolded={isUnfolded}
+                                onToggleUnfold={() => setIsUnfolded(!isUnfolded)}
+                                unit={unit}
+                                renderMode={renderMode}
+                                onRenderModeChange={setRenderMode}
+                                isComparisonView={isComparisonView}
+                                onToggleComparison={handleToggleComparison}
+                                isTraining={viewState === 'training'}
+                                trainingStep={currentTrainingStep}
+                            />
+                        </div>
+                        <div className="h-96 lg:h-auto lg:flex-1">
+                            <Canvas3D 
+                                shape={selectedShape!} 
+                                dimensions={dimensions} 
+                                isUnfolded={isUnfolded} 
+                                highlightedPartId={highlightedPart}
+                                renderMode={renderMode}
+                                comparisonData={isComparisonView ? { shape: 'cone', dimensions } : undefined}
+                                />
+                        </div>
+                        <div className="w-full lg:w-1/4">
+                            {result && <SolutionPanel result={result} unit={unit} onHighlightPart={setHighlightedPart} isComparisonView={isComparisonView} comparisonResult={comparisonResult} />}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex-1 flex items-center justify-center">
+                         <ControlPanel
+                            shapes={CLASS_9_SHAPES}
+                            selectedShape={selectedShape}
+                            onShapeSelect={handleShapeSelect}
+                            dimensions={dimensions}
+                            onDimensionChange={handleDimensionChange}
+                            calculationType={calculationType}
+                            onCalculationTypeChange={handleCalculationTypeChange}
+                            onCalculate={handleCalculate}
+                            isUnfolded={isUnfolded}
+                            onToggleUnfold={() => setIsUnfolded(!isUnfolded)}
+                            unit={unit}
+                            renderMode={renderMode}
+                            onRenderModeChange={setRenderMode}
+                            isComparisonView={isComparisonView}
+                            onToggleComparison={handleToggleComparison}
+                            isTraining={viewState === 'training'}
+                            trainingStep={currentTrainingStep}
+                        />
+                    </div>
+                )}
+            </>
+        );
+
+
         switch (viewState) {
             case 'welcome':
                 return <WelcomeScreen onStart={() => setViewState('mode_selection')} title="Solid Shapes Explorer" grade="IX" />;
@@ -309,59 +377,19 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
             case 'training':
             case 'explore':
             case 'challenge':
-                const showTrainingGuide = viewState === 'training' && currentTrainingStep;
-                const showChallengePanel = viewState === 'challenge' && currentQuestion;
-
-                return (
-                    <div className="w-full h-full flex flex-col items-center">
-                         {showChallengePanel && (
-                             <div className="w-full max-w-4xl mb-6">
+                 return (
+                    <div className="w-full flex-1 flex flex-col items-center">
+                         {viewState === 'challenge' && currentQuestion && (
+                             <div className="w-full max-w-4xl mb-4">
                                 <ChallengePanel question={currentQuestion} status={challengeStatus} onNext={handleNextChallenge} onTimeOut={handleChallengeTimeout} onCheckAnswer={handleChallengeCheck} lastCalculatedValue={lastCalculatedValue} score={score} timeLimit={DURATION_MAP[difficulty]} isSpeechEnabled={isSpeechEnabled} />
                             </div>
                         )}
-                        {showTrainingGuide && (
-                            <div className="w-full max-w-6xl mb-6">
+                        {viewState === 'training' && currentTrainingStep && (
+                            <div className="w-full max-w-6xl mb-4">
                                 <TrainingGuide currentStep={currentTrainingStep} onComplete={goBackToMenu} onContinue={advanceTrainingStep} />
                             </div>
                         )}
-                        <div className="w-full h-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                           <div className="lg:col-span-3">
-                                <ControlPanel
-                                    shapes={CLASS_9_SHAPES}
-                                    selectedShape={selectedShape}
-                                    onShapeSelect={handleShapeSelect}
-                                    dimensions={dimensions}
-                                    onDimensionChange={handleDimensionChange}
-                                    calculationType={calculationType}
-                                    onCalculationTypeChange={handleCalculationTypeChange}
-                                    onCalculate={handleCalculate}
-                                    isUnfolded={isUnfolded}
-                                    onToggleUnfold={() => setIsUnfolded(!isUnfolded)}
-                                    unit={unit}
-                                    renderMode={renderMode}
-                                    onRenderModeChange={setRenderMode}
-                                    isComparisonView={isComparisonView}
-                                    onToggleComparison={handleToggleComparison}
-                                    isTraining={viewState === 'training'}
-                                    trainingStep={currentTrainingStep}
-                                />
-                           </div>
-                           <div className="lg:col-span-6 h-[400px] lg:h-[700px] rounded-lg">
-                                { (selectedShape || isComparisonView) &&
-                                    <Canvas3D 
-                                        shape={selectedShape!} 
-                                        dimensions={dimensions} 
-                                        isUnfolded={isUnfolded} 
-                                        highlightedPartId={highlightedPart}
-                                        renderMode={renderMode}
-                                        comparisonData={isComparisonView ? { shape: 'cone', dimensions } : undefined}
-                                     />
-                                }
-                           </div>
-                           <div className="lg:col-span-3">
-                                {result && <SolutionPanel result={result} unit={unit} onHighlightPart={setHighlightedPart} isComparisonView={isComparisonView} comparisonResult={comparisonResult} />}
-                           </div>
-                        </div>
+                        {mainContent}
                     </div>
                 );
         }
@@ -377,7 +405,14 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
     };
 
     return (
-        <div className="geometry-theme min-h-screen flex flex-col font-sans w-full">
+        <div className="flex-1 flex flex-col font-sans geometry-theme" style={{
+            backgroundColor: 'var(--blueprint-bg)',
+            backgroundImage: `
+                linear-gradient(var(--blueprint-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--blueprint-grid) 1px, transparent 1px)
+            `,
+            backgroundSize: '20px 20px',
+        }}>
             <Header
                 onHelpClick={() => setShowHelp(true)}
                 currentUser={currentUser}
@@ -386,7 +421,7 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
                 modelTitle="Solid Shapes Explorer"
                 modelSubtitle={getSubtitle()}
             />
-            <main className="flex-grow flex items-center justify-center p-4 sm:p-6">
+            <main className="flex-1 flex items-center justify-center p-2 sm:p-4">
                 {renderContent()}
             </main>
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
