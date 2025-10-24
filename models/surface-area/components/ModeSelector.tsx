@@ -32,7 +32,7 @@ const ModeCard: React.FC<{
 
 export const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode }) => {
   return (
-    <div className="w-full flex-grow flex flex-col items-center p-4 pt-10 sm:pt-16">
+    <div className="flex-grow flex flex-col items-center justify-center p-4">
       <div className="text-center mb-10">
         <h2 className="text-4xl md:text-6xl font-black tracking-tight font-display" style={{ color: 'var(--blueprint-accent)'}}>Choose Your Mode</h2>
       </div>

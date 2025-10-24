@@ -466,7 +466,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
     };
 
     return (
-        <div className="h-full flex flex-col font-sans">
+        <div className="min-h-screen flex flex-col font-sans">
             <Header 
                 onHelpClick={() => setShowHelp(true)} 
                 currentUser={currentUser} 

@@ -377,7 +377,7 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
     };
 
     return (
-        <div className="geometry-theme h-full flex flex-col font-sans w-full">
+        <div className="geometry-theme min-h-screen flex flex-col font-sans w-full">
             <Header
                 onHelpClick={() => setShowHelp(true)}
                 currentUser={currentUser}
@@ -386,7 +386,7 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
                 modelTitle="Solid Shapes Explorer"
                 modelSubtitle={getSubtitle()}
             />
-            <main className="flex-grow flex p-4 sm:p-6">
+            <main className="flex-grow flex items-center justify-center p-4 sm:p-6">
                 {renderContent()}
             </main>
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
