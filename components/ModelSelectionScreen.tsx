@@ -43,15 +43,15 @@ const MODELS_CONFIG: Record<SchoolLevel, {
             shadow: 'shadow-indigo-500/40',
             border: 'border-indigo-800'
         },
-        { 
-            id: 'surface_area_10' as AppState, 
-            title: 'Combined Solids Workshop (X)', 
-            description: 'Explore composite shapes, frustums, and volume conversions in 3D.',
-            imageUrl: '/assets/surface_area_10_thumbnail.png',
-            color: 'from-rose-400 to-rose-600',
-            shadow: 'shadow-rose-500/40',
-            border: 'border-rose-800'
-        }
+        // { 
+        //     id: 'surface_area_10' as AppState, 
+        //     title: 'Combined Solids Workshop (X)', 
+        //     description: 'Explore composite shapes, frustums, and volume conversions in 3D.',
+        //     imageUrl: '/assets/surface_area_10_thumbnail.png',
+        //     color: 'from-rose-400 to-rose-600',
+        //     shadow: 'shadow-rose-500/40',
+        //     border: 'border-rose-800'
+        // }
     ]
 };
 

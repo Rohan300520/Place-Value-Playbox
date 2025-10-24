@@ -29,6 +29,7 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
     const [result, setResult] = useState<CalculationResult>(null);
     const [showHelp, setShowHelp] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
+    const [highlightedPart, setHighlightedPart] = useState<string | null>(null);
 
     // --- Challenge State ---
     const [difficulty, setDifficulty] = useState<Difficulty>('easy');
@@ -55,12 +56,14 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
         setCalculationType('volume');
         setResult(null);
         setLastCalculatedValue(null);
+        setHighlightedPart(null);
     };
 
     const handleDimensionChange = (newDimensions: ShapeDimensions) => {
         setDimensions(newDimensions);
         setResult(null);
         setLastCalculatedValue(null);
+        setHighlightedPart(null);
         if(viewState === 'training') dimensionChangedRef.current = true;
     };
     
@@ -68,6 +71,7 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
         setCalculationType(type);
         setResult(null);
         setLastCalculatedValue(null);
+        setHighlightedPart(null);
     };
 
     const handleCalculate = () => {
@@ -88,6 +92,7 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
         setResult(null);
         setDimensions({});
         setLastCalculatedValue(null);
+        setHighlightedPart(null);
     }, []);
 
     const goBackToMenu = useCallback(() => {
@@ -258,6 +263,12 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
         const currentQuestion = questions[questionIndex];
         const unit = (viewState === 'challenge' && currentQuestion?.unit) ? currentQuestion.unit : 'units';
 
+        const isShapeSelectionPhase = !selectedShape && (
+            viewState === 'explore' ||
+            (viewState === 'training' && currentTrainingStep?.requiredAction === 'select_shape') ||
+            (viewState === 'challenge' && challengeStatus === 'playing')
+        );
+
         switch (viewState) {
             case 'welcome':
                 return <WelcomeScreen onStart={() => setViewState('mode_selection')} title="Combined Solids Workshop" grade="X" />;
@@ -269,7 +280,6 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
             case 'training':
             case 'explore':
             case 'challenge':
-                const isShapeSelectionPhase = !selectedShape && (viewState === 'explore' || viewState === 'training' || (viewState === 'challenge' && challengeStatus === 'playing'));
                 const showTrainingGuide = viewState === 'training' && currentTrainingStep;
                 const showChallengePanel = viewState === 'challenge' && currentQuestion;
 
@@ -290,16 +300,21 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
                                 />
                             </div>
                         )}
+                        {showTrainingGuide && (
+                            <div className="w-full max-w-6xl mb-6">
+                                <TrainingGuide currentStep={currentTrainingStep} title={currentTrainingStep?.title || null} onComplete={goBackToMenu} onContinue={() => setTrainingStep(t => t + 1)} />
+                            </div>
+                        )}
                         {isShapeSelectionPhase ? (
                             <ShapeSelector onSelect={handleShapeSelect} shapes={CLASS_10_SHAPES} spotlightOn={currentTrainingStep?.spotlightOn} />
-                        ) : (
+                        ) : selectedShape ? (
                             <div className="w-full h-full flex flex-col lg:flex-row gap-8 items-start">
                                 <div className="w-full lg:w-3/5 h-[400px] lg:h-[600px] rounded-lg">
-                                   <Canvas3D shape={selectedShape!} dimensions={dimensions} isUnfolded={false} />
+                                   <Canvas3D shape={selectedShape} dimensions={dimensions} isUnfolded={false} highlightedPartId={highlightedPart} />
                                 </div>
                                 <div className="w-full lg:w-2/5">
                                     <InputPanel
-                                        shape={selectedShape!}
+                                        shape={selectedShape}
                                         dimensions={dimensions}
                                         onDimensionChange={handleDimensionChange}
                                         calculationType={calculationType}
@@ -311,11 +326,12 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
                                         spotlightOn={currentTrainingStep?.spotlightOn}
                                         unit={unit}
                                     />
-                                    {result && <SolutionPanel result={result} unit={unit} />}
+                                    {result && <SolutionPanel result={result} unit={unit} onHighlightPart={setHighlightedPart} />}
                                 </div>
                             </div>
+                        ) : (
+                            <div className="flex-grow w-full"></div>
                         )}
-                        {showTrainingGuide && <TrainingGuide currentStep={currentTrainingStep} onComplete={goBackToMenu} onContinue={() => setTrainingStep(t => t + 1)} />}
                     </div>
                 );
         }

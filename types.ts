@@ -139,14 +139,26 @@ export type ShapeType =
   | 'cone_on_hemisphere' | 'cylinder_with_hemispheres' | 'cone_on_cylinder' | 'frustum';
   
 export type CalculationType = 'volume' | 'lsa' | 'tsa';
+export type RenderMode = 'solid' | 'wireframe';
 
 export type ShapeDimensions = {
   [key: string]: number;
 };
 
+export type FormulaPart = {
+  partName: string;
+  formula: string;
+  meshId: string | string[];
+};
+
 export type CalculationResult = {
   value: number;
   formula: string;
+  derivation?: {
+    title: string;
+    parts: FormulaPart[];
+    finalFormula?: string;
+  };
   steps: {
     description: string;
     calculation: string;
@@ -182,19 +194,22 @@ export type TrainingSpotlight =
   | 'unfold_button' 
   | `shape-${ShapeType}` 
   | `dimension-${string}` 
-  | `calc_type-${CalculationType}`;
+  | `calc_type-${CalculationType}`
+  | 'comparison_button';
+
+export type TrainingAnimation = 'cylinder_unfold' | 'cone_volume_compare';
 
 export interface SurfaceAreaTrainingStep {
   step: number;
   type: 'intro' | 'action' | 'feedback' | 'complete';
   text: string;
+  title?: string;
   duration?: number;
   spotlightOn?: TrainingSpotlight;
-  requiredAction?: 'select_shape' | 'change_dimension' | 'select_calc_type' | 'calculate' | 'unfold' | 'continue';
+  requiredAction?: 'select_shape' | 'change_dimension' | 'select_calc_type' | 'calculate' | 'unfold' | 'continue' | 'return_to_selector' | 'toggle_comparison';
   requiredValue?: ShapeType | CalculationType;
-  shapeToLoad?: ShapeType;
-  position?: 'center' | 'top-left' | 'input-panel' | 'shape-selector';
-  arrow?: 'up' | 'down' | 'left' | 'right' | 'none';
+  // Visual training properties
+  highlightPartId?: string | string[] | null;
 }
 
 

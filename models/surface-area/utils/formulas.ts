@@ -19,6 +19,7 @@ type ShapeData = {
     dimensions: Dimension[];
     defaultDimensions: ShapeDimensions;
     lsaName: 'LSA' | 'CSA';
+    lsaPartIds?: string | string[];
     formulas: {
         [key in CalculationType]?: (dims: ShapeDimensions) => CalculationResult;
     };
@@ -32,6 +33,7 @@ export const SHAPE_DATA: Record<ShapeType, ShapeData> = {
         name: 'Cuboid',
         iconUrl: '/assets/shapes/cuboid.svg',
         lsaName: 'LSA',
+        lsaPartIds: ['front', 'back', 'left', 'right'],
         dimensions: [
             { key: 'l', name: 'Length (l)', min: 1, max: 10, step: 0.1 },
             { key: 'b', name: 'Breadth (b)', min: 1, max: 10, step: 0.1 },
@@ -60,6 +62,7 @@ export const SHAPE_DATA: Record<ShapeType, ShapeData> = {
         name: 'Cube',
         iconUrl: '/assets/shapes/cube.svg',
         lsaName: 'LSA',
+        lsaPartIds: ['front', 'back', 'left', 'right'],
         dimensions: [
             { key: 'a', name: 'Side (a)', min: 1, max: 10, step: 0.1 },
         ],
@@ -86,6 +89,7 @@ export const SHAPE_DATA: Record<ShapeType, ShapeData> = {
         name: 'Cylinder',
         iconUrl: '/assets/shapes/cylinder.svg',
         lsaName: 'CSA',
+        lsaPartIds: 'body_rect',
         dimensions: [
             { key: 'r', name: 'Radius (r)', min: 1, max: 5, step: 0.1 },
             { key: 'h', name: 'Height (h)', min: 1, max: 10, step: 0.1 },
@@ -113,6 +117,7 @@ export const SHAPE_DATA: Record<ShapeType, ShapeData> = {
         name: 'Cone',
         iconUrl: '/assets/shapes/cone.svg',
         lsaName: 'CSA',
+        lsaPartIds: 'body_main',
         dimensions: [
             { key: 'r', name: 'Radius (r)', min: 1, max: 5, step: 0.1 },
             { key: 'h', name: 'Height (h)', min: 1, max: 10, step: 0.1 },
@@ -173,6 +178,7 @@ export const SHAPE_DATA: Record<ShapeType, ShapeData> = {
         name: 'Hemisphere',
         iconUrl: '/assets/shapes/hemisphere.svg',
         lsaName: 'CSA',
+        lsaPartIds: 'curved_surface',
         dimensions: [
             { key: 'r', name: 'Radius (r)', min: 1, max: 5, step: 0.1 },
         ],

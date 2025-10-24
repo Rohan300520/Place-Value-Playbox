@@ -1,19 +1,18 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Header } from '../../components/Header';
-import type { UserInfo, ShapeType, ShapeDimensions, CalculationType, CalculationResult, SurfaceAreaState, Difficulty, SurfaceAreaChallengeQuestion, SurfaceAreaTrainingStep } from '../../types';
+import type { UserInfo, ShapeType, ShapeDimensions, CalculationType, CalculationResult, SurfaceAreaState, Difficulty, SurfaceAreaChallengeQuestion, SurfaceAreaTrainingStep, RenderMode } from '../../types';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { ModeSelector } from './components/ModeSelector';
-import { ShapeSelector } from './components/ShapeSelector';
 import { Canvas3D } from './components/Canvas3D';
-import { InputPanel } from './components/InputPanel';
 import { SolutionPanel } from './components/SolutionPanel';
 import { DifficultySelector } from '../../components/DifficultySelector';
 import { ChallengePanel } from './components/ChallengePanel';
 import { TrainingGuide } from './components/TrainingGuide';
 import { HelpModal } from './components/HelpModal';
+import { ControlPanel } from './components/ControlPanel';
 import { SHAPE_DATA, CLASS_9_SHAPES } from './utils/formulas';
 import { challenges } from './utils/challenges';
-import { trainingPlan9 } from './utils/training';
+import { trainingPlans9 } from './utils/training';
 import { logEvent, syncAnalyticsData } from '../../utils/analytics';
 import { Confetti } from '../../components/Confetti';
 import { useAudio } from '../../contexts/AudioContext';
@@ -27,9 +26,13 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
     const [dimensions, setDimensions] = useState<ShapeDimensions>({});
     const [calculationType, setCalculationType] = useState<CalculationType>('volume');
     const [result, setResult] = useState<CalculationResult>(null);
+    const [comparisonResult, setComparisonResult] = useState<CalculationResult>(null);
     const [isUnfolded, setIsUnfolded] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
+    const [highlightedPart, setHighlightedPart] = useState<string | string[] | null>(null);
+    const [renderMode, setRenderMode] = useState<RenderMode>('solid');
+    const [isComparisonView, setIsComparisonView] = useState(false);
 
     // --- Challenge State ---
     const [difficulty, setDifficulty] = useState<Difficulty>('easy');
@@ -42,34 +45,62 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
 
     // --- Training State ---
     const [trainingStep, setTrainingStep] = useState(0);
-    const currentTrainingStep = useMemo(() => trainingPlan9.find(s => s.step === trainingStep) || null, [trainingStep]);
+    const [currentTrainingPlan, setCurrentTrainingPlan] = useState<SurfaceAreaTrainingStep[] | null>(null);
+    const currentTrainingStep = useMemo(() => currentTrainingPlan?.[trainingStep] || null, [currentTrainingPlan, trainingStep]);
     const dimensionChangedRef = useRef(false);
 
     // --- Audio State ---
     const { isSpeechEnabled } = useAudio();
-    const spokenStepsRef = useRef(new Set<number>());
+    const spokenStepsRef = useRef(new Set<string>());
 
+    const resetCalculator = useCallback((isFullReset: boolean = true) => {
+        setResult(null);
+        setComparisonResult(null);
+        setIsUnfolded(false);
+        setLastCalculatedValue(null);
+        setHighlightedPart(null);
+        setIsComparisonView(false);
+        if (isFullReset) {
+            setSelectedShape(null);
+            setDimensions({});
+        }
+        if (viewState === 'training') {
+            setCurrentTrainingPlan(null);
+            setTrainingStep(0);
+        }
+    }, [viewState]);
+    
     const handleShapeSelect = (shape: ShapeType) => {
         const shapeInfo = SHAPE_DATA[shape];
         setSelectedShape(shape);
         setDimensions(shapeInfo.defaultDimensions);
         setCalculationType('volume');
-        setResult(null);
-        setIsUnfolded(false);
-        setLastCalculatedValue(null);
+        resetCalculator(false);
+
+        if (viewState === 'training') {
+            const plan = trainingPlans9[shape];
+            if (plan) {
+                setCurrentTrainingPlan(plan);
+                setTrainingStep(0);
+            }
+        }
     };
 
     const handleDimensionChange = (newDimensions: ShapeDimensions) => {
         setDimensions(newDimensions);
         setResult(null);
+        setComparisonResult(null);
         setLastCalculatedValue(null);
+        setHighlightedPart(null);
         if(viewState === 'training') dimensionChangedRef.current = true;
     };
     
     const handleCalculationTypeChange = (type: CalculationType) => {
         setCalculationType(type);
         setResult(null);
+        setComparisonResult(null);
         setLastCalculatedValue(null);
+        setHighlightedPart(null);
     };
 
     const handleCalculate = () => {
@@ -79,29 +110,49 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
         if (calculationFn) {
             const calcResult = calculationFn(dimensions);
             setResult(calcResult);
+
+            if (calculationType === 'lsa') {
+                setHighlightedPart(shapeInfo.lsaPartIds || null);
+            } else {
+                setHighlightedPart(null);
+            }
+
             if (viewState === 'challenge') {
                 setLastCalculatedValue(calcResult.value);
             }
         }
     };
-    
-    const resetCalculator = useCallback(() => {
-        setSelectedShape(null);
-        setResult(null);
-        setDimensions({});
-        setIsUnfolded(false);
-        setLastCalculatedValue(null);
-    }, []);
+
+    const handleToggleComparison = () => {
+        const turningOn = !isComparisonView;
+        setIsComparisonView(turningOn);
+
+        if (turningOn) {
+            const dims = { r: 2.5, h: 5 };
+            setSelectedShape('cylinder');
+            setDimensions(dims);
+            setCalculationType('volume');
+            setIsUnfolded(false);
+            setRenderMode('solid');
+            
+            const cylResult = SHAPE_DATA.cylinder.formulas.volume!(dims);
+            const coneResult = SHAPE_DATA.cone.formulas.volume!(dims);
+            setResult(cylResult);
+            setComparisonResult(coneResult);
+        } else {
+            resetCalculator(true);
+        }
+    };
 
     const goBackToMenu = useCallback(() => {
-        resetCalculator();
+        resetCalculator(true);
         if (viewState === 'explore' || viewState === 'training' || viewState === 'challenge') {
             setViewState('mode_selection');
         }
     }, [viewState, resetCalculator]);
 
     const handleModeSelect = async (mode: 'training' | 'explore' | 'challenge') => {
-        resetCalculator();
+        resetCalculator(true);
         await logEvent('mode_start', currentUser, { model: 'surface_area_9', mode });
         syncAnalyticsData();
         if (mode === 'challenge') {
@@ -123,7 +174,7 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
         setQuestionIndex(0);
         setScore(0);
         setChallengeStatus('playing');
-        resetCalculator();
+        resetCalculator(true);
         setViewState('challenge');
         challengeStartTimeRef.current = Date.now();
     };
@@ -164,7 +215,6 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
     const handleChallengeTimeout = async () => {
         const question = questions[questionIndex];
         if (!question) return;
-
         await logEvent('challenge_attempt', currentUser, {
             model: 'surface_area_9',
             questionId: question.id,
@@ -183,7 +233,7 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
         if (questionIndex < questions.length - 1) {
             setQuestionIndex(i => i + 1);
             setChallengeStatus('playing');
-            resetCalculator();
+            resetCalculator(true);
             challengeStartTimeRef.current = Date.now();
         } else {
             goBackToMenu(); // End of challenges
@@ -191,77 +241,63 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
     };
 
     // --- Training Logic ---
+    const advanceTrainingStep = useCallback(() => {
+        dimensionChangedRef.current = false;
+        setHighlightedPart(null);
+        setTrainingStep(t => t + 1);
+    }, []);
+    
     useEffect(() => {
         const step = currentTrainingStep;
-        if (viewState !== 'training' || !step) {
-            cancelSpeech();
-            spokenStepsRef.current.clear();
+        if (viewState !== 'training' || !step || !selectedShape) {
+            if (viewState !== 'training') {
+                cancelSpeech();
+                spokenStepsRef.current.clear();
+            }
             return;
         }
-
         let isComponentMounted = true;
+        const executeStep = async () => {
+            setHighlightedPart(step.highlightPartId ?? null);
+            const stepKey = `${selectedShape}-${step.step}`;
 
-        const advance = () => {
-            if (!isComponentMounted) return;
-            dimensionChangedRef.current = false;
-            setTrainingStep(t => t + 1);
-        };
-
-        // --- Handle auto-advancing steps ('intro' and 'feedback') ---
-        if (step.type === 'intro' || step.type === 'feedback') {
-            const performAdvance = async () => {
-                if (isSpeechEnabled) {
-                    if (!spokenStepsRef.current.has(step.step)) {
-                        cancelSpeech();
-                        spokenStepsRef.current.add(step.step);
-                        await speak(step.text, 'en-US');
-                        if (isComponentMounted) await new Promise(resolve => setTimeout(resolve, 500)); // Pause after speech
-                    } else {
-                        if (isComponentMounted) await new Promise(resolve => setTimeout(resolve, step.duration));
+            if (isSpeechEnabled && !spokenStepsRef.current.has(stepKey)) {
+                cancelSpeech();
+                await speak(step.text, 'en-US');
+                spokenStepsRef.current.add(stepKey);
+            }
+            switch (step.type) {
+                case 'intro': case 'feedback':
+                    if (!isSpeechEnabled) await new Promise(r => setTimeout(r, step.duration));
+                    if (isComponentMounted) advanceTrainingStep();
+                    break;
+                case 'action':
+                    let actionCompleted = false;
+                    if (step.requiredAction === 'select_shape' && selectedShape === step.requiredValue) actionCompleted = true;
+                    else if (step.requiredAction === 'change_dimension' && dimensionChangedRef.current) actionCompleted = true;
+                    else if (step.requiredAction === 'select_calc_type' && calculationType === step.requiredValue) actionCompleted = true;
+                    else if (step.requiredAction === 'calculate' && result) actionCompleted = true;
+                    else if (step.requiredAction === 'unfold' && isUnfolded) actionCompleted = true;
+                    else if (step.requiredAction === 'toggle_comparison' && isComparisonView) actionCompleted = true;
+                    else if (step.requiredAction === 'return_to_selector') {
+                        resetCalculator(true);
+                        advanceTrainingStep();
+                        return;
                     }
-                } else {
-                    if (isComponentMounted) await new Promise(resolve => setTimeout(resolve, step.duration));
-                }
-                advance();
-            };
-            performAdvance();
-        
-        // --- Handle action-based steps ---
-        } else if (step.type === 'action') {
-            if (isSpeechEnabled && !spokenStepsRef.current.has(step.step)) {
-                cancelSpeech();
-                speak(step.text, 'en-US');
-                spokenStepsRef.current.add(step.step);
+                    if (actionCompleted) advanceTrainingStep();
+                    break;
+                case 'complete': break;
             }
-
-            let actionCompleted = false;
-            if (step.requiredAction === 'select_shape' && selectedShape === step.requiredValue) actionCompleted = true;
-            else if (step.requiredAction === 'change_dimension' && dimensionChangedRef.current) actionCompleted = true;
-            else if (step.requiredAction === 'select_calc_type' && calculationType === step.requiredValue) actionCompleted = true;
-            else if (step.requiredAction === 'calculate' && result) actionCompleted = true;
-            else if (step.requiredAction === 'unfold' && isUnfolded) actionCompleted = true;
-            
-            if(actionCompleted) {
-                advance();
-            }
-        } else if (step.type === 'complete') {
-             if (isSpeechEnabled && !spokenStepsRef.current.has(step.step)) {
-                cancelSpeech();
-                speak(step.text, 'en-US');
-                spokenStepsRef.current.add(step.step);
-            }
-        }
-        
-        return () => {
-            isComponentMounted = false;
         };
-    }, [viewState, trainingStep, currentTrainingStep, selectedShape, calculationType, result, isUnfolded, isSpeechEnabled]);
+        executeStep();
+        return () => { isComponentMounted = false; };
+    }, [viewState, trainingStep, currentTrainingStep, selectedShape, calculationType, result, isUnfolded, isSpeechEnabled, advanceTrainingStep, resetCalculator, dimensions, isComparisonView]);
 
 
     const renderContent = () => {
         const currentQuestion = questions[questionIndex];
         const unit = (viewState === 'challenge' && currentQuestion?.unit) ? currentQuestion.unit : 'units';
-
+        
         switch (viewState) {
             case 'welcome':
                 return <WelcomeScreen onStart={() => setViewState('mode_selection')} title="Solid Shapes Explorer" grade="IX" />;
@@ -273,52 +309,59 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
             case 'training':
             case 'explore':
             case 'challenge':
-                const isShapeSelectionPhase = !selectedShape && (viewState === 'explore' || viewState === 'training' || (viewState === 'challenge' && challengeStatus === 'playing'));
                 const showTrainingGuide = viewState === 'training' && currentTrainingStep;
                 const showChallengePanel = viewState === 'challenge' && currentQuestion;
 
                 return (
                     <div className="w-full h-full flex flex-col items-center">
-                        {showChallengePanel && (
+                         {showChallengePanel && (
                              <div className="w-full max-w-4xl mb-6">
-                                <ChallengePanel 
-                                    question={currentQuestion}
-                                    status={challengeStatus}
-                                    onNext={handleNextChallenge}
-                                    onTimeOut={handleChallengeTimeout}
-                                    onCheckAnswer={handleChallengeCheck}
-                                    lastCalculatedValue={lastCalculatedValue}
-                                    score={score}
-                                    timeLimit={DURATION_MAP[difficulty]}
-                                    isSpeechEnabled={isSpeechEnabled}
+                                <ChallengePanel question={currentQuestion} status={challengeStatus} onNext={handleNextChallenge} onTimeOut={handleChallengeTimeout} onCheckAnswer={handleChallengeCheck} lastCalculatedValue={lastCalculatedValue} score={score} timeLimit={DURATION_MAP[difficulty]} isSpeechEnabled={isSpeechEnabled} />
+                            </div>
+                        )}
+                        {showTrainingGuide && (
+                            <div className="w-full max-w-6xl mb-6">
+                                <TrainingGuide currentStep={currentTrainingStep} onComplete={goBackToMenu} onContinue={advanceTrainingStep} />
+                            </div>
+                        )}
+                        <div className="w-full h-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                           <div className="lg:col-span-3">
+                                <ControlPanel
+                                    shapes={CLASS_9_SHAPES}
+                                    selectedShape={selectedShape}
+                                    onShapeSelect={handleShapeSelect}
+                                    dimensions={dimensions}
+                                    onDimensionChange={handleDimensionChange}
+                                    calculationType={calculationType}
+                                    onCalculationTypeChange={handleCalculationTypeChange}
+                                    onCalculate={handleCalculate}
+                                    isUnfolded={isUnfolded}
+                                    onToggleUnfold={() => setIsUnfolded(!isUnfolded)}
+                                    unit={unit}
+                                    renderMode={renderMode}
+                                    onRenderModeChange={setRenderMode}
+                                    isComparisonView={isComparisonView}
+                                    onToggleComparison={handleToggleComparison}
+                                    isTraining={viewState === 'training'}
+                                    trainingStep={currentTrainingStep}
                                 />
-                            </div>
-                        )}
-                        {isShapeSelectionPhase ? (
-                            <ShapeSelector onSelect={handleShapeSelect} shapes={CLASS_9_SHAPES} spotlightOn={currentTrainingStep?.spotlightOn} />
-                        ) : (
-                            <div className="w-full h-full flex flex-col lg:flex-row gap-8 items-start">
-                                <div className="w-full lg:w-3/5 h-[400px] lg:h-[600px] rounded-lg">
-                                   <Canvas3D shape={selectedShape!} dimensions={dimensions} isUnfolded={isUnfolded} />
-                                </div>
-                                <div className="w-full lg:w-2/5">
-                                    <InputPanel
-                                        shape={selectedShape!}
-                                        dimensions={dimensions}
-                                        onDimensionChange={handleDimensionChange}
-                                        calculationType={calculationType}
-                                        onCalculationTypeChange={handleCalculationTypeChange}
-                                        onCalculate={handleCalculate}
-                                        isUnfolded={isUnfolded}
-                                        onToggleUnfold={() => setIsUnfolded(!isUnfolded)}
-                                        spotlightOn={currentTrainingStep?.spotlightOn}
-                                        unit={unit}
-                                    />
-                                    {result && <SolutionPanel result={result} unit={unit} />}
-                                </div>
-                            </div>
-                        )}
-                        {showTrainingGuide && <TrainingGuide currentStep={currentTrainingStep} onComplete={goBackToMenu} onContinue={() => setTrainingStep(t => t + 1)} />}
+                           </div>
+                           <div className="lg:col-span-6 h-[400px] lg:h-[700px] rounded-lg">
+                                { (selectedShape || isComparisonView) &&
+                                    <Canvas3D 
+                                        shape={selectedShape!} 
+                                        dimensions={dimensions} 
+                                        isUnfolded={isUnfolded} 
+                                        highlightedPartId={highlightedPart}
+                                        renderMode={renderMode}
+                                        comparisonData={isComparisonView ? { shape: 'cone', dimensions } : undefined}
+                                     />
+                                }
+                           </div>
+                           <div className="lg:col-span-3">
+                                {result && <SolutionPanel result={result} unit={unit} onHighlightPart={setHighlightedPart} isComparisonView={isComparisonView} comparisonResult={comparisonResult} />}
+                           </div>
+                        </div>
                     </div>
                 );
         }
@@ -327,7 +370,7 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
     const getSubtitle = () => {
         switch(viewState) {
             case 'explore': return 'Explore Mode';
-            case 'training': return 'Training Mode';
+            case 'training': return currentTrainingPlan ? SHAPE_DATA[selectedShape!]?.name : 'Training Mode';
             case 'challenge': return 'Challenge Mode';
             default: return 'Class IX';
         }
@@ -343,7 +386,7 @@ export const SurfaceArea9App: React.FC<{ onExit: () => void; currentUser: UserIn
                 modelTitle="Solid Shapes Explorer"
                 modelSubtitle={getSubtitle()}
             />
-            <main className="flex-grow flex items-center justify-center p-4 sm:p-8">
+            <main className="flex-grow flex items-center justify-center p-4 sm:p-6">
                 {renderContent()}
             </main>
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}

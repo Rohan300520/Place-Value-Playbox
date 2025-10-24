@@ -7,7 +7,7 @@ import { ModelSelectionScreen } from './components/ModelSelectionScreen';
 import { PlaceValuePlaybox } from './models/place-value-playbox/PlaceValuePlaybox';
 import { FractionsApp } from './models/fractions/FractionsApp';
 import { SurfaceArea9App } from './models/surface-area/SurfaceArea9App';
-import { SurfaceArea10App } from './models/surface-area/SurfaceArea10App';
+// import { SurfaceArea10App } from './models/surface-area/SurfaceArea10App';
 import type { UserInfo, AppState } from './types';
 import { initAnalytics, logEvent, syncAnalyticsData } from './utils/analytics';
 
@@ -130,8 +130,8 @@ const App: React.FC = () => {
         return <FractionsApp onExit={() => setAppState('model_selection')} currentUser={currentUser} />;
       case 'surface_area_9':
         return <SurfaceArea9App onExit={() => setAppState('model_selection')} currentUser={currentUser} />;
-      case 'surface_area_10':
-        return <SurfaceArea10App onExit={() => setAppState('model_selection')} currentUser={currentUser} />;
+      // case 'surface_area_10':
+      //   return <SurfaceArea10App onExit={() => setAppState('model_selection')} currentUser={currentUser} />;
       case 'model_selection':
       default:
         return <ModelSelectionScreen onSelectModel={handleSelectModel} currentUser={currentUser} />;
