@@ -492,7 +492,7 @@ export const PlaceValuePlaybox: React.FC<{ onExit: () => void, currentUser: User
   };
 
   return (
-    <div className="min-h-screen flex flex-col font-sans">
+    <div className="h-full flex flex-col font-sans">
         <Header 
             onHelpClick={() => setShowHelpModal(true)}
             currentUser={currentUser}

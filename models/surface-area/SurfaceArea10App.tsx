@@ -347,7 +347,7 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
     };
 
     return (
-        <div className="geometry-theme min-h-screen flex flex-col font-sans w-full">
+        <div className="geometry-theme h-full flex flex-col font-sans w-full">
             <Header
                 onHelpClick={() => setShowHelp(true)}
                 currentUser={currentUser}
