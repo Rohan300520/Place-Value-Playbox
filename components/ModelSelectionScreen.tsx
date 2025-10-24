@@ -132,7 +132,7 @@ export const ModelSelectionScreen: React.FC<{ onSelectModel: (model: AppState) =
     const modelsToDisplay = MODELS_CONFIG[activeLevel];
 
     return (
-        <div className="w-full h-full flex flex-col lg:flex-row">
+        <div className="w-full flex-1 flex flex-col lg:flex-row">
             <Sidebar
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
