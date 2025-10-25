@@ -46,7 +46,7 @@ export const TrainingGuide: React.FC<TrainingGuideProps> = ({ currentStep, onCom
     );
     
     return (
-        <div className="w-full border-2 p-4 sm:p-6 rounded-2xl shadow-xl animate-pop-in" style={{ 
+        <div className="w-full border-2 p-4 sm:p-6 rounded-2xl shadow-xl animate-pop-in mb-4" style={{ 
             backgroundColor: 'rgba(30, 41, 59, 0.95)',
             borderColor: 'rgba(56, 189, 248, 0.5)',
             color: '#f1f5f9'

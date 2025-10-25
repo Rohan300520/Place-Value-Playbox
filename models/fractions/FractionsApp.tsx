@@ -142,6 +142,8 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         
         const executeStep = async () => {
             if (isSpeechEnabled && !spokenStepsRef.current.has(step.step)) {
+                // To improve reliability, cancel any lingering speech from a previous, fast-advancing step.
+                cancelSpeech();
                 spokenStepsRef.current.add(step.step);
                 await speak(step.text, 'en-US');
             }
