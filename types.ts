@@ -144,6 +144,7 @@ export interface FractionTrainingStep {
   // Animation Triggers
   animation?: 'merge' | 'split' | 'remove';
   animationTarget?: Fraction;
+  animationSplitResult?: Fraction; // The fraction of each piece after splitting.
   // For ordering module
   orderingBoxes?: Fraction[];
 }

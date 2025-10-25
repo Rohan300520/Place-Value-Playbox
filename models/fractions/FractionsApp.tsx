@@ -149,8 +149,10 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
             }
             if (!isMounted) return;
 
-            if (step.animation === 'split' && step.animationTarget) {
-                const targetFraction = step.animationTarget as Fraction;
+            if (step.animation === 'split' && step.animationTarget && step.animationSplitResult) {
+                const targetFraction = step.animationTarget;
+                const splitResultFraction = step.animationSplitResult;
+                
                 setWorkspacePieces(prev => {
                     const targetIndex = prev.findIndex(p => fractionsAreEqual(p.fraction, targetFraction) && p.state === 'idle');
                     if (targetIndex === -1) return prev;
@@ -160,10 +162,15 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                     
                     newWorkspace[targetIndex] = { ...targetPiece, state: 'removing' };
                     
-                    const newPieces: WorkspacePiece[] = [
-                        { ...targetPiece, id: `${targetPiece.id}-s1`, fraction: { numerator: 1, denominator: 6 }, state: 'splitting' },
-                        { ...targetPiece, id: `${targetPiece.id}-s2`, fraction: { numerator: 1, denominator: 6 }, state: 'splitting' }
-                    ];
+                    const numPieces = (targetFraction.numerator * splitResultFraction.denominator) / targetFraction.denominator;
+
+                    const newPieces: WorkspacePiece[] = Array.from({ length: numPieces }).map((_, i) => ({
+                        ...targetPiece,
+                        id: `${targetPiece.id}-s${i+1}`,
+                        fraction: splitResultFraction,
+                        state: 'splitting'
+                    }));
+
                     newWorkspace.splice(targetIndex, 0, ...newPieces);
                     return newWorkspace;
                 });
