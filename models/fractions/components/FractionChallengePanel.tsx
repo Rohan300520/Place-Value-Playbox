@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { FractionChallengeQuestion } from '../../../types';
-import { FractionBlock } from './FractionBlock';
+// Fix: The component exported from './FractionBlock' is named `FractionPiece`. Aliasing it to `FractionBlock` to match its usage in this file.
+import { FractionPiece as FractionBlock } from './FractionBlock';
 
 const Timer: React.FC<{ onTimeOut: () => void, status: string, duration: number }> = ({ onTimeOut, status, duration }) => {
     const [timeLeft, setTimeLeft] = useState(duration);

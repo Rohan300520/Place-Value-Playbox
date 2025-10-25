@@ -18,11 +18,11 @@ const FractionDisplay: React.FC<{ fraction: Fraction, highlight?: boolean, color
     </div>
 );
 
-export const CalculationStepsPanel: React.FC<{ equation: EquationState }> = ({ equation }) => {
+export const CalculationStepsPanel: React.FC<{ equation: EquationState, isVisible: boolean }> = ({ equation, isVisible }) => {
     const { term1, term2, operator, result, unsimplifiedResult, isSolved } = equation;
 
-    if (!isSolved || !term1 || !term2 || !operator || !result || !unsimplifiedResult) {
-        return <div className="w-full min-h-[10rem] mt-4"></div>; // Return a placeholder to prevent layout shift
+    if (!isVisible || !isSolved || !term1 || !term2 || !operator || !result || !unsimplifiedResult) {
+        return null;
     }
 
     const needsConversion = term1.denominator !== term2.denominator;

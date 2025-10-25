@@ -79,6 +79,18 @@ export interface Fraction {
   denominator: number;
 }
 
+export interface WorkspacePiece {
+  id: string;
+  fraction: Fraction;
+  position: { x: number; y: number };
+  state?: 'idle' | 'splitting' | 'merging' | 'removing';
+  // For splitting animation
+  splitInto?: Fraction;
+  // For merging animation
+  mergeTargetId?: string;
+}
+
+
 export type FractionOperator = '+' | '-';
 
 export type EquationState = {
@@ -106,32 +118,36 @@ export interface FractionChallengeQuestion {
   term1: Fraction;
   operator: FractionOperator;
   term2: Fraction;
-  type: 'add' | 'subtract';
-  answer: Fraction;
+  type: 'add' | 'subtract' | 'compare' | 'order';
+  answer: Fraction | Fraction[];
 }
 
 export type TrainingAction = 
-  | 'select_term1' 
-  | 'select_operator' 
-  | 'select_term2' 
-  | 'solve' 
-  | 'set_denominator'
-  | 'select_pieces'
-  | 'select_point'
-  | 'continue';
-
+  | 'drag_piece'
+  | 'click_bar'
+  | 'arrange_pieces'
+  | 'continue'
+  | 'solve';
+  
 export interface FractionTrainingStep {
+  module: number;
   step: number;
   type: 'intro' | 'action' | 'feedback' | 'complete';
-  ui?: 'concept' | 'number_line' | 'operations';
   text: string;
-  requiredAction?: TrainingAction;
-  requiredValue?: Fraction | FractionOperator | number;
-  spotlightOn?: Fraction | FractionOperator | 'solve' | `denominator-${number}` | 'pieces' | 'continue_button' | 'number_line_ticks' | `number_line_point-${string}`;
+  goal?: string;
   duration?: number;
-  clearBoardAfter?: boolean;
-  count?: number;
+  requiredAction?: TrainingAction;
+  requiredValue?: Fraction | Fraction[]; // Can be a single fraction to drag, or an array for ordering
+  requiredCount?: number;
+  spotlightOn?: string; // e.g., 'chart_row-4', 'workspace_piece-id', 'whole_bar'
+  clearWorkspaceAfter?: boolean;
+  // Animation Triggers
+  animation?: 'merge' | 'split' | 'remove';
+  animationTarget?: Fraction;
+  // For ordering module
+  orderingBoxes?: Fraction[];
 }
+
 
 // --- Surface Area & Volume Models ---
 export type ShapeType = 

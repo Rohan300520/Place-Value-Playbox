@@ -198,21 +198,25 @@
         .fractions-theme .control-button:active { border-bottom-width: 4px; }
         
         /* Fraction animations */
-        @keyframes subdivide-bar {
-            from { background-size: 100% 100%, 100% 100%; }
-            to { background-size: var(--subdivide-size, 100%) 100%, 100% 100%; }
+        @keyframes piece-split {
+            0% { transform: translateX(0); width: 100%; }
+            50% { transform: translateX(var(--split-translate)); width: var(--split-width); }
+            100% { transform: translateX(var(--split-translate)); width: var(--split-width); }
         }
-        .animate-subdivide {
-            animation: subdivide-bar 0.5s forwards ease-in-out;
-        }
+        .animate-piece-split { animation: piece-split 0.8s forwards ease-in-out; }
 
-        @keyframes merge-bar {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+        @keyframes piece-merge {
+            0% { transform: translateX(var(--merge-translate)); opacity: 1; }
+            100% { transform: translateX(0); opacity: 0; }
         }
-        .animate-merge {
-            animation: merge-bar 0.5s 0.5s forwards cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        .animate-piece-merge { animation: piece-merge 0.8s forwards ease-in-out; }
+        
+        @keyframes slide-out-left {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(-100%); opacity: 0; }
         }
+        .animate-slide-out-left { animation: slide-out-left 0.7s ease-in forwards; }
+
 
         /* --- GEOMETRY THEME (SURFACE AREA & VOLUMES) --- */
         .geometry-theme {

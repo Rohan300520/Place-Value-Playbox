@@ -1,74 +1,53 @@
 import React from 'react';
 import type { Fraction } from '../../../types';
 
-interface FractionBlockProps {
+interface FractionPieceProps {
   fraction: Fraction;
   onClick?: () => void;
-  isResult?: boolean;
-  subdivisionTarget?: Fraction;
+  onDragStart?: (e: React.DragEvent<HTMLDivElement>, fraction: Fraction) => void;
+  isDraggable?: boolean;
 }
 
-// Color palette for the wooden blocks based on denominator
 const BLOCK_COLORS = [
-    '#c27c3e', // 1
-    '#d68f53', // 2
-    '#e3a068', // 3
-    '#f2b17c', // 4
-    '#e69a8d', // 6
-    '#d9879a', // 8
-    '#c27b9f', // 12
-    '#a870a3', // 16
+    '#D97706', // 1 (amber-600)
+    '#EF4444', // 2 (red-500)
+    '#EC4899', // 3 (pink-500)
+    '#F59E0B', // 4 (amber-500)
+    '#8B5CF6', // 6 (violet-500)
+    '#10B981', // 8 (emerald-500)
+    '#3B82F6', // 12 (blue-500)
+    '#6366F1', // 16 (indigo-500)
 ];
 const DENOMINATORS = [1, 2, 3, 4, 6, 8, 12, 16];
 
-export const FractionBlock: React.FC<FractionBlockProps> = ({ fraction, onClick, isResult = false, subdivisionTarget }) => {
-    if (!fraction) return null;
+export const FractionPiece: React.FC<FractionPieceProps> = ({ fraction, onClick, onDragStart, isDraggable = false }) => {
+    if (!fraction || fraction.denominator === 0) return null;
     const { numerator, denominator } = fraction;
 
-    if (denominator === 0) return null;
-
     const colorIndex = DENOMINATORS.indexOf(denominator);
-    const color = colorIndex !== -1 ? BLOCK_COLORS[colorIndex] : '#a1a1aa'; // Default color
+    const color = colorIndex !== -1 ? BLOCK_COLORS[colorIndex] : '#a1a1aa';
 
-    // Calculate width based on the fraction's value
-    const value = numerator / denominator;
-    const width = isResult ? `auto` : `${Math.min(value * 100, 100)}%`;
-    const minWidth = isResult ? '10rem' : 'auto';
-    
-    const needsSubdivision = subdivisionTarget && subdivisionTarget.denominator !== fraction.denominator;
-    const conversionFactor = needsSubdivision ? subdivisionTarget.denominator / fraction.denominator : 1;
-    
-    const subdivideStyle = needsSubdivision ? {
-        '--subdivide-size': `${100 / conversionFactor}%`,
-    } as React.CSSProperties : {};
-    
     const backgroundStyle = {
-      background: `
-        repeating-linear-gradient(
-            to right,
-            transparent,
-            transparent calc(var(--subdivide-size, 100%) - 2px),
-            rgba(0,0,0,0.3) calc(var(--subdivide-size, 100%) - 2px),
-            rgba(0,0,0,0.3) var(--subdivide-size, 100%)
-        ),
-        linear-gradient(135deg, ${color}cc, ${color}ff)
-      `,
-      backgroundSize: `100% 100%, 100% 100%`,
-      boxShadow: `inset 0 -6px 0 ${color}aa, 2px 2px 5px rgba(0,0,0,0.2)`,
+        background: `linear-gradient(135deg, ${color}cc, ${color}ff)`,
+        boxShadow: `inset 0 -6px 0 ${color}aa, 2px 2px 5px rgba(0,0,0,0.2)`,
     };
     
-    const text = denominator === 1 && numerator === 1 ? 'WHOLE' : `${numerator}/${denominator}`;
+    const text = denominator === 1 ? '1' : `${numerator}/${denominator}`;
+
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+        if (onDragStart) {
+            onDragStart(e, fraction);
+        }
+    }
 
     return (
         <div
+            draggable={isDraggable}
+            onDragStart={handleDragStart}
             onClick={onClick}
-            className={`relative flex items-center justify-center h-12 rounded-lg text-white font-chalk text-2xl transition-transform duration-200 ${onClick ? 'cursor-pointer hover:scale-105' : ''} ${needsSubdivision ? 'animate-subdivide' : ''}`}
-            style={{ ...backgroundStyle, width, minWidth, ...subdivideStyle }}
+            className={`relative flex items-center justify-center h-12 rounded-lg text-white font-chalk text-2xl transition-transform duration-200 border-2 border-black/20 ${isDraggable ? 'cursor-grab active:cursor-grabbing hover:scale-105 hover:shadow-xl' : 'cursor-not-allowed'}`}
+            style={backgroundStyle}
         >
-            {/* Static subdivisions for visualization */}
-            {Array.from({ length: denominator }).map((_, i) => (
-                <div key={i} className="flex-1 h-full border-r-2 border-white/20 last:border-r-0"></div>
-            ))}
             <span className="absolute inset-0 flex items-center justify-center" style={{ textShadow: '2px 2px 3px rgba(0,0,0,0.5)' }}>
                 {text}
             </span>

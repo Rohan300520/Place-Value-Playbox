@@ -31,7 +31,7 @@ export const SHAPE_DATA: Record<ShapeType, ShapeData> = {
     // --- Class 9 Shapes ---
     cuboid: {
         name: 'Cuboid',
-        iconUrl: '/assets/shapes/cuboid.png',
+        iconUrl: '/assets/shapes/cuboid.svg',
         lsaName: 'LSA',
         lsaPartIds: ['front', 'back', 'left', 'right'],
         dimensions: [
@@ -60,7 +60,7 @@ export const SHAPE_DATA: Record<ShapeType, ShapeData> = {
     },
     cube: {
         name: 'Cube',
-        iconUrl: '/assets/shapes/cube.png',
+        iconUrl: '/assets/shapes/cube.svg',
         lsaName: 'LSA',
         lsaPartIds: ['front', 'back', 'left', 'right'],
         dimensions: [
@@ -87,7 +87,7 @@ export const SHAPE_DATA: Record<ShapeType, ShapeData> = {
     },
     cylinder: {
         name: 'Cylinder',
-        iconUrl: '/assets/shapes/cylinder.png',
+        iconUrl: '/assets/shapes/cylinder.svg',
         lsaName: 'CSA',
         lsaPartIds: 'body_rect',
         dimensions: [
@@ -115,7 +115,7 @@ export const SHAPE_DATA: Record<ShapeType, ShapeData> = {
     },
     cone: {
         name: 'Cone',
-        iconUrl: '/assets/shapes/cone.png',
+        iconUrl: '/assets/shapes/cone.svg',
         lsaName: 'CSA',
         lsaPartIds: 'body_main',
         dimensions: [
@@ -155,7 +155,7 @@ export const SHAPE_DATA: Record<ShapeType, ShapeData> = {
     },
     sphere: {
         name: 'Sphere',
-        iconUrl: '/assets/shapes/sphere.png',
+        iconUrl: '/assets/shapes/sphere.svg',
         lsaName: 'CSA',
         dimensions: [
             { key: 'r', name: 'Radius (r)', min: 1, max: 5, step: 0.1 },
@@ -176,7 +176,7 @@ export const SHAPE_DATA: Record<ShapeType, ShapeData> = {
     },
     hemisphere: {
         name: 'Hemisphere',
-        iconUrl: '/assets/shapes/hemisphere.png',
+        iconUrl: '/assets/shapes/hemisphere.svg',
         lsaName: 'CSA',
         lsaPartIds: 'curved_surface',
         dimensions: [
@@ -205,7 +205,7 @@ export const SHAPE_DATA: Record<ShapeType, ShapeData> = {
     // --- Class 10 Shapes ---
     cone_on_hemisphere: {
         name: 'Cone on Hemisphere',
-        iconUrl: '/assets/shapes/cone_on_hemisphere.png',
+        iconUrl: '/assets/shapes/cone_on_hemisphere.svg',
         lsaName: 'CSA',
         dimensions: [
             { key: 'r', name: 'Radius (r)', min: 1, max: 5, step: 0.1 },
@@ -245,7 +245,7 @@ export const SHAPE_DATA: Record<ShapeType, ShapeData> = {
     },
     cylinder_with_hemispheres: {
         name: 'Capsule',
-        iconUrl: '/assets/shapes/cylinder_with_hemispheres.png',
+        iconUrl: '/assets/shapes/cylinder_with_hemispheres.svg',
         lsaName: 'CSA',
         dimensions: [
             { key: 'r', name: 'Radius (r)', min: 1, max: 5, step: 0.1 },
@@ -283,7 +283,7 @@ export const SHAPE_DATA: Record<ShapeType, ShapeData> = {
     },
     cone_on_cylinder: {
         name: 'Tent',
-        iconUrl: '/assets/shapes/cone_on_cylinder.png',
+        iconUrl: '/assets/shapes/cone_on_cylinder.svg',
         lsaName: 'CSA',
         dimensions: [
             { key: 'r', name: 'Radius (r)', min: 1, max: 5, step: 0.1 },
@@ -326,7 +326,7 @@ export const SHAPE_DATA: Record<ShapeType, ShapeData> = {
     },
     frustum: {
         name: 'Frustum of a Cone',
-        iconUrl: '/assets/shapes/frustum.png',
+        iconUrl: '/assets/shapes/frustum.svg',
         lsaName: 'CSA',
         dimensions: [
             { key: 'r1', name: 'Radius 1 (r₁)', min: 1, max: 8, step: 0.1 },

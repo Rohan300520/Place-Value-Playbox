@@ -1,238 +1,237 @@
 import type { FractionTrainingStep } from '../../../types';
 
-// This training plan is structured to follow the pedagogical approach of
-// NCERT Class 6th Maths, Chapter 7: Fractions.
 export const fractionTrainingPlan: FractionTrainingStep[] = [
-  // --- Part 1: Anatomy of a Fraction (NCERT 7.1-7.3) ---
+  // --- Module 1: Meet the Fraction Chart ---
   {
-    step: 0,
-    type: 'intro',
-    ui: 'concept',
-    text: "Welcome to Fraction Foundations! Let's learn about fractions step-by-step.",
-    duration: 3500,
-  },
-  {
-    step: 1,
-    type: 'feedback',
-    ui: 'concept',
-    text: "A fraction represents a part of a whole. The whole must be divided into EQUAL parts.",
+    module: 1, step: 0, type: 'intro',
+    text: "Welcome! This is your Fraction Chart. The top bar is one WHOLE.",
+    spotlightOn: 'chart_row-1',
     duration: 5000,
   },
   {
-    step: 2,
-    type: 'feedback',
-    ui: 'concept',
-    text: "The DENOMINATOR (bottom number) tells us how many equal parts the whole is divided into.",
-    duration: 5000,
+    module: 1, step: 1, type: 'feedback',
+    text: "Each row below is one whole, cut into equal parts. Look at the '1/4' row. The bottom number, the denominator, tells us it's cut into 4 equal parts.",
+    spotlightOn: 'chart_row-4',
+    duration: 8000,
   },
   {
-    step: 3,
-    type: 'action',
-    ui: 'concept',
-    text: "Let's divide the whole into 4 equal parts. Click 'Cut in 4'.",
-    requiredAction: 'set_denominator',
-    requiredValue: 4,
-    spotlightOn: 'denominator-4',
-  },
-  {
-    step: 4,
-    type: 'feedback',
-    ui: 'concept',
-    text: "The NUMERATOR (top number) tells us how many of these parts we are considering.",
-    duration: 5000,
-  },
-  {
-    step: 5,
-    type: 'action',
-    ui: 'concept',
-    text: "Click on 3 parts to represent the fraction three-fourths (3/4).",
-    requiredAction: 'select_pieces',
-    count: 3,
-    spotlightOn: 'pieces',
-  },
-  {
-    step: 6,
-    type: 'feedback',
-    ui: 'concept',
-    text: "Excellent! You understand what numerators and denominators mean.",
-    duration: 4000,
-  },
-
-  // --- Part 2: Fractions on the Number Line (NCERT 7.4) ---
-  {
-    step: 7,
-    type: 'intro',
-    ui: 'number_line',
-    text: "Fractions are also numbers that can be shown on a number line.",
-    duration: 4000,
-    requiredValue: 4, // Sets denominator for the number line to fourths
-  },
-  {
-    step: 8,
-    type: 'action',
-    ui: 'number_line',
-    text: "This number line is divided into fourths. Can you find and click on 2/4?",
-    requiredAction: 'select_point',
-    requiredValue: { numerator: 2, denominator: 4 },
-    spotlightOn: 'number_line_point-2/4',
-  },
-  {
-    step: 9,
-    type: 'feedback',
-    ui: 'number_line',
-    text: "Perfect! Let's switch to eighths.",
-    duration: 2000,
-    requiredValue: 8, // Switches to eighths
-  },
-  {
-    step: 10,
-    type: 'action',
-    ui: 'number_line',
-    text: "Now find and click on 5/8 on the number line.",
-    requiredAction: 'select_point',
-    requiredValue: { numerator: 5, denominator: 8 },
-    spotlightOn: 'number_line_point-5/8',
-  },
-  {
-    step: 11,
-    type: 'feedback',
-    ui: 'number_line',
-    text: "Great job! You can pinpoint fractions on a number line.",
-    duration: 4000,
-  },
-
-  // --- Part 3: Equivalent Fractions & Simplest Form (NCERT 7.5, 7.6) ---
-  {
-    step: 12,
-    type: 'intro',
-    ui: 'operations',
-    text: "Now, let's add fractions with the same denominator, like 1/4 + 1/4.",
-    duration: 4000,
-    clearBoardAfter: true,
-  },
-  {
-    step: 13,
-    type: 'action',
-    ui: 'operations',
-    text: "First, click '1/4' on the wall.",
-    requiredAction: 'select_term1',
+    module: 1, step: 2, type: 'action',
+    text: "Now, drag one of the '1/4' pieces to the workspace below.",
+    requiredAction: 'drag_piece',
     requiredValue: { numerator: 1, denominator: 4 },
-    spotlightOn: { numerator: 1, denominator: 4 },
+    spotlightOn: 'chart_row-4',
   },
   {
-    step: 14,
-    type: 'action',
-    ui: 'operations',
-    text: "Next, click the '+' button.",
-    requiredAction: 'select_operator',
-    requiredValue: '+',
-    spotlightOn: '+',
-  },
-  {
-    step: 15,
-    type: 'action',
-    ui: 'operations',
-    text: "Click '1/4' again to complete the equation.",
-    requiredAction: 'select_term2',
-    requiredValue: { numerator: 1, denominator: 4 },
-    spotlightOn: { numerator: 1, denominator: 4 },
-  },
-  {
-    step: 16,
-    type: 'action',
-    ui: 'operations',
-    text: "Since the pieces are the same size, we can add them. Click 'Solve'.",
-    requiredAction: 'solve',
-    spotlightOn: 'solve',
-  },
-  {
-    step: 17,
-    type: 'feedback',
-    ui: 'operations',
-    text: "The answer is 2/4. But notice that the 2/4 bar is the same length as the 1/2 bar!",
-    duration: 6000,
-  },
-  {
-    step: 18,
-    type: 'feedback',
-    ui: 'operations',
-    text: "2/4 and 1/2 are called Equivalent Fractions. We always show the answer in its simplest form.",
-    duration: 6000,
+    module: 1, step: 3, type: 'feedback',
+    text: "Great! You have selected 1 of the 4 parts. The top number, the numerator, tells us how many parts we have. This piece represents 1/4.",
+    duration: 8000,
+    clearWorkspaceAfter: true,
   },
 
-  // --- Part 4: Adding & Subtracting Unlike Fractions (NCERT 7.7, 7.8) ---
+  // --- Module 2: Types of Fractions ---
   {
-    step: 19,
-    type: 'action',
-    ui: 'operations',
-    text: "Ready for the next concept?",
-    requiredAction: 'continue',
-    spotlightOn: 'continue_button',
+    module: 2, step: 4, type: 'action', text: "Ready for the next concept?", requiredAction: 'continue', spotlightOn: 'continue_button'
   },
   {
-    step: 20,
-    type: 'intro',
-    ui: 'operations',
-    text: "What about fractions with different denominators, like 1/2 + 1/4?",
-    duration: 4000,
-    clearBoardAfter: true,
+    module: 2, step: 5, type: 'action',
+    text: "Any fraction smaller than one WHOLE is a Proper Fraction. Drag 3 pieces of '1/8' into the workspace to build 3/8.",
+    requiredAction: 'drag_piece',
+    requiredValue: { numerator: 1, denominator: 8 },
+    requiredCount: 3,
+    spotlightOn: 'chart_row-8'
   },
   {
-    step: 21,
-    type: 'action',
-    ui: 'operations',
-    text: "Build the equation. Click '1/2'.",
-    requiredAction: 'select_term1',
+    module: 2, step: 6, type: 'feedback',
+    text: "See how 3/8 is shorter than the WHOLE bar? It's a proper fraction.",
+    duration: 6000,
+    spotlightOn: 'whole_bar',
+    clearWorkspaceAfter: true,
+  },
+  {
+    module: 2, step: 7, type: 'action',
+    text: "Now, let's make a fraction bigger than one WHOLE. Drag three '1/2' pieces into the workspace.",
+    requiredAction: 'drag_piece',
     requiredValue: { numerator: 1, denominator: 2 },
-    spotlightOn: { numerator: 1, denominator: 2 },
+    requiredCount: 3,
+    spotlightOn: 'chart_row-2'
   },
   {
-    step: 22,
-    type: 'action',
-    ui: 'operations',
-    text: "Click the '+' button.",
-    requiredAction: 'select_operator',
-    requiredValue: '+',
-    spotlightOn: '+',
+    module: 2, step: 8, type: 'feedback',
+    text: "This is longer than one WHOLE! You have 3 halves (3/2). When the numerator is bigger, it's an Improper Fraction.",
+    duration: 8000,
+    spotlightOn: 'whole_bar'
   },
   {
-    step: 23,
-    type: 'action',
-    ui: 'operations',
-    text: "And now click '1/4'.",
-    requiredAction: 'select_term2',
+    module: 2, step: 9, type: 'feedback',
+    text: "Watch! Two of the 1/2 pieces can merge to form one WHOLE.",
+    animation: 'merge',
+    duration: 7000,
+  },
+  {
+    module: 2, step: 10, type: 'feedback',
+    text: "So, you have 1 WHOLE and 1/2 left over. We can write this as 1 ½. This is a Mixed Fraction.",
+    duration: 8000,
+  },
+  {
+    module: 2, step: 11, type: 'action', text: "Click Continue when you're ready to move on.", requiredAction: 'continue', spotlightOn: 'continue_button', clearWorkspaceAfter: true
+  },
+
+  // --- Module 3: Comparing Fractions ---
+  {
+    module: 3, step: 12, type: 'action', text: "Let's learn to compare fractions.", requiredAction: 'continue', spotlightOn: 'continue_button'
+  },
+  {
+    module: 3, step: 13, type: 'action',
+    text: "Let's compare 2/3 and 3/4. First, build a 2/3 bar (two 1/3 pieces) in the workspace.",
+    requiredAction: 'drag_piece',
+    requiredValue: { numerator: 1, denominator: 3 },
+    requiredCount: 2,
+    spotlightOn: 'chart_row-3'
+  },
+  {
+    module: 3, step: 14, type: 'action',
+    text: "Now build a 3/4 bar (three 1/4 pieces) below it.",
+    requiredAction: 'drag_piece',
     requiredValue: { numerator: 1, denominator: 4 },
-    spotlightOn: { numerator: 1, denominator: 4 },
+    requiredCount: 3,
+    spotlightOn: 'chart_row-4'
   },
   {
-    step: 24,
-    type: 'action',
-    ui: 'operations',
-    text: "We can't add pieces of different sizes. Click 'Solve' to see how we fix this.",
-    requiredAction: 'solve',
-    spotlightOn: 'solve',
+    module: 3, step: 15, type: 'action',
+    text: "Which bar is longer? Click on the group of pieces that represents the larger fraction.",
+    requiredAction: 'click_bar',
+    requiredValue: { numerator: 3, denominator: 4 }
   },
   {
-    step: 25,
-    type: 'feedback',
-    ui: 'operations',
-    text: "To make the pieces match, we find a Common Denominator. We turn 1/2 into 2/4.",
-    duration: 6000,
+    module: 3, step: 16, type: 'feedback',
+    text: "Correct! You can see that 3/4 is greater than 2/3. The chart makes comparing easy!",
+    duration: 7000,
+    clearWorkspaceAfter: true,
+  },
+  
+  // --- Module 4: Ordering Fractions ---
+  {
+    module: 4, step: 17, type: 'action', text: "Now let's order some fractions.", requiredAction: 'continue', spotlightOn: 'continue_button'
   },
   {
-    step: 26,
-    type: 'feedback',
-    ui: 'operations',
-    text: "Now we can add 2/4 and 1/4 to get the answer: 3/4!",
+    module: 4, step: 18, type: 'action',
+    text: "Let's put 1/2, 1/4, and 5/8 in ascending order (smallest to largest). First, build 1/2 in the workspace.",
+    requiredAction: 'drag_piece',
+    requiredValue: { numerator: 1, denominator: 2 },
+    requiredCount: 1,
+    spotlightOn: 'chart_row-2',
+  },
+  {
+    module: 4, step: 19, type: 'action', text: "Now add 1/4.",
+    requiredAction: 'drag_piece', requiredValue: { numerator: 1, denominator: 4 }, requiredCount: 1, spotlightOn: 'chart_row-4',
+  },
+  {
+    module: 4, step: 20, type: 'action', text: "And finally, build 5/8.",
+    requiredAction: 'drag_piece', requiredValue: { numerator: 1, denominator: 8 }, requiredCount: 5, spotlightOn: 'chart_row-8',
+  },
+  {
+    module: 4, step: 21, type: 'feedback',
+    text: "Great! Now you can see their sizes. The correct ascending order is 1/4, 1/2, then 5/8.",
+    duration: 8000,
+    clearWorkspaceAfter: true
+  },
+
+  // --- Module 5: Addition & Subtraction ---
+  {
+    module: 5, step: 22, type: 'action', text: "Now let's add and subtract.", requiredAction: 'continue', spotlightOn: 'continue_button'
+  },
+  {
+    module: 5, step: 23, type: 'action',
+    text: "Let's solve 1/8 + 3/8. Drag one 1/8 piece and then three more 1/8 pieces into the workspace.",
+    requiredAction: 'drag_piece',
+    requiredValue: { numerator: 1, denominator: 8 },
+    requiredCount: 4,
+    spotlightOn: 'chart_row-8'
+  },
+  {
+    module: 5, step: 24, type: 'feedback',
+    text: "Exactly! You have 4 eighths in total. The answer is 4/8.",
     duration: 5000,
-    clearBoardAfter: true,
+  },
+  {
+    module: 5, step: 25, type: 'feedback',
+    text: "Look at the chart. Can you find a simpler piece that's the same length as 4/8? It's 1/2!",
+    spotlightOn: 'chart_row-2',
+    duration: 7000,
+    clearWorkspaceAfter: true,
+  },
+  {
+    module: 5, step: 26, type: 'action',
+    text: "Now for a tricky one: 1/3 + 1/6. Drag a 1/3 piece into the workspace.",
+    requiredAction: 'drag_piece',
+    requiredValue: { numerator: 1, denominator: 3 },
+    requiredCount: 1,
+    spotlightOn: 'chart_row-3',
+  },
+  {
+    module: 5, step: 27, type: 'action',
+    text: "And now the 1/6 piece.",
+    requiredAction: 'drag_piece',
+    requiredValue: { numerator: 1, denominator: 6 },
+    requiredCount: 1,
+    spotlightOn: 'chart_row-6',
+  },
+  {
+    module: 5, step: 28, type: 'feedback',
+    text: "The pieces are different sizes! Watch as we convert 1/3 into sixths to make them the same.",
+    animation: 'split',
+    animationTarget: { numerator: 1, denominator: 3 },
+    duration: 7000
+  },
+  {
+    module: 5, step: 29, type: 'feedback',
+    text: "So, 1/3 is the same as 2/6. We are really adding 2/6 + 1/6, which equals 3/6.",
+    duration: 7000
+  },
+  {
+    module: 5, step: 30, type: 'feedback',
+    text: "And 3/6 can be simplified to 1/2. Now let's see how mathematicians write this down.",
+    duration: 6000
+  },
+  {
+    module: 5, step: 31, type: 'action',
+    text: "Click the 'Solve' button to see the formal steps.",
+    requiredAction: 'solve',
+    spotlightOn: 'solve_button',
+  },
+  {
+    module: 5, step: 32, type: 'feedback',
+    text: "Great job! Here is how mathematicians write down those steps using numbers.",
+    duration: 10000,
+  },
+  {
+    module: 5, step: 33, type: 'action', text: "Finally, let's try subtraction.", requiredAction: 'continue', spotlightOn: 'continue_button', clearWorkspaceAfter: true,
+  },
+  {
+    module: 5, step: 34, type: 'action',
+    text: "Let's solve 3/4 - 1/4. First, drag three 1/4 pieces into the workspace.",
+    requiredAction: 'drag_piece',
+    requiredValue: { numerator: 1, denominator: 4 },
+    requiredCount: 3,
+    spotlightOn: 'chart_row-4',
+  },
+  {
+    module: 5, step: 35, type: 'feedback',
+    text: "Now, watch as we remove one of those 1/4 pieces.",
+    animation: 'remove',
+    animationTarget: { numerator: 1, denominator: 4 },
+    duration: 5000,
+  },
+  {
+    module: 5, step: 36, type: 'feedback',
+    text: "You are left with two 1/4 pieces, which is 2/4. This simplifies to 1/2!",
+    duration: 8000,
+    clearWorkspaceAfter: true
   },
 
   // --- Completion ---
   {
-    step: 27,
-    type: 'complete',
-    ui: 'operations',
-    text: "Training Complete! You're ready to solve any problem.",
+    module: 6, step: 37, type: 'complete',
+    text: "Training Complete! You're ready to explore fractions on your own.",
   },
 ];
