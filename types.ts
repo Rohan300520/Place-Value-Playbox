@@ -121,33 +121,31 @@ export type ExploreView = 'operations' | 'anatomy' | 'number_line';
 export interface FractionChallengeQuestion {
   id: number;
   level: Difficulty;
-  type: 'add' | 'subtract' | 'compare' | 'order';
   questionText: string;
-  // For add/subtract, these are the terms of the question displayed to the user
-  // For compare, these are the two fractions to compare
-  // For order, these are the fractions to sort
   fractions: Fraction[];
-  operator?: FractionOperator; // Only for add/subtract
-  order?: 'ascending' | 'descending'; // Only for order
-  // For add/subtract: the resulting Fraction
-  // For compare: the index of the GREATER fraction
-  // For order: the correctly sorted array of Fractions
-  answer: Fraction | number | Fraction[];
+  operator?: FractionOperator;
+  type: 'add' | 'subtract' | 'compare' | 'order';
+  answer: Fraction | Fraction[] | number; // number for compare index
+  order?: 'ascending' | 'descending';
 }
-
 
 export type TrainingAction = 
   | 'drag_piece'
   | 'click_bar'
   | 'arrange_pieces'
   | 'continue'
-  | 'solve';
+  | 'solve'
+  // Fix: Add missing training actions
+  | 'set_denominator'
+  | 'select_pieces';
   
 export interface FractionTrainingStep {
   module: number;
   step: number;
   type: 'intro' | 'action' | 'feedback' | 'complete';
   text: string;
+  // Fix: Add optional title property
+  title?: string;
   goal?: string;
   duration?: number;
   requiredAction?: TrainingAction;

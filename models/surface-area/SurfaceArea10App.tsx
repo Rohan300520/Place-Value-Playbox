@@ -29,7 +29,8 @@ export const SurfaceArea10App: React.FC<{ onExit: () => void; currentUser: UserI
     const [result, setResult] = useState<CalculationResult>(null);
     const [showHelp, setShowHelp] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
-    const [highlightedPart, setHighlightedPart] = useState<string | null>(null);
+    // Fix: Broaden the state type to allow string arrays for multi-part highlighting
+    const [highlightedPart, setHighlightedPart] = useState<string | string[] | null>(null);
 
     // --- Challenge State ---
     const [difficulty, setDifficulty] = useState<Difficulty>('easy');

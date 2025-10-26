@@ -63,7 +63,7 @@ export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ piec
         if (currentGroup.length > 0) groupedPieces.push(currentGroup);
     }
     
-    const hasContent = isExploreMode ? (equation.term1Pieces.length > 0) : (piecesToRender.length > 0);
+    const hasContent = isExploreMode ? (equation.terms.some(t => t.pieces.length > 0)) : (piecesToRender.length > 0);
 
     return (
         <div
@@ -81,19 +81,27 @@ export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ piec
             
             {/* EXPLORE MODE RENDERING */}
             {isExploreMode && (
-                <div className="w-full space-y-2">
-                    {renderPieceGroup(equation.term1Pieces)}
-                    {equation.operator && (
-                        <div className="flex items-center justify-center w-full my-2 animate-pop-in">
-                            <span className="text-5xl font-chalk text-chalk-yellow">{equation.operator}</span>
-                        </div>
-                    )}
-                    {renderPieceGroup(equation.term2Pieces)}
-                    {equation.isSolved && (
-                         <div className="w-full flex flex-col items-center animate-pop-in">
+                <div className="w-full">
+                    {equation.isSolved ? (
+                        // SOLVED VIEW: Only show the result.
+                        <div className="w-full flex flex-col items-center animate-pop-in">
                             <div className="border-t-4 border-chalk-yellow w-full my-4"></div>
                             {renderPieceGroup(equation.resultPieces)}
-                         </div>
+                        </div>
+                    ) : (
+                        // BUILDING VIEW: Show the terms horizontally.
+                        <div className="flex flex-wrap items-center gap-4">
+                            {equation.terms.map((term, index) => (
+                                <React.Fragment key={`term-${index}`}>
+                                    {renderPieceGroup(term.pieces)}
+                                    {equation.operators[index] && (
+                                        <span className="text-5xl font-chalk text-chalk-yellow animate-pop-in">
+                                            {equation.operators[index]}
+                                        </span>
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </div>
                     )}
                 </div>
             )}

@@ -68,11 +68,11 @@ export const fractionTrainingPlan: FractionTrainingStep[] = [
     duration: 7000,
   },
   {
-    module: 2, step: 10, type: 'action', text: "They merged to form 1 WHOLE!", requiredAction: 'continue', spotlightOn: 'continue_button'
+    module: 2, step: 10, type: 'feedback', text: "They merged to form 1 WHOLE! You now have a whole piece and a half piece.", duration: 6000
   },
   {
     module: 2, step: 11, type: 'feedback',
-    text: "So, you have 1 WHOLE and 1/2 left over. We can write this as 1 ½. This is a Mixed Fraction.",
+    text: "When we write 1 ½, it's called a Mixed Fraction. It's a mix of a whole number and a proper fraction.",
     duration: 8000,
   },
   {
