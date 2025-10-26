@@ -27,7 +27,7 @@ const MODELS_CONFIG: Record<SchoolLevel, {
             id: 'fractions' as AppState, 
             title: 'Fraction Foundations', 
             description: 'Explore fractions visually with an interactive chart-based model.',
-            imageUrl: '/assets/fractions_thumbnail.png',
+            imageUrl: '/assets/fractions_thumbnail.jpeg',
             color: 'from-emerald-400 to-emerald-600',
             shadow: 'shadow-emerald-500/40',
             border: 'border-emerald-800'
