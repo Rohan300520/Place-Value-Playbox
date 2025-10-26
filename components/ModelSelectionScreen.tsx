@@ -155,7 +155,7 @@ export const ModelSelectionScreen: React.FC<{ onSelectModel: (model: AppState) =
                 className="hidden lg:flex w-72 flex-col p-6 shadow-2xl z-10 border-r flex-shrink-0"
                 style={{ backgroundColor: 'var(--modal-bg)', borderColor: 'var(--border-primary)' }}
             >
-                <img src="/assets/logo.jpeg" alt="SMART C Logo" className="h-16 mb-8" />
+                <img src="/assets/logo.jpeg" alt="SMART C Logo" className="h-16 mx-auto mb-8" />
                 
                 <div className="text-left mb-8">
                     <p className="text-sm" style={{ color: 'var(--text-secondary)'}}>Welcome back,</p>
@@ -200,7 +200,7 @@ export const ModelSelectionScreen: React.FC<{ onSelectModel: (model: AppState) =
                     <button onClick={() => setIsSidebarOpen(true)} className="p-2" aria-label="Open navigation menu">
                         <svg className="h-8 w-8" style={{ color: 'var(--text-secondary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
-                    <img src="/assets/logo.jpeg" alt="SMART C Logo" className="h-10" />
+                    <img src="/assets/logo.jpeg" alt="SMART C Logo" className="h-10 mx-auto" />
                 </header>
 
                 <main className="flex-1 p-4 sm:p-10">
