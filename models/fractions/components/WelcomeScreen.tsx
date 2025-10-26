@@ -19,7 +19,7 @@ export const WelcomeScreen: React.FC<{ onStart: () => void }> = ({ onStart }) =>
           Welcome to
         </h1>
         <h2 className="text-5xl md:text-8xl font-black text-green-600 tracking-tighter mt-2 animate-float font-display" style={{ animationDelay: '0.2s', textShadow: '0 0 15px rgba(22, 163, 74, 0.2)' }}>
-          Chart Based Fraction !
+          Fraction Foundations!
         </h2>
         
         <p className="mt-4 sm:mt-6 text-lg sm:text-xl max-w-4xl mx-auto" style={{ color: 'var(--text-secondary)'}}>
