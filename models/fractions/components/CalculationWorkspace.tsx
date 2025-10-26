@@ -45,7 +45,6 @@ const renderPieceGroup = (group: WorkspacePiece[], onBarClick?: (fraction: Fract
 export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ pieces, equation, onDrop, onDragOver, isDropZoneActive, spotlightOn, onBarClick }) => {
     const isExploreMode = !!equation;
 
-    // Unify data structure for rendering
     let equationForRender: EquationState;
 
     if (isExploreMode) {
@@ -58,7 +57,6 @@ export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ piec
                 const piece = pieces[i];
                 const prevPiece = pieces[i - 1];
 
-                // If pieces have same denominator and are idle, group them. Otherwise start a new group.
                 if (currentGroup.length > 0 && piece.state === 'idle' && prevPiece.state === 'idle' && piece.fraction.denominator === prevPiece.fraction.denominator) {
                     currentGroup.push(piece);
                 } else {
@@ -97,42 +95,27 @@ export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ piec
 
             {!hasContent && !isDropZoneActive && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <p className="text-xl text-chalk-light">Drag pieces from the chart into this workspace.</p>
+                    <p className="text-xl text-chalk-light">Drag pieces into this workspace.</p>
                 </div>
             )}
             
-            {/* UNIFIED RENDER LOGIC */}
             <div className="w-full">
                 {equationForRender.isSolved ? (
-                    // SOLVED VIEW:
                     <div className="w-full flex flex-col items-start animate-pop-in">
                         <div className="border-t-4 border-chalk-yellow w-full my-4"></div>
-                        {(() => {
-                            const result = equationForRender.result;
-                            const pieces = equationForRender.resultPieces;
-                            if (!result || !pieces.length) return null;
-
-                            const resultValue = getFractionalValue(result);
-
-                            // If the visual representation would be too wide (e.g., > 120%),
-                            // render it as a single, non-scaled block to prevent overflow.
-                            if (resultValue > 1.2) {
-                                return (
-                                    <div className="w-full max-w-md self-center px-4">
-                                        <FractionPiece fraction={result} />
-                                    </div>
-                                );
-                            } else {
-                                // Otherwise, render the fraction to scale.
-                                return renderPieceGroup(pieces);
-                            }
-                        })()}
+                        {equationForRender.resultPieces.map((piece, index) => {
+                             const value = getFractionalValue(piece.fraction);
+                             const width = value > 1.2 ? '100%' : `${value * 100}%`;
+                             return (
+                                <div key={piece.id || index} className="w-full" style={{ width }}>
+                                    <FractionPiece fraction={piece.fraction} />
+                                </div>
+                             )
+                        })}
                     </div>
                 ) : (
-                    // BUILDING VIEW: Show the terms horizontally.
                     <div className={`flex gap-4 ${isExploreMode ? 'flex-wrap flex-row items-center' : 'flex-col w-full items-start'}`}>
                         {equationForRender.terms.map((term, index) => {
-                            // Special handling for animating pieces in training mode
                             if (!isExploreMode && term.pieces.length === 1 && term.pieces[0].state !== 'idle') {
                                 const piece = term.pieces[0];
                                 const animationClass = piece.state === 'splitting' ? 'animate-bouncy-pop-in' : piece.state === 'removing' ? 'animate-slide-out-left' : piece.state === 'merging' ? 'animate-piece-merge' : '';
@@ -148,7 +131,7 @@ export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ piec
                                     {renderPieceGroup(term.pieces, onBarClick)}
                                     {isExploreMode && equationForRender.operators[index] && (
                                         <span className="text-5xl font-chalk text-chalk-yellow animate-pop-in">
-                                            {equationForRender.operators[index]}
+                                            {equationForRender.operators[index] === ', or' ? <span className="text-2xl">or</span> : equationForRender.operators[index]}
                                         </span>
                                     )}
                                 </React.Fragment>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Fraction } from '../../../types';
 import { FractionPiece } from './FractionBlock';
+import { fractionsAreEqual } from '../utils/fractions';
 
 interface OrderWorkspaceProps {
     fractions: Fraction[];
@@ -26,7 +27,6 @@ export const OrderWorkspace: React.FC<OrderWorkspaceProps> = ({ fractions, onOrd
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
     useEffect(() => {
-        // Shuffle the initial list for a better user experience
         setSourceFractions([...fractions].sort(() => Math.random() - 0.5));
         setTargetFractions(Array(fractions.length).fill(null));
     }, [fractions]);
@@ -37,8 +37,6 @@ export const OrderWorkspace: React.FC<OrderWorkspaceProps> = ({ fractions, onOrd
 
     const handleDrop = (targetIndex: number) => {
         if (!draggedFraction) return;
-
-        // If the spot is already taken, do nothing (or swap in a future version)
         if (targetFractions[targetIndex]) return;
 
         const newTargets = [...targetFractions];
@@ -46,7 +44,7 @@ export const OrderWorkspace: React.FC<OrderWorkspaceProps> = ({ fractions, onOrd
         setTargetFractions(newTargets);
         onOrderChange(newTargets.filter(f => f !== null) as Fraction[]);
 
-        setSourceFractions(source => source.filter(f => !(f.numerator === draggedFraction.numerator && f.denominator === draggedFraction.denominator)));
+        setSourceFractions(source => source.filter(f => !fractionsAreEqual(f, draggedFraction)));
         setDraggedFraction(null);
         setDragOverIndex(null);
     };

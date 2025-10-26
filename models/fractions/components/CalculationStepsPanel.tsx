@@ -26,7 +26,6 @@ export const CalculationStepsPanel: React.FC<{ equation: EquationState, isVisibl
     const validTerms = terms.filter(t => t.fraction !== null).map(t => t.fraction!);
     if (validTerms.length < 2) return null;
     
-    // Fix: Replaced spread operator with Array.from() to ensure correct type inference from the Set iterator.
     const uniqueDenominators: number[] = Array.from(new Set(validTerms.map(t => t.denominator)));
     const commonDen = uniqueDenominators.reduce((acc, curr) => lcm(acc, curr));
 
@@ -48,13 +47,11 @@ export const CalculationStepsPanel: React.FC<{ equation: EquationState, isVisibl
             return null;
         }
 
-        // 1. Get prime factorizations
         const factorizations = uniqueDenominators.map(den => ({
             den,
             factors: getPrimeFactorization(den),
         }));
 
-        // 2. Find highest power for each prime
         const highestPowers: Record<number, number> = {};
         factorizations.forEach(({ factors }) => {
             for (const prime in factors) {
@@ -64,7 +61,6 @@ export const CalculationStepsPanel: React.FC<{ equation: EquationState, isVisibl
             }
         });
 
-        // 3. Calculate LCM from factors to display
         const lcmFromFactors = Object.entries(highestPowers)
             .reduce((acc, [prime, power]) => acc * (Math.pow(Number(prime), power)), 1);
 

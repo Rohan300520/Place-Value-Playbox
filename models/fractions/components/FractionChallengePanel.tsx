@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import type { FractionChallengeQuestion, Fraction } from '../../../types';
-import { FractionPiece } from './FractionBlock';
 import { useAudio } from '../../../contexts/AudioContext';
 import { speak, cancelSpeech } from '../../../utils/speech';
 
@@ -57,11 +56,9 @@ export const FractionChallengePanel: React.FC<FractionChallengePanelProps> = ({ 
 
     useEffect(() => {
         if (isSpeechEnabled && question) {
-            cancelSpeech(); // Stop any previous speech
+            cancelSpeech();
             speak(question.questionText, 'en-US');
         }
-        
-        // Cleanup: cancel speech if the component unmounts or the question changes
         return () => {
             cancelSpeech();
         };
@@ -86,6 +83,8 @@ export const FractionChallengePanel: React.FC<FractionChallengePanelProps> = ({ 
         }
         return '';
     };
+
+    const showClearButton = (question.type === 'add' || question.type === 'subtract');
 
     return (
         <div className={`w-full mb-4 p-4 rounded-2xl border-2 ${statusClasses} transition-all duration-300 chalk-bg`}>
@@ -122,7 +121,7 @@ export const FractionChallengePanel: React.FC<FractionChallengePanelProps> = ({ 
                 <div className="flex items-center gap-4">
                     {status === 'playing' ? (
                         <>
-                           {(question.type === 'add' || question.type === 'subtract') && (
+                           {showClearButton && (
                              <button onClick={onClearAnswer} className="control-button bg-amber-600 border-amber-800 hover:bg-amber-500">
                                 Clear
                              </button>

@@ -91,7 +91,8 @@ export interface WorkspacePiece {
 }
 
 
-export type FractionOperator = '+' | '-';
+// Fix: Add ', or' to FractionOperator type to support visual separators in compare mode.
+export type FractionOperator = '+' | '-' | ', or';
 
 export interface EquationTerm {
   fraction: Fraction | null;

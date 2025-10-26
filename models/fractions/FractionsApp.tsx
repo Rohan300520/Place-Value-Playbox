@@ -18,10 +18,11 @@ import { HelpModal } from './components/HelpModal';
 import { CalculationStepsPanel } from './components/CalculationStepsPanel';
 import { FractionControls } from './components/FractionControls';
 import { EquationInfoPanel } from './components/EquationInfoPanel';
+import { OrderWorkspace } from './components/OrderWorkspace';
 import { addFractions, subtractFractions, simplifyFraction, lcm, getFractionalValue, fractionsAreEqual } from './utils/fractions';
 
 
-const DURATION_MAP: Record<Difficulty, number> = { easy: 45, medium: 35, hard: 25 };
+const DURATION_MAP: Record<Difficulty, number> = { easy: 60, medium: 45, hard: 30 };
 
 const EMPTY_EQUATION: EquationState = {
     terms: [{ fraction: null, pieces: [] }],
@@ -50,6 +51,16 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
     // Explore Mode State
     const [equation, setEquation] = useState<EquationState>(EMPTY_EQUATION);
     
+    // Challenge Mode State
+    const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+    const [questions, setQuestions] = useState<FractionChallengeQuestion[]>([]);
+    const [questionIndex, setQuestionIndex] = useState(0);
+    const [challengeStatus, setChallengeStatus] = useState<'playing' | 'correct' | 'incorrect' | 'timed_out'>('playing');
+    const [score, setScore] = useState(0);
+    const [userAnswer, setUserAnswer] = useState<Fraction | Fraction[] | number | null>(null);
+    const challengeStartTimeRef = useRef<number | null>(null);
+    const currentQuestion = useMemo(() => questions[questionIndex] || null, [questions, questionIndex]);
+
     const clearWorkspace = useCallback((forTraining: boolean) => {
         if (forTraining) {
             setWorkspacePieces([]);
@@ -89,7 +100,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
 
         if (gameState === 'training') {
             setWorkspacePieces(prev => [...prev, newPiece]);
-        } else if (gameState === 'explore' && !equation.isSolved) {
+        } else if ((gameState === 'explore' || gameState === 'challenge') && !equation.isSolved) {
             setEquation(prev => {
                 const newTerms = [...prev.terms];
                 const lastTermIndex = newTerms.length - 1;
@@ -146,12 +157,16 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         
         const resultPieces: WorkspacePiece[] = [];
         if (finalResult.numerator > 0) {
-            resultPieces.push({
-                id: `result-${Date.now()}`,
-                fraction: finalResult,
-                position: { x: 0, y: 0 },
-                state: 'idle',
-            });
+             // For improper fractions, create whole pieces and a remainder piece
+            const wholeParts = Math.floor(finalResult.numerator / finalResult.denominator);
+            const remainderNum = finalResult.numerator % finalResult.denominator;
+
+            for (let i = 0; i < wholeParts; i++) {
+                resultPieces.push({ id: `result-whole-${i}`, fraction: { numerator: 1, denominator: 1 }, position: { x: 0, y: 0 } });
+            }
+            if (remainderNum > 0) {
+                resultPieces.push({ id: `result-rem-${Date.now()}`, fraction: { numerator: remainderNum, denominator: finalResult.denominator }, position: { x: 0, y: 0 } });
+            }
         }
 
         setEquation(prev => ({ ...prev, isSolved: true, unsimplifiedResult, result: finalResult, resultPieces }));
@@ -190,13 +205,94 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                 operators: ['+'],
                 unsimplifiedResult: { numerator: 3, denominator: 6 },
                 result: { numerator: 1, denominator: 2 },
-                resultPieces: [],
+                resultPieces: [{ id: `result-${Date.now()}`, fraction: { numerator: 1, denominator: 2 }, position: { x: 0, y: 0 } }],
                 isSolved: true,
             };
             setEquation(solvedEquation);
             advanceStep();
         }
     };
+    
+    // --- Challenge Logic ---
+
+    const startChallenge = useCallback((diff: Difficulty) => {
+        const filtered = challenges.filter(q => q.level === diff);
+        setQuestions([...filtered].sort(() => Math.random() - 0.5));
+        setDifficulty(diff);
+        setQuestionIndex(0);
+        setScore(0);
+        setChallengeStatus('playing');
+        setUserAnswer(null);
+        clearWorkspace(false);
+        setGameState('challenge');
+        challengeStartTimeRef.current = Date.now();
+    }, [clearWorkspace]);
+
+    const handleCheckAnswer = useCallback(async () => {
+        if (!currentQuestion) return;
+
+        let isCorrect = false;
+        const answer = currentQuestion.answer;
+        let finalUserAnswer = userAnswer;
+
+        if (currentQuestion.type === 'add' || currentQuestion.type === 'subtract') {
+            const workspaceAnswer = simplifyFraction(equation.terms[0].fraction || { numerator: 0, denominator: 1 });
+            finalUserAnswer = workspaceAnswer;
+            isCorrect = fractionsAreEqual(workspaceAnswer, answer as Fraction);
+        } else if (currentQuestion.type === 'compare') {
+            const selectedFraction = equation.terms[userAnswer as number]?.fraction;
+            const correctFraction = currentQuestion.fractions[answer as number];
+            isCorrect = fractionsAreEqual(selectedFraction, correctFraction);
+        } else if (currentQuestion.type === 'order') {
+            const orderedAnswer = answer as Fraction[];
+            const orderedUserAnswer = userAnswer as Fraction[];
+            if (orderedUserAnswer.length === orderedAnswer.length) {
+                isCorrect = orderedUserAnswer.every((f, i) => fractionsAreEqual(f, orderedAnswer[i]));
+            }
+        }
+
+        const durationSeconds = challengeStartTimeRef.current ? (Date.now() - challengeStartTimeRef.current) / 1000 : 0;
+        await logEvent('challenge_attempt', currentUser, {
+            model: 'fractions', questionId: currentQuestion.id, questionText: currentQuestion.questionText,
+            level: difficulty, status: isCorrect ? 'correct' : 'incorrect', durationSeconds,
+            userAnswer: JSON.stringify(finalUserAnswer), correctAnswer: JSON.stringify(answer),
+        });
+
+        if (isCorrect) {
+            setChallengeStatus('correct');
+            setScore(s => s + 10);
+            setShowConfetti(true);
+        } else {
+            setChallengeStatus('incorrect');
+        }
+    }, [currentQuestion, userAnswer, equation, currentUser, difficulty]);
+    
+    const handleNextChallenge = useCallback(() => {
+        if (questionIndex < questions.length - 1) {
+            setQuestionIndex(i => i + 1);
+            setChallengeStatus('playing');
+            setUserAnswer(null);
+            clearWorkspace(false);
+            challengeStartTimeRef.current = Date.now();
+        } else {
+            goBackToMenu();
+        }
+    }, [questionIndex, questions, clearWorkspace, goBackToMenu]);
+    
+    const handleTimeOut = useCallback(async () => {
+        if (!currentQuestion) return;
+        await logEvent('challenge_attempt', currentUser, { model: 'fractions', questionId: currentQuestion.id, status: 'timed_out' });
+        setChallengeStatus('timed_out');
+    }, [currentQuestion, currentUser]);
+
+    const handleCompareSelection = useCallback((fraction: Fraction) => {
+        if (gameState !== 'challenge' || currentQuestion?.type !== 'compare') return;
+        const termIndex = equation.terms.findIndex(t => fractionsAreEqual(t.fraction, fraction));
+        if (termIndex !== -1) {
+            setUserAnswer(termIndex);
+        }
+    }, [gameState, currentQuestion, equation.terms]);
+
 
     useEffect(() => {
         return () => cancelSpeech();
@@ -261,7 +357,6 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
             if (step.animation === 'remove' && step.animationTarget) {
                 const targetFraction = step.animationTarget as Fraction;
                 setWorkspacePieces(prev => {
-                    // Fix: Replace findLastIndex with a reverse loop for broader compatibility.
                     let targetIndex = -1;
                     for (let i = prev.length - 1; i >= 0; i--) {
                         if (fractionsAreEqual(prev[i].fraction, targetFraction) && prev[i].state === 'idle') {
@@ -305,15 +400,29 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         if (mode === 'training') {
             setTrainingStep(0);
             spokenStepsRef.current.clear();
+        } else if (mode === 'challenge') {
+            setGameState('challenge_difficulty_selection');
         }
     };
     
+    // For challenge mode 'compare', set up the workspace with the fractions to be compared
+    useEffect(() => {
+        if (gameState === 'challenge' && currentQuestion?.type === 'compare') {
+            const terms = currentQuestion.fractions.map(f => {
+                const pieces: WorkspacePiece[] = [{ id: `challenge-${f.numerator}/${f.denominator}`, fraction: f, position: {x:0, y:0} }];
+                return { fraction: f, pieces };
+            });
+            setEquation({ ...EMPTY_EQUATION, terms, operators: [', or'] }); // Using comma as a visual separator
+        }
+    }, [gameState, currentQuestion]);
+
     const getSubtitle = () => {
         switch (gameState) {
             case 'training': return 'Training Mode';
             case 'explore': return 'Explore Mode';
-            case 'challenge': return 'Challenge Mode';
+            case 'challenge': return `Challenge Mode (${difficulty})`;
             case 'mode_selection': return 'Choose a Mode';
+            case 'challenge_difficulty_selection': return 'Choose Difficulty';
             default: return null;
         }
     };
@@ -326,6 +435,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         switch(gameState) {
             case 'welcome': return <WelcomeScreen onStart={() => setGameState('mode_selection')} />;
             case 'mode_selection': return <ModeSelector onSelectMode={handleModeSelection} />;
+            case 'challenge_difficulty_selection': return <DifficultySelector onSelectDifficulty={startChallenge} onBack={goBackToMenu} />;
             case 'training':
                 return (
                     <div className="fractions-theme w-full flex-grow flex flex-col items-center p-4">
@@ -372,8 +482,57 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                         </div>
                     </div>
                 );
-            case 'challenge': // Simplified challenge
-                return <div className="text-2xl font-chalk text-chalk-yellow">Challenge Mode Coming Soon for this new UI!</div>;
+            case 'challenge':
+                if (!currentQuestion) return <div className="text-2xl font-chalk text-chalk-yellow">Loading challenges...</div>;
+                
+                const isCompareMode = currentQuestion.type === 'compare';
+                const isOrderMode = currentQuestion.type === 'order';
+                const isAddSubMode = currentQuestion.type === 'add' || currentQuestion.type === 'subtract';
+                
+                return (
+                    <div className="fractions-theme w-full flex-grow flex flex-col items-center p-4">
+                       <div className="w-full max-w-5xl">
+                            <FractionChallengePanel
+                                status={challengeStatus}
+                                question={currentQuestion}
+                                onCheckAnswer={handleCheckAnswer}
+                                onNext={handleNextChallenge}
+                                onTimeOut={handleTimeOut}
+                                onClearAnswer={() => clearWorkspace(false)}
+                                score={score}
+                                timeLimit={DURATION_MAP[difficulty]}
+                            />
+
+                            {isOrderMode && (
+                                <OrderWorkspace
+                                    fractions={currentQuestion.fractions}
+                                    onOrderChange={(ordered) => setUserAnswer(ordered)}
+                                    orderDirection={currentQuestion.order!}
+                                />
+                            )}
+
+                            {(isAddSubMode || isCompareMode) && (
+                                <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                                    <div className="max-h-[70vh] overflow-y-auto pr-2 rounded-lg">
+                                        <FractionChart onPieceDragStart={handlePieceDragStart} />
+                                    </div>
+                                    <div className="flex flex-col gap-4">
+                                        <p className="text-chalk-light font-semibold text-center text-lg">
+                                            {isCompareMode ? 'The fractions are shown below. Click the one you think is greater.' : 'Build your answer in the workspace below.'}
+                                        </p>
+                                        <CalculationWorkspace
+                                            equation={equation}
+                                            onDrop={handleDrop}
+                                            onDragOver={handleDragOver}
+                                            isDropZoneActive={isDropZoneActive}
+                                            onBarClick={isCompareMode ? handleCompareSelection : undefined}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                       </div>
+                    </div>
+                );
             default: return null;
         }
     };
