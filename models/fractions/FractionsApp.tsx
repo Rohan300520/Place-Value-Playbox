@@ -6,6 +6,7 @@ import { ModeSelector } from './components/ModeSelector';
 import { DifficultySelector } from '../../components/DifficultySelector';
 import { FractionChart } from './components/FractionWall';
 import { CalculationWorkspace } from './components/CalculationWorkspace';
+import { CompareWorkspace } from './components/CompareWorkspace';
 import { FractionChallengePanel } from './components/FractionChallengePanel';
 import { TrainingGuide } from './components/TrainingGuide';
 import { Confetti } from '../../components/Confetti';
@@ -233,16 +234,17 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
 
         let isCorrect = false;
         const answer = currentQuestion.answer;
-        let finalUserAnswer = userAnswer;
+        let finalUserAnswer: Fraction | Fraction[] | number | null = userAnswer;
 
         if (currentQuestion.type === 'add' || currentQuestion.type === 'subtract') {
             const workspaceAnswer = simplifyFraction(equation.terms[0].fraction || { numerator: 0, denominator: 1 });
             finalUserAnswer = workspaceAnswer;
             isCorrect = fractionsAreEqual(workspaceAnswer, answer as Fraction);
         } else if (currentQuestion.type === 'compare') {
-            const selectedFraction = equation.terms[userAnswer as number]?.fraction;
-            const correctFraction = currentQuestion.fractions[answer as number];
-            isCorrect = fractionsAreEqual(selectedFraction, correctFraction);
+            isCorrect = userAnswer === answer;
+            if (typeof userAnswer === 'number' && userAnswer >= 0 && userAnswer < currentQuestion.fractions.length) {
+                finalUserAnswer = currentQuestion.fractions[userAnswer];
+            }
         } else if (currentQuestion.type === 'order') {
             const orderedAnswer = answer as Fraction[];
             const orderedUserAnswer = userAnswer as Fraction[];
@@ -265,7 +267,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         } else {
             setChallengeStatus('incorrect');
         }
-    }, [currentQuestion, userAnswer, equation, currentUser, difficulty]);
+    }, [currentQuestion, userAnswer, equation.terms, currentUser, difficulty]);
     
     const handleNextChallenge = useCallback(() => {
         if (questionIndex < questions.length - 1) {
@@ -287,11 +289,11 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
 
     const handleCompareSelection = useCallback((fraction: Fraction) => {
         if (gameState !== 'challenge' || currentQuestion?.type !== 'compare') return;
-        const termIndex = equation.terms.findIndex(t => fractionsAreEqual(t.fraction, fraction));
-        if (termIndex !== -1) {
-            setUserAnswer(termIndex);
+        const fractionIndex = currentQuestion.fractions.findIndex(f => fractionsAreEqual(f, fraction));
+        if (fractionIndex !== -1) {
+            setUserAnswer(fractionIndex);
         }
-    }, [gameState, currentQuestion, equation.terms]);
+    }, [gameState, currentQuestion]);
 
 
     useEffect(() => {
@@ -405,17 +407,6 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         }
     };
     
-    // For challenge mode 'compare', set up the workspace with the fractions to be compared
-    useEffect(() => {
-        if (gameState === 'challenge' && currentQuestion?.type === 'compare') {
-            const terms = currentQuestion.fractions.map(f => {
-                const pieces: WorkspacePiece[] = [{ id: `challenge-${f.numerator}/${f.denominator}`, fraction: f, position: {x:0, y:0} }];
-                return { fraction: f, pieces };
-            });
-            setEquation({ ...EMPTY_EQUATION, terms, operators: [', or'] }); // Using comma as a visual separator
-        }
-    }, [gameState, currentQuestion]);
-
     const getSubtitle = () => {
         switch (gameState) {
             case 'training': return 'Training Mode';
@@ -510,22 +501,29 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                                     orderDirection={currentQuestion.order!}
                                 />
                             )}
+                            
+                            {isCompareMode && (
+                                <CompareWorkspace
+                                    fractions={currentQuestion.fractions}
+                                    selectedFraction={typeof userAnswer === 'number' ? currentQuestion.fractions[userAnswer] : null}
+                                    onSelect={handleCompareSelection}
+                                />
+                            )}
 
-                            {(isAddSubMode || isCompareMode) && (
+                            {isAddSubMode && (
                                 <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
                                     <div className="max-h-[70vh] overflow-y-auto pr-2 rounded-lg">
                                         <FractionChart onPieceDragStart={handlePieceDragStart} />
                                     </div>
                                     <div className="flex flex-col gap-4">
                                         <p className="text-chalk-light font-semibold text-center text-lg">
-                                            {isCompareMode ? 'The fractions are shown below. Click the one you think is greater.' : 'Build your answer in the workspace below.'}
+                                            Build your answer in the workspace below.
                                         </p>
                                         <CalculationWorkspace
                                             equation={equation}
                                             onDrop={handleDrop}
                                             onDragOver={handleDragOver}
                                             isDropZoneActive={isDropZoneActive}
-                                            onBarClick={isCompareMode ? handleCompareSelection : undefined}
                                         />
                                     </div>
                                 </div>
