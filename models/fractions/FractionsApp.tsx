@@ -5,7 +5,7 @@ import { WelcomeScreen } from './components/WelcomeScreen';
 import { ModeSelector } from './components/ModeSelector';
 import { DifficultySelector } from '../../components/DifficultySelector';
 import { FractionChart } from './components/FractionWall';
-import { Workspace } from './components/CalculationCanvas';
+import { CalculationWorkspace } from './components/CalculationWorkspace';
 import { FractionChallengePanel } from './components/FractionChallengePanel';
 import { TrainingGuide } from './components/TrainingGuide';
 import { Confetti } from '../../components/Confetti';
@@ -16,43 +16,52 @@ import { speak, cancelSpeech } from '../../utils/speech';
 import { useAudio } from '../../contexts/AudioContext';
 import { HelpModal } from './components/HelpModal';
 import { CalculationStepsPanel } from './components/CalculationStepsPanel';
+import { FractionControls } from './components/FractionControls';
+import { EquationInfoPanel } from './components/EquationInfoPanel';
+import { addFractions, subtractFractions, simplifyFraction, lcm, getFractionalValue, fractionsAreEqual } from './utils/fractions';
 
-function fractionsAreEqual(f1: Fraction | null, f2: Fraction | null): boolean {
-    if (!f1 || !f2) return false;
-    if(f1.numerator === 0 && f2.numerator === 0) return true;
-    return f1.numerator * f2.denominator === f2.numerator * f1.denominator;
-}
 
 const DURATION_MAP: Record<Difficulty, number> = { easy: 45, medium: 35, hard: 25 };
+
+const EMPTY_EQUATION: EquationState = {
+    terms: [{ fraction: null, pieces: [] }],
+    operators: [],
+    result: null,
+    resultPieces: [],
+    unsimplifiedResult: null,
+    unsimplifiedResultPieces: [],
+    isSolved: false,
+};
 
 export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo | null }> = ({ onExit, currentUser }) => {
     const [gameState, setGameState] = useState<FractionState>('welcome');
     const [showHelp, setShowHelp] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
-    const [workspacePieces, setWorkspacePieces] = useState<WorkspacePiece[]>([]);
     const [isDropZoneActive, setIsDropZoneActive] = useState(false);
     
     // Training State
     const [trainingStep, setTrainingStep] = useState(0);
+    const [workspacePieces, setWorkspacePieces] = useState<WorkspacePiece[]>([]); // Only for training
     const [incorrectActionFeedback, setIncorrectActionFeedback] = useState<string | null>(null);
     const spokenStepsRef = useRef<Set<number>>(new Set());
     const { isSpeechEnabled } = useAudio();
     const currentTrainingStep = useMemo(() => fractionTrainingPlan.find(s => s.step === trainingStep) || null, [trainingStep]);
 
-    // Solution Panel State
-    const [showSolutionPanel, setShowSolutionPanel] = useState(false);
-    const [equationForSolution, setEquationForSolution] = useState<EquationState | null>(null);
+    // Explore Mode State
+    const [equation, setEquation] = useState<EquationState>(EMPTY_EQUATION);
     
-    const clearWorkspace = useCallback(() => {
-        setWorkspacePieces([]);
-        setShowSolutionPanel(false);
-        setEquationForSolution(null);
+    const clearWorkspace = useCallback((forTraining: boolean) => {
+        if (forTraining) {
+            setWorkspacePieces([]);
+        } else {
+            setEquation(EMPTY_EQUATION);
+        }
     }, []);
 
     const advanceStep = useCallback(() => {
         const step = fractionTrainingPlan.find(s => s.step === trainingStep);
         if (step?.clearWorkspaceAfter) {
-            clearWorkspace();
+            clearWorkspace(true);
         }
         setIncorrectActionFeedback(null);
         setTrainingStep(t => t + 1);
@@ -68,25 +77,90 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         e.preventDefault();
         setIsDropZoneActive(false);
         const fractionData = e.dataTransfer.getData('application/json');
-        if (fractionData) {
-            const fraction = JSON.parse(fractionData) as Fraction;
-            const newPiece: WorkspacePiece = {
-                id: `wp-${Date.now()}`,
-                fraction,
-                position: { x: 0, y: workspacePieces.length * 50 }, // Simple stacking
-                state: 'idle',
-            };
+        if (!fractionData) return;
+
+        const fraction = JSON.parse(fractionData) as Fraction;
+        const newPiece: WorkspacePiece = {
+            id: `wp-${Date.now()}`,
+            fraction,
+            position: { x: 0, y: 0 },
+            state: 'idle',
+        };
+
+        if (gameState === 'training') {
             setWorkspacePieces(prev => [...prev, newPiece]);
+        } else if (gameState === 'explore' && !equation.isSolved) {
+            setEquation(prev => {
+                const newTerms = [...prev.terms];
+                const lastTermIndex = newTerms.length - 1;
+                const currentTerm = newTerms[lastTermIndex];
+                
+                const newPieces = [...currentTerm.pieces, newPiece];
+                const newFraction = addFractions(currentTerm.fraction, fraction);
+                
+                newTerms[lastTermIndex] = { fraction: newFraction, pieces: newPieces };
+
+                return { ...prev, terms: newTerms };
+            });
         }
     };
     
-    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
+    
+    const handleSetOperator = (op: FractionOperator) => {
+        if (gameState === 'explore' && !equation.isSolved) {
+             setEquation(prev => {
+                const lastTerm = prev.terms[prev.terms.length - 1];
+                if (lastTerm.fraction) {
+                    return {
+                        ...prev,
+                        operators: [...prev.operators, op],
+                        terms: [...prev.terms, { fraction: null, pieces: [] }],
+                    };
+                }
+                return prev;
+            });
+        }
+    }
+
+    const handleSolveEquation = () => {
+        if (gameState !== 'explore' || equation.terms.length < 2 || equation.isSolved) return;
+
+        const { terms, operators } = equation;
+        
+        if (!terms[terms.length - 1].fraction) return;
+
+        let currentResult = terms[0].fraction!;
+        
+        for (let i = 0; i < operators.length; i++) {
+            const nextTerm = terms[i + 1].fraction!;
+            if (operators[i] === '+') {
+                currentResult = addFractions(currentResult, nextTerm);
+            } else {
+                currentResult = subtractFractions(currentResult, nextTerm);
+            }
+        }
+
+        const unsimplifiedResult: Fraction = currentResult;
+        const finalResult = simplifyFraction(unsimplifiedResult);
+        
+        const resultPieces: WorkspacePiece[] = [];
+        if (finalResult.numerator > 0) {
+            resultPieces.push({
+                id: `result-${Date.now()}`,
+                fraction: finalResult,
+                position: { x: 0, y: 0 },
+                state: 'idle',
+            });
+        }
+
+        setEquation(prev => ({ ...prev, isSolved: true, unsimplifiedResult, result: finalResult, resultPieces }));
     };
 
 
     const goBackToMenu = useCallback(() => {
-        clearWorkspace();
+        clearWorkspace(true);
+        clearWorkspace(false);
         setGameState('mode_selection');
         spokenStepsRef.current.clear();
         setTrainingStep(0);
@@ -95,11 +169,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
 
     const handleBarClick = useCallback((clickedFraction: Fraction) => {
         if (gameState !== 'training' || !currentTrainingStep) return;
-
-        if (
-            currentTrainingStep.type === 'action' &&
-            currentTrainingStep.requiredAction === 'click_bar'
-        ) {
+        if (currentTrainingStep.type === 'action' && currentTrainingStep.requiredAction === 'click_bar') {
             if (fractionsAreEqual(clickedFraction, currentTrainingStep.requiredValue as Fraction)) {
                 setIncorrectActionFeedback(null);
                 advanceStep();
@@ -110,28 +180,26 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         }
     }, [gameState, currentTrainingStep, advanceStep]);
     
-    const handleSolve = () => {
+    const handleSolveTraining = () => {
         if (gameState === 'training' && currentTrainingStep?.requiredAction === 'solve') {
-            const equation = {
-                term1: { numerator: 1, denominator: 3 },
-                operator: '+' as FractionOperator,
-                term2: { numerator: 1, denominator: 6 },
+            const solvedEquation: EquationState = {
+                terms: [
+                    { fraction: { numerator: 1, denominator: 3 }, pieces: [] },
+                    { fraction: { numerator: 1, denominator: 6 }, pieces: [] }
+                ],
+                operators: ['+'],
                 unsimplifiedResult: { numerator: 3, denominator: 6 },
                 result: { numerator: 1, denominator: 2 },
+                resultPieces: [],
                 isSolved: true,
             };
-            setEquationForSolution(equation);
-            setShowSolutionPanel(true);
+            setEquation(solvedEquation);
             advanceStep();
         }
     };
 
-
     useEffect(() => {
-        // Cleanup speech on unmount
-        return () => {
-            cancelSpeech();
-        }
+        return () => cancelSpeech();
     }, []);
     
     useEffect(() => {
@@ -142,7 +210,6 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         
         const executeStep = async () => {
             if (isSpeechEnabled && !spokenStepsRef.current.has(step.step)) {
-                // To improve reliability, cancel any lingering speech from a previous, fast-advancing step.
                 cancelSpeech();
                 spokenStepsRef.current.add(step.step);
                 await speak(step.text, 'en-US');
@@ -156,21 +223,16 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                 setWorkspacePieces(prev => {
                     const targetIndex = prev.findIndex(p => fractionsAreEqual(p.fraction, targetFraction) && p.state === 'idle');
                     if (targetIndex === -1) return prev;
-
                     const targetPiece = prev[targetIndex];
                     const newWorkspace = [...prev];
-                    
                     newWorkspace[targetIndex] = { ...targetPiece, state: 'removing' };
-                    
                     const numPieces = (targetFraction.numerator * splitResultFraction.denominator) / targetFraction.denominator;
-
                     const newPieces: WorkspacePiece[] = Array.from({ length: numPieces }).map((_, i) => ({
                         ...targetPiece,
                         id: `${targetPiece.id}-s${i+1}`,
                         fraction: splitResultFraction,
                         state: 'splitting'
                     }));
-
                     newWorkspace.splice(targetIndex, 0, ...newPieces);
                     return newWorkspace;
                 });
@@ -211,20 +273,13 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
             }
 
             if (step.type === 'intro' || step.type === 'feedback') {
-                if (!isSpeechEnabled) {
-                    await new Promise(r => setTimeout(r, step.duration || 4000));
-                }
+                if (!isSpeechEnabled) await new Promise(r => setTimeout(r, step.duration || 4000));
                 if (isMounted) advanceStep();
-            } else if (step.type === 'action') {
-                if (step.requiredAction === 'drag_piece') {
-                    const requiredFraction = step.requiredValue as Fraction;
-                    const count = workspacePieces.filter(p => 
-                        fractionsAreEqual(p.fraction, requiredFraction)
-                    ).length;
-
-                    if (count >= (step.requiredCount || 1)) {
-                        if (isMounted) advanceStep();
-                    }
+            } else if (step.type === 'action' && step.requiredAction === 'drag_piece') {
+                const requiredFraction = step.requiredValue as Fraction;
+                const count = workspacePieces.filter(p => fractionsAreEqual(p.fraction, requiredFraction)).length;
+                if (count >= (step.requiredCount || 1)) {
+                    if (isMounted) advanceStep();
                 }
             }
         }
@@ -234,7 +289,8 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
     }, [gameState, trainingStep, currentTrainingStep, isSpeechEnabled, workspacePieces, advanceStep]);
 
     const handleModeSelection = async (mode: FractionState) => {
-        clearWorkspace();
+        clearWorkspace(true);
+        clearWorkspace(false);
         setGameState(mode);
         await logEvent('mode_start', currentUser, { model: 'fractions', mode });
         syncAnalyticsData();
@@ -263,45 +319,39 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
             case 'welcome': return <WelcomeScreen onStart={() => setGameState('mode_selection')} />;
             case 'mode_selection': return <ModeSelector onSelectMode={handleModeSelection} />;
             case 'training':
-            case 'explore':
                 return (
                     <div className="fractions-theme w-full flex-grow flex flex-col items-center justify-center p-4">
                         <div className="w-full max-w-4xl flex flex-col items-center animate-pop-in">
-                            {gameState === 'training' && currentTrainingStep && (
-                                <TrainingGuide currentStep={currentTrainingStep} onComplete={goBackToMenu} onContinue={() => advanceStep()} incorrectActionFeedback={incorrectActionFeedback} />
-                            )}
-                            <FractionChart 
-                                onPieceDragStart={handlePieceDragStart} 
-                                spotlightOn={currentTrainingStep?.spotlightOn}
-                                trainingRequiredFraction={trainingRequiredFraction}
-                            />
+                            {currentTrainingStep && <TrainingGuide currentStep={currentTrainingStep} onComplete={goBackToMenu} onContinue={() => advanceStep()} incorrectActionFeedback={incorrectActionFeedback} />}
+                            <FractionChart onPieceDragStart={handlePieceDragStart} spotlightOn={currentTrainingStep?.spotlightOn} trainingRequiredFraction={trainingRequiredFraction} />
                             <div className="w-full mt-4">
-                                <Workspace 
-                                    pieces={workspacePieces}
-                                    onDrop={handleDrop}
-                                    onDragOver={handleDragOver}
-                                    isDropZoneActive={isDropZoneActive}
-                                    spotlightOn={currentTrainingStep?.spotlightOn}
-                                    onBarClick={gameState === 'training' && currentTrainingStep?.requiredAction === 'click_bar' ? handleBarClick : undefined}
-                                />
+                                <CalculationWorkspace pieces={workspacePieces} onDrop={handleDrop} onDragOver={handleDragOver} isDropZoneActive={isDropZoneActive} spotlightOn={currentTrainingStep?.spotlightOn} onBarClick={currentTrainingStep?.requiredAction === 'click_bar' ? handleBarClick : undefined} />
                                 <div className="mt-4 flex justify-between items-center">
-                                    <div>
-                                        {gameState === 'training' && currentTrainingStep?.requiredAction === 'solve' && (
-                                            <button
-                                                onClick={handleSolve}
-                                                className={`control-button bg-green-600 border-green-800 hover:bg-green-500 ${currentTrainingStep.spotlightOn === 'solve_button' ? 'animate-guide-pulse' : ''}`}
-                                            >
-                                                Solve
-                                            </button>
-                                        )}
-                                    </div>
-                                    <button onClick={() => clearWorkspace()} className="control-button bg-red-600 border-red-800 hover:bg-red-500">
-                                        Clear Workspace
-                                    </button>
+                                    {currentTrainingStep?.requiredAction === 'solve' && (
+                                        <button onClick={handleSolveTraining} className={`control-button bg-green-600 border-green-800 hover:bg-green-500 ${currentTrainingStep.spotlightOn === 'solve_button' ? 'animate-guide-pulse' : ''}`}>Solve</button>
+                                    )}
+                                    <button onClick={() => clearWorkspace(true)} className="control-button bg-red-600 border-red-800 hover:bg-red-500 ml-auto">Clear Workspace</button>
                                 </div>
-                                {showSolutionPanel && equationForSolution && (
-                                    <CalculationStepsPanel equation={equationForSolution} isVisible={showSolutionPanel} />
-                                )}
+                                {equation.isSolved && <CalculationStepsPanel equation={equation} isVisible={equation.isSolved} />}
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'explore':
+                 return (
+                    <div className="fractions-theme w-full flex-grow flex flex-col items-center justify-center p-4">
+                        <div className="w-full max-w-4xl flex flex-col items-center animate-pop-in">
+                            <EquationInfoPanel equation={equation} />
+                            <FractionChart onPieceDragStart={handlePieceDragStart} />
+                             <div className="w-full mt-4">
+                               <CalculationWorkspace equation={equation} onDrop={handleDrop} onDragOver={handleDragOver} isDropZoneActive={isDropZoneActive} />
+                                <FractionControls 
+                                    onOperatorSelect={handleSetOperator}
+                                    onSolve={handleSolveEquation}
+                                    onClear={() => clearWorkspace(false)}
+                                    equation={equation}
+                                />
+                                {equation.isSolved && <CalculationStepsPanel equation={equation} isVisible={equation.isSolved} />}
                             </div>
                         </div>
                     </div>

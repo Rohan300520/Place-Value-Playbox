@@ -93,12 +93,18 @@ export interface WorkspacePiece {
 
 export type FractionOperator = '+' | '-';
 
+export interface EquationTerm {
+  fraction: Fraction | null;
+  pieces: WorkspacePiece[];
+}
+
 export type EquationState = {
-  term1: Fraction | null;
-  operator: FractionOperator | null;
-  term2: Fraction | null;
+  terms: EquationTerm[];
+  operators: FractionOperator[];
   result: Fraction | null;
+  resultPieces: WorkspacePiece[];
   unsimplifiedResult?: Fraction | null;
+  unsimplifiedResultPieces?: WorkspacePiece[];
   isSolved: boolean;
 };
 

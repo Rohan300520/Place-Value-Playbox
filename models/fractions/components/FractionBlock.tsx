@@ -9,16 +9,35 @@ interface FractionPieceProps {
 }
 
 const BLOCK_COLORS = [
-    '#D97706', // 1 (amber-600)
-    '#EF4444', // 2 (red-500)
-    '#EC4899', // 3 (pink-500)
-    '#F59E0B', // 4 (amber-500)
-    '#8B5CF6', // 6 (violet-500)
-    '#10B981', // 8 (emerald-500)
-    '#3B82F6', // 12 (blue-500)
-    '#6366F1', // 16 (indigo-500)
+    '#D35400', // 1 (Orange)
+    '#27AE60', // 2 (Green)
+    '#483D8B', // 3 (Dark Slate Blue)
+    '#2980B9', // 4 (Light Blue)
+    '#16A085', // 5 (Teal)
+    '#A52A2A', // 6 (Brown)
+    '#8E44AD', // 7 (Purple)
+    '#C71585', // 8 (Medium Violet Red)
+    '#34495E', // 9 (Dark Grey)
+    '#BDC3C7', // 10 (Silver)
+    '#C0392B', // 12 (Red)
+    '#F1C40F', // 16 (Yellow)
 ];
-const DENOMINATORS = [1, 2, 3, 4, 6, 8, 12, 16];
+const DENOMINATORS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16];
+
+const getTextStyle = (backgroundColor: string): { className: string; style: React.CSSProperties } => {
+    const upperBg = backgroundColor.toUpperCase();
+    // Yellow and Silver are too bright for white text, so switch to dark text.
+    if (upperBg === '#F1C40F' || upperBg === '#BDC3C7') {
+        return {
+            className: 'text-slate-900', // Dark text
+            style: { textShadow: '1px 1px 2px rgba(255,255,255,0.4)' } // Light shadow for contrast
+        };
+    }
+    return {
+        className: 'text-white',
+        style: { textShadow: '2px 2px 3px rgba(0,0,0,0.5)' }
+    };
+};
 
 export const FractionPiece: React.FC<FractionPieceProps> = ({ fraction, onClick, onDragStart, isDraggable = false }) => {
     if (!fraction || fraction.denominator === 0) return null;
@@ -32,7 +51,8 @@ export const FractionPiece: React.FC<FractionPieceProps> = ({ fraction, onClick,
         boxShadow: `inset 0 -6px 0 ${color}aa, 2px 2px 5px rgba(0,0,0,0.2)`,
     };
     
-    const text = denominator === 1 ? '1' : `${numerator}/${denominator}`;
+    const text = denominator === 1 ? 'WHOLE' : `${numerator}/${denominator}`;
+    const textStyle = getTextStyle(color);
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
         if (onDragStart) {
@@ -45,10 +65,10 @@ export const FractionPiece: React.FC<FractionPieceProps> = ({ fraction, onClick,
             draggable={isDraggable}
             onDragStart={handleDragStart}
             onClick={onClick}
-            className={`relative flex items-center justify-center h-12 rounded-lg text-white font-chalk text-2xl transition-transform duration-200 border-2 border-black/20 ${isDraggable ? 'cursor-grab active:cursor-grabbing hover:scale-105 hover:shadow-xl' : 'cursor-not-allowed'}`}
+            className={`relative flex items-center justify-center h-12 rounded-lg ${textStyle.className} font-chalk text-2xl transition-transform duration-200 border-2 border-black/20 ${isDraggable ? 'cursor-grab active:cursor-grabbing hover:scale-105 hover:shadow-xl' : 'cursor-not-allowed'}`}
             style={backgroundStyle}
         >
-            <span className="absolute inset-0 flex items-center justify-center" style={{ textShadow: '2px 2px 3px rgba(0,0,0,0.5)' }}>
+            <span className="absolute inset-0 flex items-center justify-center" style={textStyle.style}>
                 {text}
             </span>
         </div>

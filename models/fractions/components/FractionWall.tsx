@@ -2,7 +2,7 @@ import React from 'react';
 import type { Fraction } from '../../../types';
 import { FractionPiece } from './FractionBlock';
 
-const DENOMINATORS = [1, 2, 3, 4, 6, 8, 12];
+const DENOMINATORS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16];
 
 interface FractionChartProps {
     onPieceDragStart: (e: React.DragEvent<HTMLDivElement>, fraction: Fraction) => void;

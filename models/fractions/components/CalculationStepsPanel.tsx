@@ -1,8 +1,6 @@
 import React from 'react';
 import type { EquationState, Fraction } from '../../../types';
-
-const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
-const lcm = (a: number, b: number): number => (a * b) / gcd(a, b);
+import { lcm, getPrimeFactorization } from '../utils/fractions';
 
 function fractionsAreEqual(f1: Fraction | null | undefined, f2: Fraction | null | undefined): boolean {
     if (!f1 || !f2) return false;
@@ -19,22 +17,102 @@ const FractionDisplay: React.FC<{ fraction: Fraction, highlight?: boolean, color
 );
 
 export const CalculationStepsPanel: React.FC<{ equation: EquationState, isVisible: boolean }> = ({ equation, isVisible }) => {
-    const { term1, term2, operator, result, unsimplifiedResult, isSolved } = equation;
+    const { terms, operators, result, unsimplifiedResult, isSolved } = equation;
 
-    if (!isVisible || !isSolved || !term1 || !term2 || !operator || !result || !unsimplifiedResult) {
+    if (!isVisible || !isSolved || terms.length < 2 || !result || !unsimplifiedResult) {
         return null;
     }
 
-    const needsConversion = term1.denominator !== term2.denominator;
-    const commonDen = needsConversion ? lcm(term1.denominator, term2.denominator) : term1.denominator;
+    const validTerms = terms.filter(t => t.fraction !== null).map(t => t.fraction!);
+    if (validTerms.length < 2) return null;
     
-    const multiplier1 = commonDen / term1.denominator;
-    const converted1 = { numerator: term1.numerator * multiplier1, denominator: commonDen };
-    
-    const multiplier2 = commonDen / term2.denominator;
-    const converted2 = { numerator: term2.numerator * multiplier2, denominator: commonDen };
+    // Fix: Replaced spread operator with Array.from() to ensure correct type inference from the Set iterator.
+    const uniqueDenominators: number[] = Array.from(new Set(validTerms.map(t => t.denominator)));
+    const commonDen = uniqueDenominators.reduce((acc, curr) => lcm(acc, curr));
+
+    const needsConversion = uniqueDenominators.some(den => den !== commonDen);
+
+    const convertedTerms = validTerms.map(term => {
+        const multiplier = commonDen / term.denominator;
+        return {
+            original: term,
+            multiplier: multiplier,
+            converted: { numerator: term.numerator * multiplier, denominator: commonDen }
+        };
+    });
 
     const needsSimplifying = !fractionsAreEqual(unsimplifiedResult, result);
+
+    const renderLcmExplanation = () => {
+        if (uniqueDenominators.length <= 1) {
+            return null;
+        }
+
+        // 1. Get prime factorizations
+        const factorizations = uniqueDenominators.map(den => ({
+            den,
+            factors: getPrimeFactorization(den),
+        }));
+
+        // 2. Find highest power for each prime
+        const highestPowers: Record<number, number> = {};
+        factorizations.forEach(({ factors }) => {
+            for (const prime in factors) {
+                if (!highestPowers[prime] || factors[prime] > highestPowers[prime]) {
+                    highestPowers[prime] = factors[prime];
+                }
+            }
+        });
+
+        // 3. Calculate LCM from factors to display
+        const lcmFromFactors = Object.entries(highestPowers)
+            .reduce((acc, [prime, power]) => acc * (Math.pow(Number(prime), power)), 1);
+
+        return (
+            <div className="text-sm space-y-3">
+                <p className="font-bold mb-1">How to find the LCM (using Prime Factorization):</p>
+                
+                <div className="space-y-1">
+                    <p>1. Find the prime factors of each denominator:</p>
+                    {factorizations.map(({ den, factors }) => (
+                        <div key={den} className="flex items-center gap-2 pl-4">
+                            <span className="font-bold w-8 text-right">{den}</span>
+                            <span>=</span>
+                            <p className="font-mono flex-1">
+                                {Object.entries(factors)
+                                    .flatMap(([prime, power]) => Array(power).fill(prime))
+                                    .join(' × ')}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="space-y-1">
+                    <p>2. Take the highest power of each unique prime factor:</p>
+                    <p className="font-mono pl-4 text-lg">
+                        {Object.entries(highestPowers)
+                            .map(([prime, power]) => (
+                                <span key={prime} className="mr-2">
+                                    {prime}
+                                    <sup>{power > 1 ? power : ''}</sup>
+                                </span>
+                            ))
+                            .reduce((prev, curr) => <>{prev} × {curr}</>)}
+                    </p>
+                </div>
+                
+                <div className="space-y-1">
+                    <p>3. Multiply them together:</p>
+                    <p className="font-mono pl-4">
+                        {Object.entries(highestPowers)
+                            .map(([prime, power]) => `${Math.pow(Number(prime), power)}`)
+                            .join(' × ')}
+                        <span className="font-bold"> = {lcmFromFactors}</span>
+                    </p>
+                </div>
+            </div>
+        );
+    };
 
     let stepCounter = 1;
 
@@ -47,32 +125,28 @@ export const CalculationStepsPanel: React.FC<{ equation: EquationState, isVisibl
                         <li className="flex items-start gap-3">
                             <span className="font-chalk text-chalk-yellow text-xl">{stepCounter++}.</span>
                             <div>
-                                <p>Find a common denominator (LCM) for <span className="font-bold text-chalk-yellow">{term1.denominator}</span> and <span className="font-bold text-chalk-yellow">{term2.denominator}</span>.</p>
-                                <p className="bg-slate-900/50 p-2 rounded-md mt-1">The least common multiple is <span className="font-bold text-chalk-green text-xl">{commonDen}</span>.</p>
+                                <p>Find a common denominator for all fractions.</p>
+                                <div className="bg-slate-900/50 p-3 rounded-md mt-1">
+                                    {renderLcmExplanation()}
+                                    <p className={` ${uniqueDenominators.length > 1 ? 'mt-2 pt-2 border-t-2 border-chalk-border/50' : ''}`}>
+                                        The least common multiple (LCM) is <span className="font-bold text-chalk-green text-xl">{commonDen}</span>.
+                                    </p>
+                                </div>
                             </div>
                         </li>
                         <li className="flex items-start gap-3">
                             <span className="font-chalk text-chalk-yellow text-xl">{stepCounter++}.</span>
                             <div>
                                 <p>Convert the fractions to have the same denominator.</p>
-                                {multiplier1 > 1 && (
-                                     <div className="flex items-center gap-2 bg-slate-900/50 p-2 rounded-md mt-1">
-                                        <FractionDisplay fraction={term1} />
+                                {convertedTerms.map((term, index) => term.multiplier > 1 && (
+                                     <div key={index} className="flex items-center gap-2 bg-slate-900/50 p-2 rounded-md mt-1">
+                                        <FractionDisplay fraction={term.original} />
                                         <span>×</span>
-                                        <FractionDisplay fraction={{ numerator: multiplier1, denominator: multiplier1 }} color="text-chalk-green" />
+                                        <FractionDisplay fraction={{ numerator: term.multiplier, denominator: term.multiplier }} color="text-chalk-green" />
                                         <span>=</span>
-                                        <FractionDisplay fraction={converted1} highlight={true} />
+                                        <FractionDisplay fraction={term.converted} highlight={true} />
                                      </div>
-                                )}
-                                 {multiplier2 > 1 && (
-                                     <div className="flex items-center gap-2 bg-slate-900/50 p-2 rounded-md mt-1">
-                                        <FractionDisplay fraction={term2} />
-                                        <span>×</span>
-                                        <FractionDisplay fraction={{ numerator: multiplier2, denominator: multiplier2 }} color="text-chalk-green"/>
-                                        <span>=</span>
-                                        <FractionDisplay fraction={converted2} highlight={true} />
-                                     </div>
-                                )}
+                                ))}
                             </div>
                         </li>
                     </>
@@ -81,10 +155,13 @@ export const CalculationStepsPanel: React.FC<{ equation: EquationState, isVisibl
                      <span className="font-chalk text-chalk-yellow text-xl">{stepCounter++}.</span>
                      <div>
                         <p>Perform the calculation.</p>
-                         <div className="flex items-center gap-2 bg-slate-900/50 p-2 rounded-md mt-1">
-                            <FractionDisplay fraction={converted1} />
-                            <span className="text-3xl font-bold">{operator}</span>
-                            <FractionDisplay fraction={converted2} />
+                         <div className="flex items-center flex-wrap gap-2 bg-slate-900/50 p-2 rounded-md mt-1">
+                            {convertedTerms.map((term, index) => (
+                                <React.Fragment key={index}>
+                                    <FractionDisplay fraction={term.converted} />
+                                    {operators[index] && <span className="text-3xl font-bold">{operators[index]}</span>}
+                                </React.Fragment>
+                            ))}
                             <span>=</span>
                             <FractionDisplay fraction={unsimplifiedResult} highlight={true} />
                          </div>
