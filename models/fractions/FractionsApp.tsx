@@ -71,6 +71,16 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
     
     const currentQuestion = useMemo(() => filteredQuestions[currentQuestionIndex] || null, [filteredQuestions, currentQuestionIndex]);
 
+    useEffect(() => {
+        if (gameState === 'training' && currentTrainingStep && isSpeechEnabled) {
+            if (!spokenStepsRef.current.has(currentTrainingStep.step)) {
+                cancelSpeech();
+                speak(currentTrainingStep.text, 'en-US');
+                spokenStepsRef.current.add(currentTrainingStep.step);
+            }
+        }
+    }, [gameState, currentTrainingStep, isSpeechEnabled]);
+
     const clearWorkspace = useCallback((forTraining: boolean) => {
         if (forTraining) {
             setTrainingWorkspacePieces([]);
