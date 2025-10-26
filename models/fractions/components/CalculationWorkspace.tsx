@@ -42,25 +42,26 @@ const renderPieceGroup = (group: WorkspacePiece[], onBarClick?: (fraction: Fract
 
 
 export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ pieces, equation, onDrop, onDragOver, isDropZoneActive, spotlightOn, onBarClick }) => {
-    // Determine which pieces to render based on mode
     const isExploreMode = !!equation;
     const piecesToRender = isExploreMode ? [] : (pieces || []);
     
-    // Group consecutive pieces for training mode
+    // Group ALL pieces by their denominator, not just consecutive ones.
+    // This is better for Challenge mode where the user is building a total sum.
     const groupedPieces: WorkspacePiece[][] = [];
     if (!isExploreMode && piecesToRender.length > 0) {
-        let currentGroup: WorkspacePiece[] = [];
-        for (let i = 0; i < piecesToRender.length; i++) {
-            const piece = piecesToRender[i];
-            const prevPiece = piecesToRender[i - 1];
-            if (piece.state !== 'idle' || currentGroup.length === 0 || piece.fraction.denominator !== prevPiece.fraction.denominator || prevPiece.state !== 'idle') {
-                if (currentGroup.length > 0) groupedPieces.push(currentGroup);
-                currentGroup = [piece];
-            } else {
-                currentGroup.push(piece);
+        const piecesByDenominator = piecesToRender.reduce((acc, piece) => {
+            const den = piece.fraction.denominator;
+            if (!acc[den]) {
+                acc[den] = [];
             }
+            acc[den].push(piece);
+            return acc;
+        }, {} as Record<number, WorkspacePiece[]>);
+        
+        // Push the groups into the final array
+        for (const den in piecesByDenominator) {
+            groupedPieces.push(piecesByDenominator[den]);
         }
-        if (currentGroup.length > 0) groupedPieces.push(currentGroup);
     }
     
     const hasContent = isExploreMode ? (equation.terms[0].pieces.length > 0) : (piecesToRender.length > 0);
@@ -105,8 +106,9 @@ export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ piec
                 </div>
             )}
 
-            {/* TRAINING MODE RENDERING */}
+            {/* TRAINING / CHALLENGE MODE RENDERING */}
             {!isExploreMode && groupedPieces.map((group, groupIndex) => {
+                // This logic is specific to training animations and should not affect challenge mode
                 if (group.length === 1 && group[0].state !== 'idle') {
                     const piece = group[0];
                     const animationClass = piece.state === 'splitting' ? 'animate-bouncy-pop-in' : piece.state === 'removing' ? 'animate-slide-out-left' : piece.state === 'merging' ? 'animate-piece-merge' : '';
@@ -116,7 +118,8 @@ export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ piec
                         </div>
                     );
                 }
-                return <div key={groupIndex}>{renderPieceGroup(group, onBarClick)}</div>;
+                // FIX: Added w-full to ensure the percentage width of the piece group is relative to the full workspace width.
+                return <div key={groupIndex} className="w-full">{renderPieceGroup(group, onBarClick)}</div>;
             })}
         </div>
     );

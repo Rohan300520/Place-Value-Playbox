@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import type { FractionChallengeQuestion } from '../../../types';
-// Fix: The component exported from './FractionBlock' is named `FractionPiece`. Aliasing it to `FractionBlock` to match its usage in this file.
-import { FractionPiece as FractionBlock } from './FractionBlock';
+import type { FractionChallengeQuestion, Fraction } from '../../../types';
+import { FractionPiece } from './FractionBlock';
+import { useAudio } from '../../../contexts/AudioContext';
+import { speak, cancelSpeech } from '../../../utils/speech';
 
-const Timer: React.FC<{ onTimeOut: () => void, status: string, duration: number }> = ({ onTimeOut, status, duration }) => {
+const Timer: React.FC<{ onTimeOut: () => void, status: string, duration: number, questionId: number }> = ({ onTimeOut, status, duration, questionId }) => {
     const [timeLeft, setTimeLeft] = useState(duration);
 
     useEffect(() => {
@@ -22,7 +23,7 @@ const Timer: React.FC<{ onTimeOut: () => void, status: string, duration: number 
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [status, onTimeOut, duration]);
+    }, [status, onTimeOut, duration, questionId]);
     
     const percentage = (timeLeft / duration) * 100;
     let timerColor = 'bg-green-400';
@@ -52,25 +53,51 @@ interface FractionChallengePanelProps {
 }
 
 export const FractionChallengePanel: React.FC<FractionChallengePanelProps> = ({ status, question, onCheckAnswer, onNext, onTimeOut, onClearAnswer, score, timeLimit }) => {
+    const { isSpeechEnabled } = useAudio();
+
+    useEffect(() => {
+        if (isSpeechEnabled && question) {
+            cancelSpeech(); // Stop any previous speech
+            speak(question.questionText, 'en-US');
+        }
+        
+        // Cleanup: cancel speech if the component unmounts or the question changes
+        return () => {
+            cancelSpeech();
+        };
+    }, [question, isSpeechEnabled]);
+
     let statusClasses = 'border-chalk-cyan/80';
     if(status === 'correct') statusClasses = 'border-chalk-green/80 animate-celebrate';
     if(status === 'incorrect' || status === 'timed_out') statusClasses = 'border-chalk-red/80 animate-shake';
+
+    const getCorrectAnswerText = () => {
+        const { answer, type } = question;
+        if (type === 'add' || type === 'subtract') {
+            const ans = answer as Fraction;
+            return `${ans.numerator}/${ans.denominator}`;
+        }
+        if (type === 'compare') {
+            const ans = question.fractions[answer as number];
+            return `${ans.numerator}/${ans.denominator}`;
+        }
+        if (type === 'order') {
+            return (answer as Fraction[]).map(f => `${f.numerator}/${f.denominator}`).join(', ');
+        }
+        return '';
+    };
 
     return (
         <div className={`w-full mb-4 p-4 rounded-2xl border-2 ${statusClasses} transition-all duration-300 chalk-bg`}>
             <div className="flex justify-between items-start gap-4">
                  <div className="flex-1">
                     <p className="text-2xl font-chalk text-chalk-yellow">Challenge! <span className='capitalize text-chalk-light'>({question.level})</span></p>
-                    <div className="flex items-center justify-center gap-2 sm:gap-4 my-3 text-chalk-light">
-                        <FractionBlock fraction={question.term1} />
-                        <span className="text-4xl font-chalk">{question.operator}</span>
-                        <FractionBlock fraction={question.term2} />
-                        <span className="text-4xl font-chalk">= ?</span>
-                    </div>
+                    <p className="text-lg text-chalk-light mt-2">{question.questionText}</p>
+                    
                     {(status === 'incorrect' || status === 'timed_out') && (
                         <div className="mt-2 p-2 bg-red-900/50 border border-red-500 rounded-lg">
                             <p className="text-red-300 font-bold text-center font-chalk">
-                               {status === 'timed_out' ? 'Time is up! ' : 'Not quite! '}The correct answer is {question.answer.numerator}/{question.answer.denominator}.
+                               {status === 'timed_out' ? 'Time is up! ' : 'Not quite! '}The correct answer is {getCorrectAnswerText()}.
                             </p>
                         </div>
                     )}
@@ -90,29 +117,22 @@ export const FractionChallengePanel: React.FC<FractionChallengePanelProps> = ({ 
 
             <div className="w-full flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
                 <div className="w-full sm:w-1/2">
-                    {status === 'playing' && <Timer onTimeOut={onTimeOut} status={status} duration={timeLimit} />}
+                    {status === 'playing' && <Timer onTimeOut={onTimeOut} status={status} duration={timeLimit} questionId={question.id}/>}
                 </div>
                 <div className="flex items-center gap-4">
                     {status === 'playing' ? (
                         <>
-                           <button 
-                                onClick={onClearAnswer}
-                                className="control-button bg-amber-600 border-amber-800 hover:bg-amber-500"
-                            >
+                           {(question.type === 'add' || question.type === 'subtract') && (
+                             <button onClick={onClearAnswer} className="control-button bg-amber-600 border-amber-800 hover:bg-amber-500">
                                 Clear
-                            </button>
-                            <button 
-                                onClick={onCheckAnswer}
-                                className="control-button bg-green-600 border-green-800 hover:bg-green-500"
-                            >
+                             </button>
+                           )}
+                            <button onClick={onCheckAnswer} className="control-button bg-green-600 border-green-800 hover:bg-green-500">
                                 Check Answer
                             </button>
                         </>
                     ) : (
-                        <button 
-                            onClick={onNext}
-                            className="control-button bg-sky-600 border-sky-800 hover:bg-sky-500"
-                        >
+                        <button onClick={onNext} className="control-button bg-sky-600 border-sky-800 hover:bg-sky-500">
                             Next
                         </button>
                     )}
