@@ -22,9 +22,11 @@ import { FractionControls } from './components/FractionControls';
 import { EquationInfoPanel } from './components/EquationInfoPanel';
 import { OrderWorkspace } from './components/OrderWorkspace';
 import { addFractions, subtractFractions, simplifyFraction, lcm, getFractionalValue, fractionsAreEqual } from './utils/fractions';
+import { ActivityPanel } from './components/ActivityPanel';
 
 
 const DURATION_MAP: Record<Difficulty, number> = { easy: 60, medium: 45, hard: 30 };
+const DENOMINATORS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16];
 
 const EMPTY_EQUATION: EquationState = {
     terms: [{ fraction: null, pieces: [] }],
@@ -47,6 +49,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
     const [trainingStep, setTrainingStep] = useState(0);
     const [workspacePieces, setWorkspacePieces] = useState<WorkspacePiece[]>([]); // Only for training
     const [incorrectActionFeedback, setIncorrectActionFeedback] = useState<string | null>(null);
+    const [activityFeedback, setActivityFeedback] = useState<{ type: 'error' | 'success' | 'hint', message: string } | null>(null);
     const spokenStepsRef = useRef<Set<number>>(new Set());
     const { isSpeechEnabled } = useAudio();
     const currentTrainingStep = useMemo(() => fractionTrainingPlan.find(s => s.step === trainingStep) || null, [trainingStep]);
@@ -78,6 +81,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
             clearWorkspace(true);
         }
         setIncorrectActionFeedback(null);
+        setActivityFeedback(null);
         setTrainingStep(t => t + 1);
     }, [trainingStep, clearWorkspace]);
 
@@ -256,8 +260,101 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         }
     };
     
-    // --- Challenge Logic ---
+    // --- Activity Logic ---
+    const handleCheckActivityAnswer = () => {
+        if (!currentTrainingStep?.activity) return;
 
+        setActivityFeedback(null);
+        const { activity } = currentTrainingStep;
+        
+        const userFraction = workspacePieces.reduce((acc, piece) => addFractions(acc, piece.fraction), { numerator: 0, denominator: 1 });
+
+        if (userFraction.numerator === 0 && userFraction.denominator === 1) {
+            setActivityFeedback({ type: 'hint', message: "Your workspace is empty. Drag some pieces to build your answer!" });
+            return;
+        }
+
+        if (activity.type === 'build') {
+            const target = activity.target;
+            const userDenominator = workspacePieces[0]?.fraction.denominator;
+
+            if (workspacePieces.some(p => p.fraction.denominator !== userDenominator)) {
+                setActivityFeedback({ type: 'error', message: "Oops! All your pieces must be the same size (have the same denominator)." });
+                return;
+            }
+
+            if (userDenominator !== target.denominator) {
+                setActivityFeedback({ type: 'error', message: `You used 1/${userDenominator} pieces, but we need 1/${target.denominator} pieces for this fraction.` });
+                return;
+            }
+
+            if (userFraction.numerator !== target.numerator) {
+                setActivityFeedback({ type: 'hint', message: `You have ${userFraction.numerator} pieces, but you need ${target.numerator}. Keep trying!` });
+                return;
+            }
+
+            setActivityFeedback({ type: 'success', message: "Perfect! You built it correctly. Well done!" });
+            setShowConfetti(true);
+            setTimeout(() => advanceStep(), 3000);
+
+        } else if (activity.type === 'equivalent') {
+            const target = activity.target;
+
+            if (workspacePieces.some(p => p.fraction.denominator === target.denominator)) {
+                setActivityFeedback({ type: 'hint', message: "Good start, but try to use pieces with a DIFFERENT denominator than the target." });
+                return;
+            }
+
+            const userValue = getFractionalValue(userFraction);
+            const targetValue = getFractionalValue(target);
+
+            if (Math.abs(userValue - targetValue) < 0.001) {
+                const simplifiedUserFraction = simplifyFraction(userFraction);
+                setActivityFeedback({ type: 'success', message: `Yes! ${simplifiedUserFraction.numerator}/${simplifiedUserFraction.denominator} is the same size as ${target.numerator}/${target.denominator}. Excellent!` });
+                setShowConfetti(true);
+                setTimeout(() => advanceStep(), 4000);
+            } else if (userValue < targetValue) {
+                setActivityFeedback({ type: 'hint', message: "You're on the right track, but your fraction is a little too small. Try adding more pieces." });
+            } else {
+                setActivityFeedback({ type: 'hint', message: "Almost! Your fraction is a little too big. Try removing a piece." });
+            }
+        } else if (activity.type === 'improper_to_mixed') {
+            const target = activity.target;
+            
+            const expectedWholeParts = Math.floor(target.numerator / target.denominator);
+            const expectedNumerator = target.numerator % target.denominator;
+            const expectedDenominator = target.denominator;
+
+            const userWholeParts = workspacePieces.filter(p => p.fraction.denominator === 1).reduce((sum, p) => sum + p.fraction.numerator, 0);
+            const userFractionalPieces = workspacePieces.filter(p => p.fraction.denominator !== 1);
+            
+            if (userFractionalPieces.length > 0 && userFractionalPieces.some(p => p.fraction.denominator !== userFractionalPieces[0].fraction.denominator)) {
+                setActivityFeedback({ type: 'error', message: "Oops! All your fractional pieces must be the same size." });
+                return;
+            }
+            if (userFractionalPieces.length > 0 && userFractionalPieces[0].fraction.denominator !== expectedDenominator) {
+                 setActivityFeedback({ type: 'error', message: `You need to use 1/${expectedDenominator} pieces for the fractional part.` });
+                return;
+            }
+            
+            const userNumerator = userFractionalPieces.reduce((sum, p) => sum + p.fraction.numerator, 0);
+
+            if (userWholeParts === expectedWholeParts && userNumerator === expectedNumerator) {
+                setActivityFeedback({ type: 'success', message: `That's it! ${target.numerator}/${target.denominator} is the same as ${expectedWholeParts} and ${expectedNumerator}/${expectedDenominator}.` });
+                setShowConfetti(true);
+                setTimeout(() => advanceStep(), 4000);
+            } else {
+                 setActivityFeedback({ type: 'hint', message: `Not quite. Remember how many ${expectedDenominator} pieces make one whole. Keep trying!` });
+            }
+        }
+    };
+    
+    const handleResetActivity = () => {
+        clearWorkspace(true);
+        setActivityFeedback(null);
+    };
+
+    // --- Challenge Logic ---
     const startChallenge = useCallback((diff: Difficulty) => {
         const filtered = challenges.filter(q => q.level === diff);
         setQuestions([...filtered].sort(() => Math.random() - 0.5));
@@ -492,14 +589,28 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
             case 'model_intro': return <FractionIntroScreen onContinue={() => setGameState('mode_selection')} />;
             case 'mode_selection': return <ModeSelector onSelectMode={handleModeSelection} />;
             case 'challenge_difficulty_selection': return <DifficultySelector onSelectDifficulty={startChallenge} onBack={goBackToMenu} />;
-            case 'training':
+            case 'training': {
+                const isActivity = currentTrainingStep?.type === 'activity';
+                const activityOptions = currentTrainingStep?.activity?.options;
+                const disabledDenominators = (isActivity && currentTrainingStep.activity?.type === 'equivalent')
+                    ? [currentTrainingStep.activity.target.denominator, ...(activityOptions?.allowedDenominators ? DENOMINATORS.filter(d => !activityOptions.allowedDenominators!.includes(d)) : [])]
+                    : [];
+
                 return (
                     <div className="fractions-theme w-full flex-grow flex flex-col items-center p-4">
                         <div className="w-full max-w-7xl flex flex-col items-center animate-pop-in">
-                            {currentTrainingStep && <TrainingGuide currentStep={currentTrainingStep} onComplete={goBackToMenu} onContinue={() => advanceStep()} incorrectActionFeedback={incorrectActionFeedback} />}
+                            {currentTrainingStep && !isActivity && <TrainingGuide currentStep={currentTrainingStep} onComplete={goBackToMenu} onContinue={() => advanceStep()} incorrectActionFeedback={incorrectActionFeedback} />}
+                            {isActivity && currentTrainingStep.activity && (
+                                <ActivityPanel 
+                                    activity={currentTrainingStep.activity}
+                                    feedback={activityFeedback}
+                                    onCheck={handleCheckActivityAnswer}
+                                    onReset={handleResetActivity}
+                                />
+                            )}
                             <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
                                 <div className="max-h-[70vh] overflow-y-auto pr-2 rounded-lg">
-                                    <FractionChart onPieceDragStart={handlePieceDragStart} spotlightOn={currentTrainingStep?.spotlightOn} trainingRequiredFraction={trainingRequiredFraction} />
+                                    <FractionChart onPieceDragStart={handlePieceDragStart} spotlightOn={currentTrainingStep?.spotlightOn} trainingRequiredFraction={trainingRequiredFraction} disabledDenominators={disabledDenominators} />
                                 </div>
                                 <div className="flex flex-col gap-4">
                                     <CalculationWorkspace pieces={workspacePieces} onDrop={handleDrop} onDragOver={handleDragOver} isDropZoneActive={isDropZoneActive} spotlightOn={currentTrainingStep?.spotlightOn} onBarClick={currentTrainingStep?.requiredAction === 'click_bar' ? handleBarClick : undefined} />
@@ -515,6 +626,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                         </div>
                     </div>
                 );
+            }
             case 'explore':
                  return (
                     <div 

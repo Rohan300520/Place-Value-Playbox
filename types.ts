@@ -141,11 +141,20 @@ export type TrainingAction =
   | 'set_denominator'
   | 'select_pieces';
   
+export type TrainingActivity = {
+  type: 'build' | 'equivalent' | 'improper_to_mixed';
+  target: Fraction;
+  options?: {
+    // For equivalence, which denominators are allowed for the user's answer
+    allowedDenominators?: number[];
+  };
+};
+  
 // Fix: Add 'simplify' to the animation type and include related properties to support the simplification animation step.
 export interface FractionTrainingStep {
   module: number;
   step: number;
-  type: 'intro' | 'action' | 'feedback' | 'complete';
+  type: 'intro' | 'action' | 'feedback' | 'complete' | 'activity';
   text: string;
   // Fix: Add optional title property
   title?: string;
@@ -164,6 +173,7 @@ export interface FractionTrainingStep {
   animationResult?: Fraction;
   // For ordering module
   orderingBoxes?: Fraction[];
+  activity?: TrainingActivity;
 }
 
 
