@@ -8,8 +8,6 @@ import { createHandlerBoundToURL } from 'workbox-navigation';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
-declare const self: ServiceWorkerGlobalScope;
-
 // Immediately take control of the page when the service worker activates.
 self.addEventListener('install', () => {
   self.skipWaiting();
