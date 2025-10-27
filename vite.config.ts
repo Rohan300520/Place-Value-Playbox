@@ -8,14 +8,15 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'inline',
-      devOptions: {
-        enabled: true,
-      },
-      // Switch to an explicit strategy for more control and reliability
+      // devOptions removed - this was forcing a dev-only service worker
+      // that requires the dev server to be running, causing the offline error.
+      
+      // Use the 'injectManifest' strategy for full control over the service worker.
       strategies: 'injectManifest',
-      srcDir: '.',
+      srcDir: '.', // The root directory where service-worker.js is located.
       filename: 'service-worker.js',
       
+      // Assets to be included in the service worker's precache manifest.
       includeAssets: ['assets/place-value-box-model.png', 'assets/*.svg', 'assets/*.jpeg', 'assets/*.webp', '404.html'],
       manifest: {
         name: 'Place Value Playbox',
@@ -28,7 +29,7 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'assets/icon.svg', // Corrected path to the icon
+            src: 'assets/icon.svg',
             sizes: 'any',
             type: 'image/svg+xml',
             purpose: 'any maskable',
@@ -36,9 +37,11 @@ export default defineConfig({
         ],
       },
       injectManifest: {
-        // Define what files to precache. The custom service worker will use this manifest.
-        globPatterns: ['**/*.{js,ts,tsx,css,html,ico,png,svg,jpeg,webp}'],
-        maximumFileSizeToCacheInBytes: 30 * 1024 * 1024,
+        // Specifies which files in the build output directory should be precached.
+        // This pattern targets all essential built assets for offline functionality.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpeg,webp}'],
+        // Set a reasonable file size limit for precaching.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
       },
     }),
   ],
