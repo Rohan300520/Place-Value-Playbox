@@ -24,6 +24,7 @@ function createTextSprite(text: string, options: { color?: string, fontSize?: nu
     const context = canvas.getContext('2d');
     // Fix: The THREE.Sprite constructor requires a material argument.
     // The THREE.Sprite constructor now requires a material. Added a default SpriteMaterial to prevent an error.
+    // Fix: The THREE.Sprite constructor now requires a material argument, which was missing.
     if (!context) return new THREE.Sprite(new THREE.SpriteMaterial());
 
     context.font = `Bold ${fontSize}px Arial`;
