@@ -14,10 +14,21 @@ import { initAnalytics, logEvent, syncAnalyticsData } from './utils/analytics';
 // --- Main App Component (Router) ---
 const App: React.FC = () => {
   // Top-level state management
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [appState, setAppState] = useState<AppState>('model_selection');
   const [licenseStatus, setLicenseStatus] = useState<'loading' | 'valid' | 'locked' | 'expired' | 'tampered'>('loading');
   const [expiredDuration, setExpiredDuration] = useState<number | null>(null);
   const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
+
+  // Effect to handle SPA routing fallback from 404.html
+  useEffect(() => {
+    const pathFrom404 = sessionStorage.getItem('spa_path_fallback');
+    if (pathFrom404) {
+      sessionStorage.removeItem('spa_path_fallback');
+      window.history.replaceState(null, '', pathFrom404);
+      setCurrentPath(pathFrom404); // Update state to trigger re-render
+    }
+  }, []);
 
   useEffect(() => {
     // Check license and user info on initial load
@@ -113,7 +124,7 @@ const App: React.FC = () => {
   };
   
   // Render based on admin path
-  if (window.location.pathname.startsWith('/admin')) {
+  if (currentPath.startsWith('/admin')) {
     return <AdminPage />;
   }
   

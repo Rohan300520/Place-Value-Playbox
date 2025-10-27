@@ -12,7 +12,7 @@ export default defineConfig({
         enabled: true,
       },
       // Explicitly include assets from the public folder in the precache manifest.
-      includeAssets: ['assets/place-value-box-model.png', 'assets/*.svg', 'assets/*.jpeg', 'assets/*.webp'],
+      includeAssets: ['assets/place-value-box-model.png', 'assets/*.svg', 'assets/*.jpeg', 'assets/*.webp', '404.html'],
       manifest: {
         name: 'Place Value Playbox',
         short_name: 'Playbox',
@@ -36,8 +36,8 @@ export default defineConfig({
         clientsClaim: true, // Take control of the page immediately
         navigateFallback: '/index.html', // Serve the app shell for offline navigation
         maximumFileSizeToCacheInBytes: 30 * 1024 * 1024, // Cache larger files
-        // Precache all assets in the build output
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpeg,webp}'],
+        // Precache all assets in the build output, including source files for the no-build setup
+        globPatterns: ['**/*.{js,ts,tsx,css,html,ico,png,svg,jpeg,webp}'],
         runtimeCaching: [
           {
             // This rule is crucial for dev mode PWA to work offline.

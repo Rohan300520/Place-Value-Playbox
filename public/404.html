@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Page Not Found - Redirecting</title>
+    <script>
+        // Store the path the user tried to access in sessionStorage
+        // and redirect them to the root of the application. The SPA
+        // will then handle the routing.
+        const path = window.location.pathname;
+        if (path !== '/') {
+            sessionStorage.setItem('spa_path_fallback', path);
+        }
+        window.location.replace('/');
+    </script>
+</head>
+<body>
+    <p>If you are not automatically redirected, please <a href="/">click here</a> to go to the homepage.</p>
+</body>
+</html>
