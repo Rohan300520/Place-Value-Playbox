@@ -8,11 +8,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'inline',
-      // devOptions removed - this was forcing a dev-only service worker
-      // that requires the dev server to be running, causing the offline error.
       
       // Use the 'injectManifest' strategy for full control over the service worker.
-      strategies: 'injectManifest',
+      // FIX: Changed 'strategies' to 'strategy' and moved injectManifest options to the top level.
+      strategy: 'injectManifest',
       srcDir: '.', // The root directory where service-worker.js is located.
       filename: 'service-worker.js',
       
@@ -36,13 +35,11 @@ export default defineConfig({
           },
         ],
       },
-      injectManifest: {
-        // Specifies which files in the build output directory should be precached.
-        // This pattern targets all essential built assets for offline functionality.
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpeg,webp}'],
-        // Set a reasonable file size limit for precaching.
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
-      },
+      // Specifies which files in the build output directory should be precached.
+      // This pattern targets all essential built assets for offline functionality.
+      globPatterns: ['**/*.{js,css,html,ico,png,svg,jpeg,webp}'],
+      // Set a reasonable file size limit for precaching.
+      maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
     }),
   ],
 });
