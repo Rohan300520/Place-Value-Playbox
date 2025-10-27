@@ -1,10 +1,9 @@
 // This is an explicit service worker implementation using Workbox.
 // It gives us full control over caching strategies for better offline reliability.
 
-import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
+import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
-import { createHandlerBoundToURL } from 'workbox-navigation';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
