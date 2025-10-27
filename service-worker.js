@@ -25,7 +25,8 @@ precacheAndRoute(self.__WB_MANIFEST || []);
 
 // Set up App Shell-style routing. All navigation requests are fulfilled with index.html.
 // This is crucial for a Single Page Application (SPA).
-const handler = createHandlerBoundToURL('/index.html');
+// FIX: Use 'index.html' instead of '/index.html' to match the precache manifest entry.
+const handler = createHandlerBoundToURL('index.html');
 const navigationRoute = new NavigationRoute(handler);
 registerRoute(navigationRoute);
 
