@@ -111,6 +111,7 @@ export type EquationState = {
 
 export type FractionState =
   | 'welcome'
+  | 'model_intro'
   | 'mode_selection'
   | 'training'
   | 'explore'

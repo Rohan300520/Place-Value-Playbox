@@ -55,7 +55,7 @@ export const FractionPiece: React.FC<FractionPieceProps> = ({ fraction, onClick,
     const textStyle = getTextStyle(color);
 
     let fontSizeClass = 'text-2xl';
-    if (denominator === 12) {
+    if (denominator >= 9 && denominator <= 12) {
         fontSizeClass = 'text-xl';
     } else if (denominator > 12) {
         fontSizeClass = 'text-base';

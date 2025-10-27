@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import type { Fraction, FractionState, Difficulty, FractionChallengeQuestion, UserInfo, WorkspacePiece, FractionTrainingStep, EquationState, FractionOperator } from '../../types';
 import { Header } from '../../components/Header';
 import { WelcomeScreen } from './components/WelcomeScreen';
+import { FractionIntroScreen } from './components/FractionIntroScreen';
 import { ModeSelector } from './components/ModeSelector';
 import { DifficultySelector } from '../../components/DifficultySelector';
 import { FractionChart } from './components/FractionWall';
@@ -413,6 +414,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
             case 'explore': return 'Explore Mode';
             case 'challenge': return `Challenge Mode (${difficulty})`;
             case 'mode_selection': return 'Choose a Mode';
+            case 'model_intro': return 'Learning Objectives';
             case 'challenge_difficulty_selection': return 'Choose Difficulty';
             default: return null;
         }
@@ -424,7 +426,8 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
 
     const renderMainContent = () => {
         switch(gameState) {
-            case 'welcome': return <WelcomeScreen onStart={() => setGameState('mode_selection')} />;
+            case 'welcome': return <WelcomeScreen onStart={() => setGameState('model_intro')} />;
+            case 'model_intro': return <FractionIntroScreen onContinue={() => setGameState('mode_selection')} />;
             case 'mode_selection': return <ModeSelector onSelectMode={handleModeSelection} />;
             case 'challenge_difficulty_selection': return <DifficultySelector onSelectDifficulty={startChallenge} onBack={goBackToMenu} />;
             case 'training':
@@ -541,7 +544,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                 onHelpClick={() => setShowHelp(true)} 
                 currentUser={currentUser} 
                 onExit={onExit}
-                onBackToModelMenu={['welcome', 'mode_selection'].includes(gameState) ? undefined : goBackToMenu}
+                onBackToModelMenu={['welcome', 'model_intro', 'mode_selection'].includes(gameState) ? undefined : goBackToMenu}
                 modelTitle="Fraction Foundations"
                 modelSubtitle={getSubtitle() ?? undefined}
             />

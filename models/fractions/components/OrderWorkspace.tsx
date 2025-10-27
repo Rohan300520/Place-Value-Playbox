@@ -16,7 +16,11 @@ const DropTarget: React.FC<{ fraction: Fraction | null, onDrop: () => void, onDr
         onDragLeave={onDragLeave}
         className={`w-32 h-20 border-4 border-dashed rounded-lg flex items-center justify-center transition-colors duration-200 ${isOver ? 'border-yellow-400 bg-yellow-400/20' : 'border-chalk-border'}`}
     >
-        {fraction && <FractionPiece fraction={fraction} />}
+        {fraction && (
+            <div className="p-1 w-24">
+                <FractionPiece fraction={fraction} />
+            </div>
+        )}
     </div>
 );
 
