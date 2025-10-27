@@ -24,7 +24,7 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'assets/logo.svg', // Point to an existing icon
+            src: 'assets/icon.svg', // Corrected path to the icon
             sizes: 'any',
             type: 'image/svg+xml',
             purpose: 'any maskable',
@@ -41,14 +41,13 @@ export default defineConfig({
         runtimeCaching: [
           {
             // This rule is crucial for dev mode PWA to work offline.
-            // It caches requests to the local dev server.
+            // Switched to StaleWhileRevalidate for better offline-first behavior.
             urlPattern: ({ url }) => url.origin === self.location.origin,
-            handler: 'NetworkFirst',
+            handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'local-dev-assets',
-              networkTimeoutSeconds: 10,
               expiration: {
-                maxEntries: 100,
+                maxEntries: 200,
               },
               cacheableResponse: {
                 statuses: [0, 200],
