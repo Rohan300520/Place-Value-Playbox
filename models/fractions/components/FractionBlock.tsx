@@ -3,8 +3,8 @@ import type { Fraction } from '../../../types';
 
 interface FractionPieceProps {
   fraction: Fraction;
-  onClick?: () => void;
-  onDragStart?: (e: React.DragEvent<HTMLDivElement>, fraction: Fraction) => void;
+  onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragEnd?: (e: React.DragEvent<HTMLDivElement>) => void;
   isDraggable?: boolean;
 }
 
@@ -39,7 +39,7 @@ const getTextStyle = (backgroundColor: string): { className: string; style: Reac
     };
 };
 
-export const FractionPiece: React.FC<FractionPieceProps> = ({ fraction, onClick, onDragStart, isDraggable = false }) => {
+export const FractionPiece: React.FC<FractionPieceProps> = ({ fraction, onDragStart, onDragEnd, isDraggable = false }) => {
     if (!fraction || fraction.denominator === 0) return null;
     const { numerator, denominator } = fraction;
 
@@ -61,18 +61,16 @@ export const FractionPiece: React.FC<FractionPieceProps> = ({ fraction, onClick,
         fontSizeClass = 'text-base';
     }
 
-    const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-        if (onDragStart) {
-            onDragStart(e, fraction);
-        }
-    }
+    const interactiveClass = isDraggable
+      ? 'cursor-grab active:cursor-grabbing hover:scale-105 hover:shadow-xl'
+      : 'cursor-default';
 
     return (
         <div
             draggable={isDraggable}
-            onDragStart={handleDragStart}
-            onClick={onClick}
-            className={`relative flex items-center justify-center h-12 rounded-lg ${textStyle.className} font-chalk ${fontSizeClass} transition-transform duration-200 border-2 border-black/20 ${isDraggable ? 'cursor-grab active:cursor-grabbing hover:scale-105 hover:shadow-xl' : 'cursor-not-allowed'}`}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+            className={`relative flex items-center justify-center h-12 rounded-lg ${textStyle.className} font-chalk ${fontSizeClass} transition-all duration-200 border-2 border-black/20 ${interactiveClass}`}
             style={backgroundStyle}
         >
             <span className="absolute inset-0 flex items-center justify-center whitespace-nowrap" style={textStyle.style}>

@@ -11,9 +11,16 @@ interface CalculationWorkspaceProps {
     isDropZoneActive: boolean;
     spotlightOn?: string | null;
     onBarClick?: (fraction: Fraction) => void;
+    onWorkspacePieceDragStart?: (e: React.DragEvent<HTMLDivElement>, pieceId: string) => void;
+    onWorkspacePieceDragEnd?: () => void;
 }
 
-const renderPieceGroup = (group: WorkspacePiece[], onBarClick?: (fraction: Fraction) => void) => {
+const renderPieceGroup = (
+    group: WorkspacePiece[], 
+    onBarClick?: (fraction: Fraction) => void,
+    onWorkspacePieceDragStart?: (e: React.DragEvent<HTMLDivElement>, pieceId: string) => void,
+    onWorkspacePieceDragEnd?: () => void
+) => {
     if (!group || group.length === 0) return null;
 
     const totalNumerator = group.reduce((sum, piece) => sum + piece.fraction.numerator, 0);
@@ -34,7 +41,12 @@ const renderPieceGroup = (group: WorkspacePiece[], onBarClick?: (fraction: Fract
         >
             {group.map(piece => (
                 <div key={piece.id} className="flex-1">
-                    <FractionPiece fraction={piece.fraction} />
+                    <FractionPiece 
+                        fraction={piece.fraction} 
+                        isDraggable={!!onWorkspacePieceDragStart}
+                        onDragStart={onWorkspacePieceDragStart ? (e) => { e.stopPropagation(); onWorkspacePieceDragStart(e, piece.id)} : undefined}
+                        onDragEnd={onWorkspacePieceDragEnd ? (e) => { e.stopPropagation(); onWorkspacePieceDragEnd()} : undefined}
+                    />
                 </div>
             ))}
         </div>
@@ -42,7 +54,7 @@ const renderPieceGroup = (group: WorkspacePiece[], onBarClick?: (fraction: Fract
 };
 
 
-export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ pieces, equation, onDrop, onDragOver, isDropZoneActive, spotlightOn, onBarClick }) => {
+export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ pieces, equation, onDrop, onDragOver, isDropZoneActive, spotlightOn, onBarClick, onWorkspacePieceDragStart, onWorkspacePieceDragEnd }) => {
     const isExploreMode = !!equation;
 
     let equationForRender: EquationState;
@@ -128,8 +140,8 @@ export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ piec
 
                             return (
                                 <React.Fragment key={`term-${index}`}>
-                                    {renderPieceGroup(term.pieces, onBarClick)}
-                                    {isExploreMode && equationForRender.operators[index] && (
+                                    {renderPieceGroup(term.pieces, onBarClick, onWorkspacePieceDragStart, onWorkspacePieceDragEnd)}
+                                    {isExploreMode && equationForRender.operators[index] && term.fraction && (
                                         <span className="text-5xl font-chalk text-chalk-yellow animate-pop-in">
                                             {equationForRender.operators[index] === ', or' ? <span className="text-2xl">or</span> : equationForRender.operators[index]}
                                         </span>

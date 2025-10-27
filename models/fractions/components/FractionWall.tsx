@@ -23,7 +23,7 @@ export const FractionChart: React.FC<FractionChartProps> = ({ onPieceDragStart, 
     return (
         <div className="w-full p-4 rounded-2xl chalk-bg-light space-y-2">
             {DENOMINATORS.map(d => {
-                const isSpotlighted = spotlightOn === `chart_row-${d}`;
+                const isSpotlighted = !!spotlightOn && spotlightOn.split(',').includes(`chart_row-${d}`);
                 const currentFraction = { numerator: 1, denominator: d };
 
                 const isCorrectPieceForTraining = isTrainingDragStep 
@@ -42,7 +42,7 @@ export const FractionChart: React.FC<FractionChartProps> = ({ onPieceDragStart, 
                                 <FractionPiece 
                                     fraction={currentFraction}
                                     isDraggable={isDraggable}
-                                    onDragStart={onPieceDragStart}
+                                    onDragStart={(e) => onPieceDragStart(e, currentFraction)}
                                 />
                             </div>
                         ))}

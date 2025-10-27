@@ -141,6 +141,7 @@ export type TrainingAction =
   | 'set_denominator'
   | 'select_pieces';
   
+// Fix: Add 'simplify' to the animation type and include related properties to support the simplification animation step.
 export interface FractionTrainingStep {
   module: number;
   step: number;
@@ -156,9 +157,11 @@ export interface FractionTrainingStep {
   spotlightOn?: string; // e.g., 'chart_row-4', 'workspace_piece-id', 'whole_bar'
   clearWorkspaceAfter?: boolean;
   // Animation Triggers
-  animation?: 'merge' | 'split' | 'remove';
+  animation?: 'merge' | 'split' | 'remove' | 'simplify';
   animationTarget?: Fraction;
   animationSplitResult?: Fraction; // The fraction of each piece after splitting.
+  animationTargetCount?: number;
+  animationResult?: Fraction;
   // For ordering module
   orderingBoxes?: Fraction[];
 }

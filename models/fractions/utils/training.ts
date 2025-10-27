@@ -162,26 +162,35 @@ export const fractionTrainingPlan: FractionTrainingStep[] = [
   {
     module: 4, step: 26, type: 'feedback',
     text: "And 3/6 can be simplified to 1/2. Now let's see how mathematicians write this down.",
-    duration: 7000
+    duration: 7000,
   },
   {
-    module: 4, step: 27, type: 'action',
+    module: 4, step: 27, type: 'feedback',
+    text: "Watch as we simplify 3/6 to its simplest form, 1/2! The three 1/6 pieces combine because they are equivalent to one 1/2 piece.",
+    animation: 'simplify',
+    animationTarget: { numerator: 1, denominator: 6 },
+    animationTargetCount: 3,
+    animationResult: { numerator: 1, denominator: 2 },
+    duration: 8000,
+  },
+  {
+    module: 4, step: 28, type: 'action',
     text: "Click the 'Solve' button to see the formal steps.",
     requiredAction: 'solve',
     spotlightOn: 'solve_button',
   },
   {
-    module: 4, step: 28, type: 'feedback',
+    module: 4, step: 29, type: 'feedback',
     text: "Great job! Here is how mathematicians write down those steps using numbers.",
     duration: 12000,
   },
   
   // --- Module 4: Subtraction (revamped) ---
   {
-    module: 4, step: 29, type: 'action', text: "Finally, let's try subtraction. It's just like addition, but backwards!", requiredAction: 'continue', spotlightOn: 'continue_button', clearWorkspaceAfter: true,
+    module: 4, step: 30, type: 'action', text: "Finally, let's try subtraction. It's just like addition, but backwards!", requiredAction: 'continue', spotlightOn: 'continue_button', clearWorkspaceAfter: true,
   },
   {
-    module: 4, step: 30, type: 'action',
+    module: 4, step: 31, type: 'action',
     text: "Let's solve 3/4 - 1/4. First, drag three 1/4 pieces into the workspace.",
     requiredAction: 'drag_piece',
     requiredValue: { numerator: 1, denominator: 4 },
@@ -189,34 +198,34 @@ export const fractionTrainingPlan: FractionTrainingStep[] = [
     spotlightOn: 'chart_row-4',
   },
   {
-    module: 4, step: 31, type: 'feedback',
+    module: 4, step: 32, type: 'feedback',
     text: "Great! You have 3 fourths. Now we need to subtract, or take away, 1 fourth.",
     duration: 7000,
   },
   {
-    module: 4, step: 32, type: 'feedback',
+    module: 4, step: 33, type: 'feedback',
     text: "Watch closely as one piece disappears! Poof!",
     animation: 'remove',
     animationTarget: { numerator: 1, denominator: 4 },
     duration: 5000,
   },
   {
-    module: 4, step: 33, type: 'feedback',
+    module: 4, step: 34, type: 'feedback',
     text: "We started with 3 pieces and took 1 away. How many are left? That's right, 2 pieces!",
     duration: 7000,
   },
   {
-    module: 4, step: 34, type: 'feedback',
+    module: 4, step: 35, type: 'feedback',
     text: "So, 3/4 minus 1/4 equals 2/4.",
     duration: 6000,
   },
   {
-    module: 4, step: 35, type: 'feedback',
+    module: 4, step: 36, type: 'feedback',
     text: "And look! Two 1/4 pieces are the same size as one 1/2 piece. So 2/4 is the same as 1/2.",
     duration: 8000,
   },
   {
-    module: 4, step: 36, type: 'action',
+    module: 4, step: 37, type: 'action',
     text: "Awesome! Let's try a trickier one.",
     requiredAction: 'continue',
     spotlightOn: 'continue_button',
@@ -225,7 +234,7 @@ export const fractionTrainingPlan: FractionTrainingStep[] = [
 
   // --- Subtraction with different denominators ---
   {
-    module: 4, step: 37, type: 'action',
+    module: 4, step: 38, type: 'action',
     text: "Let's solve 1/2 - 1/4. First, drag a 1/2 piece into the workspace.",
     requiredAction: 'drag_piece',
     requiredValue: { numerator: 1, denominator: 2 },
@@ -233,42 +242,43 @@ export const fractionTrainingPlan: FractionTrainingStep[] = [
     spotlightOn: 'chart_row-2',
   },
   {
-    module: 4, step: 38, type: 'feedback',
+    module: 4, step: 39, type: 'feedback',
     text: "Hmm, we have a 1/2 piece, but we need to subtract a 1/4 piece. They are different sizes!",
     duration: 7000,
   },
   {
-    module: 4, step: 39, type: 'feedback',
-    text: "We can't subtract until the pieces are the same size. We need a common denominator!",
-    duration: 7000,
+    module: 4, step: 40, type: 'feedback',
+    text: "Let's use the chart to compare them. Notice how two '1/4' pieces line up perfectly with one '1/2' piece. This means 1/2 is equivalent to 2/4.",
+    spotlightOn: 'chart_row-2,chart_row-4',
+    duration: 9000
   },
   {
-    module: 4, step: 40, type: 'feedback',
-    text: "Let's change the 1/2 piece into smaller, equal pieces. Watch it split into two 1/4 pieces!",
+    module: 4, step: 41, type: 'feedback',
+    text: "To subtract, we must convert 1/2 into fourths. Watch it split!",
     animation: 'split',
     animationTarget: { numerator: 1, denominator: 2 },
     animationSplitResult: { numerator: 1, denominator: 4 },
     duration: 7000,
   },
   {
-    module: 4, step: 41, type: 'feedback',
+    module: 4, step: 42, type: 'feedback',
     text: "Perfect! Now we have two 1/4 pieces. This is the same as 1/2.",
     duration: 6000,
   },
   {
-    module: 4, step: 42, type: 'feedback',
+    module: 4, step: 43, type: 'feedback',
     text: "Now we can take away one 1/4 piece. Ready? Here it goes!",
     animation: 'remove',
     animationTarget: { numerator: 1, denominator: 4 },
     duration: 5000,
   },
   {
-    module: 4, step: 43, type: 'feedback',
+    module: 4, step: 44, type: 'feedback',
     text: "What's left? Just one 1/4 piece!",
     duration: 6000,
   },
   {
-    module: 4, step: 44, type: 'feedback',
+    module: 4, step: 45, type: 'feedback',
     text: "So, 1/2 minus 1/4 equals 1/4. You did it!",
     duration: 8000,
     clearWorkspaceAfter: true
@@ -276,7 +286,7 @@ export const fractionTrainingPlan: FractionTrainingStep[] = [
 
   // --- Completion ---
   {
-    module: 5, step: 45, type: 'complete',
+    module: 5, step: 46, type: 'complete',
     text: "Training Complete! You're ready to explore fractions on your own.",
   },
 ];

@@ -41,6 +41,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
     const [showHelp, setShowHelp] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
     const [isDropZoneActive, setIsDropZoneActive] = useState(false);
+    const [draggedWorkspacePieceId, setDraggedWorkspacePieceId] = useState<string | null>(null);
     
     // Training State
     const [trainingStep, setTrainingStep] = useState(0);
@@ -86,8 +87,19 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         setIsDropZoneActive(true);
     };
 
+    const handleWorkspacePieceDragStart = (e: React.DragEvent<HTMLDivElement>, pieceId: string) => {
+        e.dataTransfer.setData('application/x-workspace-piece', pieceId);
+        e.dataTransfer.effectAllowed = "move";
+        setDraggedWorkspacePieceId(pieceId);
+    };
+
+    const handleWorkspacePieceDragEnd = () => {
+        setDraggedWorkspacePieceId(null);
+    };
+
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
+        e.stopPropagation();
         setIsDropZoneActive(false);
         const fractionData = e.dataTransfer.getData('application/json');
         if (!fractionData) return;
@@ -118,7 +130,37 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         }
     };
     
-    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const removePieceFromEquation = (pieceId: string) => {
+        setEquation(prev => {
+            const newTerms = prev.terms.map(term => {
+                if (!term.pieces.some(p => p.id === pieceId)) {
+                    return term;
+                }
+    
+                const newPieces = term.pieces.filter(p => p.id !== pieceId);
+                const newFraction = newPieces.length > 0
+                    ? newPieces.reduce((acc: Fraction | null, currentPiece) => addFractions(acc, currentPiece.fraction), null)
+                    : null;
+    
+                return { ...term, pieces: newPieces, fraction: newFraction };
+            });
+            return { ...prev, terms: newTerms };
+        });
+    };
+    
+    const handleDropOnBackground = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const pieceId = e.dataTransfer.getData('application/x-workspace-piece');
+        if (pieceId) {
+            removePieceFromEquation(pieceId);
+        }
+        setIsDropZoneActive(false);
+    };
     
     const handleSetOperator = (op: FractionOperator) => {
         if (gameState === 'explore' && !equation.isSolved) {
@@ -173,7 +215,6 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
 
         setEquation(prev => ({ ...prev, isSolved: true, unsimplifiedResult, result: finalResult, resultPieces }));
     };
-
 
     const goBackToMenu = useCallback(() => {
         clearWorkspace(true);
@@ -356,6 +397,27 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                     }, 800);
                 }
             }
+            
+            if (step.animation === 'simplify' && step.animationTarget && step.animationTargetCount && step.animationResult) {
+                const piecesToSimplify = workspacePieces.filter(p => fractionsAreEqual(p.fraction, step.animationTarget!) && p.state === 'idle').slice(0, step.animationTargetCount);
+                if (piecesToSimplify.length === step.animationTargetCount) {
+                    setWorkspacePieces(prev => prev.map(p => 
+                        piecesToSimplify.some(ps => ps.id === p.id) ? { ...p, state: 'merging' } : p
+                    ));
+                    setTimeout(() => {
+                        setWorkspacePieces(prev => {
+                            const remainingPieces = prev.filter(p => p.state !== 'merging');
+                            const newSimplifiedPiece: WorkspacePiece = { 
+                                id: `wp-simplified-${Date.now()}`, 
+                                fraction: step.animationResult!, 
+                                position: { x: 0, y: 0 }, 
+                                state: 'idle' 
+                            };
+                            return [newSimplifiedPiece, ...remainingPieces];
+                        });
+                    }, 800);
+                }
+            }
 
             if (step.animation === 'remove' && step.animationTarget) {
                 const targetFraction = step.animationTarget as Fraction;
@@ -455,7 +517,11 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                 );
             case 'explore':
                  return (
-                    <div className="fractions-theme w-full flex-grow flex flex-col items-center p-4">
+                    <div 
+                        className="fractions-theme w-full flex-grow flex flex-col items-center p-4"
+                        onDrop={handleDropOnBackground}
+                        onDragOver={(e) => e.preventDefault()}
+                    >
                         <div className="w-full max-w-7xl flex flex-col items-center animate-pop-in">
                             <EquationInfoPanel equation={equation} />
                             <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
@@ -463,7 +529,14 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                                     <FractionChart onPieceDragStart={handlePieceDragStart} />
                                 </div>
                                 <div className="flex flex-col gap-4">
-                                    <CalculationWorkspace equation={equation} onDrop={handleDrop} onDragOver={handleDragOver} isDropZoneActive={isDropZoneActive} />
+                                    <CalculationWorkspace 
+                                        equation={equation} 
+                                        onDrop={handleDrop} 
+                                        onDragOver={handleDragOver} 
+                                        isDropZoneActive={isDropZoneActive}
+                                        onWorkspacePieceDragStart={handleWorkspacePieceDragStart}
+                                        onWorkspacePieceDragEnd={handleWorkspacePieceDragEnd}
+                                    />
                                     <FractionControls 
                                         onOperatorSelect={handleSetOperator}
                                         onSolve={handleSolveEquation}
@@ -484,7 +557,11 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                 const isAddSubMode = currentQuestion.type === 'add' || currentQuestion.type === 'subtract';
                 
                 return (
-                    <div className="fractions-theme w-full flex-grow flex flex-col items-center p-4">
+                    <div 
+                        className="fractions-theme w-full flex-grow flex flex-col items-center p-4"
+                        onDrop={handleDropOnBackground}
+                        onDragOver={(e) => e.preventDefault()}
+                    >
                        <div className="w-full max-w-5xl">
                             <FractionChallengePanel
                                 status={challengeStatus}
@@ -527,6 +604,8 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                                             onDrop={handleDrop}
                                             onDragOver={handleDragOver}
                                             isDropZoneActive={isDropZoneActive}
+                                            onWorkspacePieceDragStart={handleWorkspacePieceDragStart}
+                                            onWorkspacePieceDragEnd={handleWorkspacePieceDragEnd}
                                         />
                                     </div>
                                 </div>
