@@ -41,7 +41,6 @@ export default defineConfig({
         runtimeCaching: [
           {
             // This rule is crucial for dev mode PWA to work offline.
-            // Switched to StaleWhileRevalidate for better offline-first behavior.
             urlPattern: ({ url }) => url.origin === self.location.origin,
             handler: 'StaleWhileRevalidate',
             options: {
@@ -55,14 +54,14 @@ export default defineConfig({
             },
           },
           {
-            // Cache CDN assets
+            // Cache CDN assets with a more robust strategy
             urlPattern: /^https:\/\/(aistudiocdn\.com|cdn\.jsdelivr\.net|unpkg\.com|cdn\.tailwindcss\.com)\/.*/i,
-            handler: 'CacheFirst',
+            handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'cdn-cache',
               expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 365 days
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -70,20 +69,35 @@ export default defineConfig({
             }
           },
           {
-            // Cache Google Fonts
-            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
-            handler: 'CacheFirst',
+            // Cache Google Fonts stylesheets with StaleWhileRevalidate
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'google-fonts-cache',
+              cacheName: 'google-fonts-stylesheets',
               expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 365
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
               },
               cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          }
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Cache Google Fonts font files with CacheFirst
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
         ]
       },
     }),
