@@ -5,6 +5,7 @@ interface FractionPieceProps {
   fraction: Fraction;
   onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void;
   onDragEnd?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onClick?: () => void;
   isDraggable?: boolean;
 }
 
@@ -39,7 +40,7 @@ const getTextStyle = (backgroundColor: string): { className: string; style: Reac
     };
 };
 
-export const FractionPiece: React.FC<FractionPieceProps> = ({ fraction, onDragStart, onDragEnd, isDraggable = false }) => {
+export const FractionPiece: React.FC<FractionPieceProps> = ({ fraction, onDragStart, onDragEnd, onClick, isDraggable = false }) => {
     if (!fraction || fraction.denominator === 0) return null;
     const { numerator, denominator } = fraction;
 
@@ -62,7 +63,7 @@ export const FractionPiece: React.FC<FractionPieceProps> = ({ fraction, onDragSt
     }
 
     const interactiveClass = isDraggable
-      ? 'cursor-grab active:cursor-grabbing hover:scale-105 hover:shadow-xl'
+      ? 'cursor-pointer hover:scale-105 hover:shadow-xl'
       : 'cursor-default';
 
     return (
@@ -70,6 +71,7 @@ export const FractionPiece: React.FC<FractionPieceProps> = ({ fraction, onDragSt
             draggable={isDraggable}
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
+            onClick={onClick}
             className={`relative flex items-center justify-center h-12 rounded-lg ${textStyle.className} font-chalk ${fontSizeClass} transition-all duration-200 border-2 border-black/20 ${interactiveClass}`}
             style={backgroundStyle}
         >

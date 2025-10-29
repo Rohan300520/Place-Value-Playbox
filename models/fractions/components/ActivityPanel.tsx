@@ -59,7 +59,7 @@ export const ActivityPanel: React.FC<ActivityPanelProps> = ({ activity, feedback
             )}
             {activity.type === 'improper_to_mixed' && (
                 <div className="text-center">
-                    <p className="font-chalk text-2xl text-chalk-cyan">Convert This Improper Fraction</p>
+                    <p className="font-chalk text-2xl text-chalk-cyan">Convert to a Mixed Fraction</p>
                     <div className="inline-flex flex-col items-center my-2">
                         <span className="font-chalk text-8xl text-chalk-yellow">{activity.target.numerator}</span>
                         <div className="border-t-8 border-chalk-yellow w-24"></div>

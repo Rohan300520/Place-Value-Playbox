@@ -6,6 +6,7 @@ const DENOMINATORS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16];
 
 interface FractionChartProps {
     onPieceDragStart: (e: React.DragEvent<HTMLDivElement>, fraction: Fraction) => void;
+    onPieceClick?: (fraction: Fraction) => void;
     spotlightOn?: string | null;
     trainingRequiredFraction?: Fraction | null;
     disabledDenominators?: number[];
@@ -17,7 +18,7 @@ function fractionsAreEqual(f1: Fraction | null, f2: Fraction | null): boolean {
     return f1.numerator * f2.denominator === f2.numerator * f1.denominator;
 }
 
-export const FractionChart: React.FC<FractionChartProps> = ({ onPieceDragStart, spotlightOn, trainingRequiredFraction, disabledDenominators = [] }) => {
+export const FractionChart: React.FC<FractionChartProps> = ({ onPieceDragStart, onPieceClick, spotlightOn, trainingRequiredFraction, disabledDenominators = [] }) => {
     
     const isTrainingDragStep = !!trainingRequiredFraction;
 
@@ -45,6 +46,7 @@ export const FractionChart: React.FC<FractionChartProps> = ({ onPieceDragStart, 
                                     fraction={currentFraction}
                                     isDraggable={isDraggable}
                                     onDragStart={(e) => onPieceDragStart(e, currentFraction)}
+                                    onClick={isDraggable && onPieceClick ? () => onPieceClick(currentFraction) : undefined}
                                 />
                             </div>
                         ))}

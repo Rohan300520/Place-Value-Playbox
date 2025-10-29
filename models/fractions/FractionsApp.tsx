@@ -101,16 +101,9 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         setDraggedWorkspacePieceId(null);
     };
 
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDropZoneActive(false);
-        const fractionData = e.dataTransfer.getData('application/json');
-        if (!fractionData) return;
-
-        const fraction = JSON.parse(fractionData) as Fraction;
+    const addPieceToWorkspace = (fraction: Fraction) => {
         const newPiece: WorkspacePiece = {
-            id: `wp-${Date.now()}`,
+            id: `wp-${Date.now()}-${Math.random()}`,
             fraction,
             position: { x: 0, y: 0 },
             state: 'idle',
@@ -132,6 +125,27 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                 return { ...prev, terms: newTerms };
             });
         }
+    };
+    
+    const handleChartPieceClick = (fraction: Fraction) => {
+        if ((gameState !== 'explore' && gameState !== 'challenge') || equation.isSolved) {
+            return;
+        }
+        // For challenge mode, only allow adding pieces for add/subtract questions
+        if (gameState === 'challenge' && currentQuestion && (currentQuestion.type !== 'add' && currentQuestion.type !== 'subtract')) {
+            return;
+        }
+        addPieceToWorkspace(fraction);
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDropZoneActive(false);
+        const fractionData = e.dataTransfer.getData('application/json');
+        if (!fractionData) return;
+        const fraction = JSON.parse(fractionData) as Fraction;
+        addPieceToWorkspace(fraction);
     };
     
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -638,7 +652,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                             <EquationInfoPanel equation={equation} />
                             <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
                                 <div className="max-h-[70vh] overflow-y-auto pr-2 rounded-lg">
-                                    <FractionChart onPieceDragStart={handlePieceDragStart} />
+                                    <FractionChart onPieceDragStart={handlePieceDragStart} onPieceClick={handleChartPieceClick} />
                                 </div>
                                 <div className="flex flex-col gap-4">
                                     <CalculationWorkspace 
@@ -705,7 +719,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                             {isAddSubMode && (
                                 <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
                                     <div className="max-h-[70vh] overflow-y-auto pr-2 rounded-lg">
-                                        <FractionChart onPieceDragStart={handlePieceDragStart} />
+                                        <FractionChart onPieceDragStart={handlePieceDragStart} onPieceClick={handleChartPieceClick} />
                                     </div>
                                     <div className="flex flex-col gap-4">
                                         <p className="text-chalk-light font-semibold text-center text-lg">

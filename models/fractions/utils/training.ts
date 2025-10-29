@@ -141,7 +141,7 @@ export const fractionTrainingPlan: FractionTrainingStep[] = [
   {
     module: 5, step: 20, type: 'activity',
     text: "You're doing great! Let's try converting an Improper Fraction (like 5/3) into a Mixed Fraction (like 1 and 2/3).",
-    title: "Activity: Improper to Mixed",
+    title: "Activity: Convert Improper to Mixed Fraction",
     activity: {
       type: 'improper_to_mixed',
       target: { numerator: 5, denominator: 3 },

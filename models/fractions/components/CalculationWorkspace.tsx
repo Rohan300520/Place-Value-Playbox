@@ -95,7 +95,7 @@ export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ piec
     const hasContent = equationForRender.terms.some(t => t.pieces.length > 0);
 
     const containerClasses = `w-full min-h-[20rem] p-6 rounded-2xl chalk-border flex flex-col justify-start relative transition-all duration-300 gap-2 ${isDropZoneActive ? 'bg-slate-700/50' : ''}`;
-    const alignmentClass = isExploreMode ? 'items-start' : 'items-start';
+    const alignmentClass = 'items-start'; // Always align items to the start for consistent bar layout
 
     return (
         <div
@@ -126,29 +126,32 @@ export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ piec
                         })}
                     </div>
                 ) : (
-                    <div className={`flex gap-4 ${isExploreMode ? 'flex-wrap flex-row items-center' : 'flex-col w-full items-start'}`}>
-                        {equationForRender.terms.map((term, index) => {
-                            if (!isExploreMode && term.pieces.length === 1 && term.pieces[0].state !== 'idle') {
-                                const piece = term.pieces[0];
-                                const animationClass = piece.state === 'splitting' ? 'animate-bouncy-pop-in' : piece.state === 'removing' ? 'animate-slide-out-left' : piece.state === 'merging' ? 'animate-piece-merge' : '';
-                                return (
-                                     <div key={piece.id} className={`flex flex-row gap-px ${animationClass}`} style={{ width: `${(piece.fraction.numerator / piece.fraction.denominator) * 100}%` }}>
-                                        <div className="flex-1"><FractionPiece fraction={piece.fraction} /></div>
-                                    </div>
-                                );
-                            }
-
-                            return (
-                                <React.Fragment key={`term-${index}`}>
-                                    {renderPieceGroup(term.pieces, onBarClick, onWorkspacePieceDragStart, onWorkspacePieceDragEnd)}
-                                    {isExploreMode && equationForRender.operators[index] && term.fraction && (
+                    <div className="flex flex-col w-full items-start gap-4">
+                        {equationForRender.terms.map((term, index) => (
+                            <React.Fragment key={`term-${index}`}>
+                                {(() => {
+                                    const piecesByDenominator = term.pieces.reduce((acc, piece) => {
+                                        const den = piece.fraction.denominator;
+                                        if (!acc[den]) acc[den] = [];
+                                        acc[den].push(piece);
+                                        return acc;
+                                    }, {} as Record<number, WorkspacePiece[]>);
+                                    
+                                    return Object.values(piecesByDenominator).map((pieceGroup, i) => (
+                                        <div key={i} className="w-full">
+                                            {renderPieceGroup(pieceGroup, onBarClick, onWorkspacePieceDragStart, onWorkspacePieceDragEnd)}
+                                        </div>
+                                    ));
+                                })()}
+                                {isExploreMode && equationForRender.operators[index] && term.fraction && (
+                                    <div className="self-center py-2">
                                         <span className="text-5xl font-chalk text-chalk-yellow animate-pop-in">
                                             {equationForRender.operators[index] === ', or' ? <span className="text-2xl">or</span> : equationForRender.operators[index]}
                                         </span>
-                                    )}
-                                </React.Fragment>
-                            );
-                        })}
+                                    </div>
+                                )}
+                            </React.Fragment>
+                        ))}
                     </div>
                 )}
             </div>
