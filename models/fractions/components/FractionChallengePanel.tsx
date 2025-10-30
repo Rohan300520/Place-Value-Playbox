@@ -50,9 +50,10 @@ interface FractionChallengePanelProps {
     score: number;
     timeLimit: number;
     isWorkoutActive: boolean;
+    solvedAnswer: Fraction | Fraction[] | number | null;
 }
 
-export const FractionChallengePanel: React.FC<FractionChallengePanelProps> = ({ status, question, onCheckAnswer, onNext, onTimeOut, onClearAnswer, score, timeLimit, isWorkoutActive }) => {
+export const FractionChallengePanel: React.FC<FractionChallengePanelProps> = ({ status, question, onCheckAnswer, onNext, onTimeOut, onClearAnswer, score, timeLimit, isWorkoutActive, solvedAnswer }) => {
     const { isSpeechEnabled } = useAudio();
 
     useEffect(() => {
@@ -69,35 +70,43 @@ export const FractionChallengePanel: React.FC<FractionChallengePanelProps> = ({ 
     if(status === 'correct') statusClasses = 'border-chalk-green/80 animate-celebrate';
     if(status === 'incorrect' || status === 'timed_out') statusClasses = 'border-chalk-red/80 animate-shake';
 
-    const getCorrectAnswerText = () => {
-        const { answer, type } = question;
-        if (type === 'add' || type === 'subtract') {
-            const ans = answer as Fraction;
-            return `${ans.numerator}/${ans.denominator}`;
+    const getAnswerAsText = (answer: Fraction | Fraction[] | number | null) => {
+        if (answer === null) return '';
+        if (typeof answer === 'number') {
+             const ans = question.fractions[answer as number];
+             return `${ans.numerator}/${ans.denominator}`;
         }
-        if (type === 'compare') {
-            const ans = question.fractions[answer as number];
-            return `${ans.numerator}/${ans.denominator}`;
-        }
-        if (type === 'order') {
+        if (Array.isArray(answer)) {
             return (answer as Fraction[]).map(f => `${f.numerator}/${f.denominator}`).join(', ');
+        }
+        if (typeof answer === 'object' && 'numerator' in answer) {
+             const ans = answer as Fraction;
+             return `${ans.numerator}/${ans.denominator}`;
         }
         return '';
     };
 
-    const showClearButton = (question.type === 'add' || question.type === 'subtract') && !isWorkoutActive;
+    const getQuestionTextWithAnswer = () => {
+        if (status === 'playing' || !solvedAnswer) {
+            return question.questionText;
+        }
+        const answerText = getAnswerAsText(solvedAnswer);
+        return question.questionText.replace('?', answerText);
+    };
+
+    const showClearButton = (question.type === 'add' || question.type === 'subtract') && !isWorkoutActive && status === 'playing';
 
     return (
         <div className={`w-full mb-4 p-4 rounded-2xl border-2 ${statusClasses} transition-all duration-300 chalk-bg`}>
             <div className="flex justify-between items-start gap-4">
                  <div className="flex-1">
                     <p className="text-2xl font-chalk text-chalk-yellow">Challenge! <span className='capitalize text-chalk-light'>({question.level})</span></p>
-                    <p className="text-lg text-chalk-light mt-2">{question.questionText}</p>
+                    <p className="text-lg text-chalk-light mt-2">{getQuestionTextWithAnswer()}</p>
                     
                     {(status === 'incorrect' || status === 'timed_out') && (
                         <div className="mt-2 p-2 bg-red-900/50 border border-red-500 rounded-lg">
                             <p className="text-red-300 font-bold text-center font-chalk">
-                               {status === 'timed_out' ? 'Time is up! ' : 'Not quite! '}The correct answer is {getCorrectAnswerText()}.
+                               {status === 'timed_out' ? 'Time is up! ' : 'Not quite! '}The correct answer is {getAnswerAsText(question.answer)}.
                             </p>
                         </div>
                     )}

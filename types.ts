@@ -132,6 +132,8 @@ export interface FractionChallengeQuestion {
   type: 'add' | 'subtract' | 'compare' | 'order';
   answer: Fraction | Fraction[] | number; // number for compare index
   order?: 'ascending' | 'descending';
+  displayType?: 'chart' | 'mcq' | 'pizza';
+  mcqOptions?: Fraction[];
 }
 
 export type TrainingAction = 

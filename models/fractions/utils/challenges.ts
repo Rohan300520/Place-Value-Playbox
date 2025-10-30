@@ -11,7 +11,7 @@ export const challenges: FractionChallengeQuestion[] = [
     },
     {
         id: 2, level: 'easy', type: 'subtract',
-        questionText: 'What is 7/8 - 3/8?',
+        questionText: 'What is 7/8 - 3/8 = ?',
         fractions: [{ numerator: 7, denominator: 8 }, { numerator: 3, denominator: 8 }],
         operator: '-',
         answer: { numerator: 4, denominator: 8 } // simplified is 1/2
@@ -67,7 +67,7 @@ export const challenges: FractionChallengeQuestion[] = [
     },
     {
         id: 10, level: 'medium', type: 'add',
-        questionText: 'What is 2/5 + 1/10?',
+        questionText: 'What is 2/5 + 1/10 = ?',
         fractions: [{ numerator: 2, denominator: 5 }, { numerator: 1, denominator: 10 }],
         operator: '+',
         answer: { numerator: 5, denominator: 10 } // simplified 1/2
@@ -79,14 +79,18 @@ export const challenges: FractionChallengeQuestion[] = [
         questionText: 'Calculate the difference: 5/6 - 1/4 = ?',
         fractions: [{ numerator: 5, denominator: 6 }, { numerator: 1, denominator: 4 }],
         operator: '-',
-        answer: { numerator: 7, denominator: 12 }
+        answer: { numerator: 7, denominator: 12 },
+        displayType: 'mcq',
+        mcqOptions: [ { numerator: 4, denominator: 2 }, { numerator: 7, denominator: 12 }, { numerator: 1, denominator: 2 } ]
     },
     {
         id: 12, level: 'hard', type: 'add',
-        questionText: 'What is 2/3 + 3/4? Your answer will be an improper fraction.',
+        questionText: 'What is 2/3 + 3/4 = ? Your answer will be an improper fraction.',
         fractions: [{ numerator: 2, denominator: 3 }, { numerator: 3, denominator: 4 }],
         operator: '+',
-        answer: { numerator: 17, denominator: 12 }
+        answer: { numerator: 17, denominator: 12 },
+        displayType: 'mcq',
+        mcqOptions: [ { numerator: 17, denominator: 6 }, { numerator: 5, denominator: 12 }, { numerator: 17, denominator: 12 } ]
     },
     {
         id: 13, level: 'hard', type: 'compare',
@@ -103,9 +107,10 @@ export const challenges: FractionChallengeQuestion[] = [
     },
     {
         id: 15, level: 'hard', type: 'subtract',
-        questionText: 'A whole pizza is eaten except for 3/8. How much was eaten?',
+        questionText: 'A whole pizza is cut into 8 slices. If 3/8 of it is left, how much was eaten? Select the eaten slices.',
         fractions: [{ numerator: 1, denominator: 1 }, { numerator: 3, denominator: 8 }],
         operator: '-',
-        answer: { numerator: 5, denominator: 8 }
+        answer: { numerator: 5, denominator: 8 },
+        displayType: 'pizza',
     }
 ];

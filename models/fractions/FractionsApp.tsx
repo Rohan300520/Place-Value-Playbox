@@ -24,6 +24,8 @@ import { EquationInfoPanel } from './components/EquationInfoPanel';
 import { OrderWorkspace } from './components/OrderWorkspace';
 import { addFractions, subtractFractions, simplifyFraction, lcm, getFractionalValue, fractionsAreEqual } from './utils/fractions';
 import { ActivityPanel } from './components/ActivityPanel';
+import { MultipleChoiceOptions } from './components/MultipleChoiceOptions';
+import { PizzaVisual } from './components/PizzaVisual';
 
 
 const DURATION_MAP: Record<Difficulty, number> = { easy: 60, medium: 45, hard: 30 };
@@ -87,6 +89,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
     const [challengeStatus, setChallengeStatus] = useState<'playing' | 'correct' | 'incorrect' | 'timed_out'>('playing');
     const [score, setScore] = useState(0);
     const [userAnswer, setUserAnswer] = useState<Fraction | Fraction[] | number | null>(null);
+    const [solvedAnswerForPanel, setSolvedAnswerForPanel] = useState<Fraction | Fraction[] | number | null>(null);
     const challengeStartTimeRef = useRef<number | null>(null);
     const currentQuestion = useMemo(() => questions[questionIndex] || null, [questions, questionIndex]);
 
@@ -233,7 +236,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
     }
 
     const handleSolveEquation = () => {
-        if ((gameState !== 'explore' && gameState !== 'challenge') || equation.terms.length < 2 || equation.isSolved) return;
+        if (((gameState !== 'explore' && gameState !== 'challenge') || equation.isSolved) && !(gameState === 'explore' && equation.isWorkoutActive)) return;
         
         if (equation.isWorkoutActive && gameState === 'explore') {
              if (isSpeechEnabled) {
@@ -243,7 +246,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
 
         const { terms, operators } = equation;
         
-        if (!terms[terms.length - 1].fraction) return;
+        if (terms.length < 2 || !terms[terms.length - 1].fraction) return;
 
         let currentResult: Fraction = terms[0].fraction!;
         
@@ -563,6 +566,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         setScore(0);
         setChallengeStatus('playing');
         setUserAnswer(null);
+        setSolvedAnswerForPanel(null);
         clearWorkspace(false);
         setGameState('challenge');
         challengeStartTimeRef.current = Date.now();
@@ -575,7 +579,11 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         const answer = currentQuestion.answer;
         let finalUserAnswer: Fraction | Fraction[] | number | null = userAnswer;
 
-        if (currentQuestion.type === 'add' || currentQuestion.type === 'subtract') {
+        if (currentQuestion.displayType === 'mcq' || currentQuestion.displayType === 'pizza') {
+            if (userAnswer && typeof userAnswer === 'object' && 'numerator' in userAnswer) {
+                 isCorrect = fractionsAreEqual(userAnswer as Fraction, answer as Fraction);
+            }
+        } else if (currentQuestion.type === 'add' || currentQuestion.type === 'subtract') {
             const workspaceAnswer = equation.isWorkoutActive 
                 ? equation.result
                 : simplifyFraction(equation.terms[0].fraction || { numerator: 0, denominator: 1 });
@@ -592,7 +600,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         } else if (currentQuestion.type === 'order') {
             const orderedAnswer = answer as Fraction[];
             const orderedUserAnswer = userAnswer as Fraction[];
-            if (orderedUserAnswer.length === orderedAnswer.length) {
+            if (orderedUserAnswer && orderedUserAnswer.length === orderedAnswer.length) {
                 isCorrect = orderedUserAnswer.every((f, i) => fractionsAreEqual(f, orderedAnswer[i]));
             }
         }
@@ -608,8 +616,10 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
             setChallengeStatus('correct');
             setScore(s => s + 10);
             setShowConfetti(true);
+            setSolvedAnswerForPanel(finalUserAnswer);
         } else {
             setChallengeStatus('incorrect');
+            setSolvedAnswerForPanel(answer);
         }
     }, [currentQuestion, userAnswer, equation, currentUser, difficulty]);
     
@@ -618,6 +628,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
             setQuestionIndex(i => i + 1);
             setChallengeStatus('playing');
             setUserAnswer(null);
+            setSolvedAnswerForPanel(null);
             clearWorkspace(false);
             challengeStartTimeRef.current = Date.now();
         } else {
@@ -629,6 +640,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         if (!currentQuestion) return;
         await logEvent('challenge_attempt', currentUser, { model: 'fractions', questionId: currentQuestion.id, status: 'timed_out' });
         setChallengeStatus('timed_out');
+        setSolvedAnswerForPanel(currentQuestion.answer);
     }, [currentQuestion, currentUser]);
 
     const handleCompareSelection = useCallback((fraction: Fraction) => {
@@ -879,9 +891,9 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
             case 'challenge':
                 if (!currentQuestion) return <div className="text-2xl font-chalk text-chalk-yellow">Loading challenges...</div>;
                 
-                const isCompareMode = currentQuestion.type === 'compare';
+                const displayType = currentQuestion.displayType || 'chart';
                 const isOrderMode = currentQuestion.type === 'order';
-                const isAddSubMode = currentQuestion.type === 'add' || currentQuestion.type === 'subtract';
+                const isCompareMode = currentQuestion.type === 'compare';
                 
                 return (
                     <div 
@@ -896,64 +908,82 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                                 onCheckAnswer={handleCheckAnswer}
                                 onNext={handleNextChallenge}
                                 onTimeOut={handleTimeOut}
-                                onClearAnswer={() => clearWorkspace(false)}
+                                onClearAnswer={() => { clearWorkspace(false); setUserAnswer(null); }}
                                 score={score}
                                 timeLimit={DURATION_MAP[difficulty]}
                                 isWorkoutActive={equation.isWorkoutActive}
+                                solvedAnswer={solvedAnswerForPanel}
                             />
 
-                            {isOrderMode && (
-                                <OrderWorkspace
-                                    fractions={currentQuestion.fractions}
-                                    onOrderChange={(ordered) => setUserAnswer(ordered)}
-                                    orderDirection={currentQuestion.order!}
-                                />
-                            )}
-                            
-                            {isCompareMode && (
-                                <CompareWorkspace
-                                    fractions={currentQuestion.fractions}
-                                    selectedFraction={typeof userAnswer === 'number' ? currentQuestion.fractions[userAnswer] : null}
-                                    onSelect={handleCompareSelection}
-                                />
-                            )}
+                             <div className="mt-4">
+                                {isOrderMode && (
+                                    <OrderWorkspace
+                                        fractions={currentQuestion.fractions}
+                                        onOrderChange={(ordered) => setUserAnswer(ordered)}
+                                        orderDirection={currentQuestion.order!}
+                                    />
+                                )}
+                                
+                                {isCompareMode && (
+                                    <CompareWorkspace
+                                        fractions={currentQuestion.fractions}
+                                        selectedFraction={typeof userAnswer === 'number' ? currentQuestion.fractions[userAnswer] : null}
+                                        onSelect={handleCompareSelection}
+                                    />
+                                )}
 
-                            {isAddSubMode && (
-                                <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
-                                    <div className="max-h-[70vh] overflow-y-auto pr-2 rounded-lg">
-                                        <FractionChart onPieceDragStart={handlePieceDragStart} onPieceClick={handleChartPieceClick} />
-                                    </div>
-                                    <div className="flex flex-col gap-4">
-                                        <p className="text-chalk-light font-semibold text-center text-lg">
-                                            Build your answer below, or use the Workout mode to solve step-by-step.
-                                        </p>
-                                        <CalculationWorkspace
-                                            equation={equation}
-                                            onDrop={handleDrop}
-                                            onDragOver={handleDragOver}
-                                            isDropZoneActive={isDropZoneActive}
-                                            onWorkspacePieceDragStart={handleWorkspacePieceDragStart}
-                                            onWorkspacePieceDragEnd={handleWorkspacePieceDragEnd}
-                                        />
-                                         {equation.isWorkoutActive ? (
-                                            <WorkoutControls
-                                                workoutStep={equation.workoutStep}
-                                                onNextStep={handleWorkoutNextStep}
-                                                onFinish={handleFinishWorkout}
+                                {displayType === 'mcq' && currentQuestion.mcqOptions && (
+                                    <MultipleChoiceOptions 
+                                        options={currentQuestion.mcqOptions}
+                                        selectedOption={userAnswer as Fraction | null}
+                                        onSelect={(fraction) => setUserAnswer(fraction)}
+                                    />
+                                )}
+
+                                {displayType === 'pizza' && (
+                                    <PizzaVisual 
+                                        totalSlices={currentQuestion.answer.denominator}
+                                        onSelectionChange={(fraction) => setUserAnswer(fraction)}
+                                    />
+                                )}
+
+                                {displayType === 'chart' && (currentQuestion.type === 'add' || currentQuestion.type === 'subtract') && (
+                                    <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                                        <div className="max-h-[70vh] overflow-y-auto pr-2 rounded-lg">
+                                            <FractionChart onPieceDragStart={handlePieceDragStart} onPieceClick={handleChartPieceClick} />
+                                        </div>
+                                        <div className="flex flex-col gap-4">
+                                            <p className="text-chalk-light font-semibold text-center text-lg">
+                                                Build your answer below, or use the Workout mode to solve step-by-step.
+                                            </p>
+                                            <CalculationWorkspace
                                                 equation={equation}
+                                                onDrop={handleDrop}
+                                                onDragOver={handleDragOver}
+                                                isDropZoneActive={isDropZoneActive}
+                                                onWorkspacePieceDragStart={handleWorkspacePieceDragStart}
+                                                onWorkspacePieceDragEnd={handleWorkspacePieceDragEnd}
                                             />
-                                        ) : (
-                                            <FractionControls 
-                                                onOperatorSelect={handleSetOperator}
-                                                onSolve={handleSolveEquation}
-                                                onWorkout={handleStartWorkout}
-                                                onClear={() => clearWorkspace(false)}
-                                                equation={equation}
-                                            />
-                                        )}
+                                            {equation.isWorkoutActive ? (
+                                                <WorkoutControls
+                                                    workoutStep={equation.workoutStep}
+                                                    onNextStep={handleWorkoutNextStep}
+                                                    onFinish={handleFinishWorkout}
+                                                    equation={equation}
+                                                />
+                                            ) : (
+                                                <FractionControls 
+                                                    onOperatorSelect={handleSetOperator}
+                                                    onSolve={handleSolveEquation}
+                                                    onWorkout={handleStartWorkout}
+                                                    onClear={() => clearWorkspace(false)}
+                                                    equation={equation}
+                                                />
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+                             </div>
                        </div>
                     </div>
                 );
