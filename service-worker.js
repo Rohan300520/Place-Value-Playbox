@@ -71,3 +71,20 @@ registerRoute(
     ],
   })
 );
+
+// Cache images with a Cache First strategy to ensure they are available offline.
+registerRoute(
+  ({ request }) => request.destination === 'image',
+  new CacheFirst({
+    cacheName: 'image-cache',
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 60,
+        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+      }),
+      new CacheableResponsePlugin({
+        statuses: [0, 200], // Also cache opaque responses for cross-origin images
+      }),
+    ],
+  })
+);
