@@ -16,13 +16,18 @@ interface CalculationWorkspaceProps {
     onWorkspacePieceDragEnd?: () => void;
 }
 
+// Define a threshold for when to switch to a consolidated view for better visibility.
+const DENOMINATOR_VISIBILITY_THRESHOLD = 20;
+
+
+// This function renders a group of pieces. It's complex to handle animations and different visual states.
 const renderPieceGroup = (
     group: WorkspacePiece[], 
     isCombining: boolean,
     onBarClick?: (fraction: Fraction) => void,
     onWorkspacePieceDragStart?: (e: React.DragEvent<HTMLDivElement>, pieceId: string) => void,
     onWorkspacePieceDragEnd?: () => void
-) => {
+): React.ReactNode => {
     if (!group || group.length === 0) return null;
 
     const totalNumerator = group.reduce((sum, piece) => sum + piece.fraction.numerator, 0);
@@ -34,33 +39,47 @@ const renderPieceGroup = (
             onBarClick({ numerator: totalNumerator, denominator });
         }
     };
-
-    // Creative Solution: If the group is larger than a whole and pieces are idle, wrap it into multiple lines
+    
     const allIdle = group.every(p => !p.state || p.state === 'idle');
+
+    // Creative Solution Part 1: Handle wrapping for improper fractions (e.g., 3/2)
     if (totalValue > 1 && allIdle) {
         const piecesPerWhole = denominator / group[0].fraction.numerator;
         let remainingPieces = [...group];
-        // FIX: Replaced JSX.Element with React.ReactNode to resolve namespace error.
         const rows: React.ReactNode[] = [];
         
         while (remainingPieces.length > 0) {
             const rowPieces = remainingPieces.splice(0, piecesPerWhole);
             const rowValue = rowPieces.reduce((sum, p) => sum + (p.fraction.numerator / p.fraction.denominator), 0);
             
-            rows.push(
-                <div key={`row-${rows.length}`} className="flex flex-row gap-px" style={{ width: `${rowValue * 100}%` }}>
-                    {rowPieces.map(piece => (
-                        <div key={piece.id} className="flex-1">
-                            <FractionPiece
-                                fraction={piece.fraction}
-                                isDraggable={!!onWorkspacePieceDragStart}
-                                onDragStart={onWorkspacePieceDragStart ? (e) => { e.stopPropagation(); onWorkspacePieceDragStart(e, piece.id)} : undefined}
-                                onDragEnd={onWorkspacePieceDragEnd ? (e) => { e.stopPropagation(); onWorkspacePieceDragEnd()} : undefined}
-                            />
-                        </div>
-                    ))}
-                </div>
-            );
+            // If denominator is large, render this row as a single consolidated block
+            if (denominator > DENOMINATOR_VISIBILITY_THRESHOLD) {
+                const rowNumerator = rowPieces.reduce((sum, p) => sum + p.fraction.numerator, 0);
+                rows.push(
+                    <div key={`row-${rows.length}`} style={{ width: `${rowValue * 100}%` }}>
+                        <FractionPiece 
+                            fraction={{ numerator: rowNumerator, denominator: denominator }}
+                            isDraggable={false} 
+                        />
+                    </div>
+                );
+            } else {
+                 // Otherwise, render individual pieces for the row
+                rows.push(
+                    <div key={`row-${rows.length}`} className="flex flex-row gap-px" style={{ width: `${rowValue * 100}%` }}>
+                        {rowPieces.map(piece => (
+                            <div key={piece.id} className="flex-1">
+                                <FractionPiece
+                                    fraction={piece.fraction}
+                                    isDraggable={!!onWorkspacePieceDragStart}
+                                    onDragStart={onWorkspacePieceDragStart ? (e) => { e.stopPropagation(); onWorkspacePieceDragStart(e, piece.id)} : undefined}
+                                    onDragEnd={onWorkspacePieceDragEnd ? (e) => { e.stopPropagation(); onWorkspacePieceDragEnd()} : undefined}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                );
+            }
         }
         
         return (
@@ -73,7 +92,23 @@ const renderPieceGroup = (
         );
     }
     
-    // --- ORIGINAL LOGIC (for groups <= 1 whole, or during animations) ---
+    // Creative Solution Part 2: For single-line fractions with large denominators, render one consolidated block
+    if (denominator > DENOMINATOR_VISIBILITY_THRESHOLD && allIdle) {
+        return (
+             <div 
+                className={`transition-opacity animate-pop-in ${onBarClick ? 'cursor-pointer hover:opacity-80' : ''}`}
+                style={{ width: `${totalValue * 100}%` }}
+                onClick={handleBarClick}
+            >
+                <FractionPiece 
+                    fraction={{ numerator: totalNumerator, denominator: denominator }}
+                    isDraggable={false} 
+                />
+            </div>
+        );
+    }
+    
+    // Original logic for animations or smaller denominators
     return (
         <div 
             className={`flex flex-row gap-px transition-opacity ${isCombining ? '' : 'animate-pop-in'} ${onBarClick ? 'cursor-pointer hover:opacity-80' : ''}`}
