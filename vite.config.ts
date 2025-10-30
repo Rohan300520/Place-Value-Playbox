@@ -16,7 +16,7 @@ export default defineConfig({
       filename: 'service-worker.js',
       
       // Assets to be included in the service worker's precache manifest.
-      includeAssets: ['assets/place-value-box-model.png', 'assets/*.svg', 'assets/*.jpeg', 'assets/*.webp', '404.html'],
+      includeAssets: ['assets/**/*.{png,svg,jpeg,webp}', '404.html'],
       manifest: {
         name: 'Place Value Playbox',
         short_name: 'Playbox',
