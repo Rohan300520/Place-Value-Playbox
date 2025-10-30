@@ -10,13 +10,12 @@ export default defineConfig({
       injectRegister: 'inline',
       
       // Use the 'injectManifest' strategy for full control over the service worker.
-      // FIX: Changed 'strategies' to 'strategy' and moved injectManifest options to the top level.
       strategy: 'injectManifest',
       srcDir: '.', // The root directory where service-worker.js is located.
       filename: 'service-worker.js',
       
-      // Assets to be included in the service worker's precache manifest.
-      includeAssets: ['assets/**/*.{png,svg,jpeg,webp}', '404.html'],
+      // This glob pattern ensures all files within the assets directory are precached.
+      includeAssets: ['assets/**/*', '404.html'],
       manifest: {
         name: 'Place Value Playbox',
         short_name: 'Playbox',
@@ -35,11 +34,9 @@ export default defineConfig({
           },
         ],
       },
-      // Specifies which files in the build output directory should be precached.
-      // This pattern targets all essential built assets for offline functionality.
-      globPatterns: ['**/*.{js,css,html,ico,png,svg,jpeg,webp}'],
-      // Set a reasonable file size limit for precaching.
-      maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
+      // 'globPatterns' is not used with the 'injectManifest' strategy.
+      // The manifest is built from the project's output files and 'includeAssets'.
+      maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 5 MB
     }),
   ],
 });
