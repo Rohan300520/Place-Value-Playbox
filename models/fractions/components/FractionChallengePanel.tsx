@@ -49,9 +49,10 @@ interface FractionChallengePanelProps {
     onClearAnswer: () => void;
     score: number;
     timeLimit: number;
+    isWorkoutActive: boolean;
 }
 
-export const FractionChallengePanel: React.FC<FractionChallengePanelProps> = ({ status, question, onCheckAnswer, onNext, onTimeOut, onClearAnswer, score, timeLimit }) => {
+export const FractionChallengePanel: React.FC<FractionChallengePanelProps> = ({ status, question, onCheckAnswer, onNext, onTimeOut, onClearAnswer, score, timeLimit, isWorkoutActive }) => {
     const { isSpeechEnabled } = useAudio();
 
     useEffect(() => {
@@ -84,7 +85,7 @@ export const FractionChallengePanel: React.FC<FractionChallengePanelProps> = ({ 
         return '';
     };
 
-    const showClearButton = (question.type === 'add' || question.type === 'subtract');
+    const showClearButton = (question.type === 'add' || question.type === 'subtract') && !isWorkoutActive;
 
     return (
         <div className={`w-full mb-4 p-4 rounded-2xl border-2 ${statusClasses} transition-all duration-300 chalk-bg`}>

@@ -83,7 +83,7 @@ export interface WorkspacePiece {
   id: string;
   fraction: Fraction;
   position: { x: number; y: number };
-  state?: 'idle' | 'splitting' | 'merging' | 'removing';
+  state?: 'idle' | 'splitting' | 'merging' | 'removing' | 'combining';
   // For splitting animation
   splitInto?: Fraction;
   // For merging animation
@@ -107,6 +107,9 @@ export type EquationState = {
   unsimplifiedResult?: Fraction | null;
   unsimplifiedResultPieces?: WorkspacePiece[];
   isSolved: boolean;
+  isWorkoutActive: boolean;
+  workoutStep: 'idle' | 'commonDenominator' | 'combine' | 'simplify' | 'done';
+  autoAdvanceWorkout?: boolean;
 };
 
 export type FractionState =

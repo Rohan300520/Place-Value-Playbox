@@ -1,8 +1,9 @@
 import React from 'react';
-import type { WorkspacePiece, Fraction, EquationState } from '../../../types';
+import type { WorkspacePiece, Fraction, EquationState, EquationTerm } from '../../../types';
 import { FractionPiece } from './FractionBlock';
-import { getFractionalValue } from '../utils/fractions';
+import { SplittingPiece } from './SplittingPiece';
 
+// FIX: Define the missing props interface for the component.
 interface CalculationWorkspaceProps {
     pieces?: WorkspacePiece[]; // For training mode
     equation?: EquationState; // For explore mode
@@ -17,6 +18,7 @@ interface CalculationWorkspaceProps {
 
 const renderPieceGroup = (
     group: WorkspacePiece[], 
+    isCombining: boolean,
     onBarClick?: (fraction: Fraction) => void,
     onWorkspacePieceDragStart?: (e: React.DragEvent<HTMLDivElement>, pieceId: string) => void,
     onWorkspacePieceDragEnd?: () => void
@@ -25,30 +27,79 @@ const renderPieceGroup = (
 
     const totalNumerator = group.reduce((sum, piece) => sum + piece.fraction.numerator, 0);
     const denominator = group[0].fraction.denominator;
-    const totalWidthPercentage = (totalNumerator / denominator) * 100;
+    const totalValue = totalNumerator / denominator;
 
     const handleBarClick = () => {
         if (onBarClick) {
             onBarClick({ numerator: totalNumerator, denominator });
         }
     };
+
+    // Creative Solution: If the group is larger than a whole and pieces are idle, wrap it into multiple lines
+    const allIdle = group.every(p => !p.state || p.state === 'idle');
+    if (totalValue > 1 && allIdle) {
+        const piecesPerWhole = denominator / group[0].fraction.numerator;
+        let remainingPieces = [...group];
+        // FIX: Replaced JSX.Element with React.ReactNode to resolve namespace error.
+        const rows: React.ReactNode[] = [];
+        
+        while (remainingPieces.length > 0) {
+            const rowPieces = remainingPieces.splice(0, piecesPerWhole);
+            const rowValue = rowPieces.reduce((sum, p) => sum + (p.fraction.numerator / p.fraction.denominator), 0);
+            
+            rows.push(
+                <div key={`row-${rows.length}`} className="flex flex-row gap-px" style={{ width: `${rowValue * 100}%` }}>
+                    {rowPieces.map(piece => (
+                        <div key={piece.id} className="flex-1">
+                            <FractionPiece
+                                fraction={piece.fraction}
+                                isDraggable={!!onWorkspacePieceDragStart}
+                                onDragStart={onWorkspacePieceDragStart ? (e) => { e.stopPropagation(); onWorkspacePieceDragStart(e, piece.id)} : undefined}
+                                onDragEnd={onWorkspacePieceDragEnd ? (e) => { e.stopPropagation(); onWorkspacePieceDragEnd()} : undefined}
+                            />
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+        
+        return (
+            <div 
+                className={`w-full flex flex-col gap-2 transition-opacity animate-pop-in ${onBarClick ? 'cursor-pointer hover:opacity-80' : ''}`}
+                onClick={handleBarClick}
+            >
+                {rows}
+            </div>
+        );
+    }
     
+    // --- ORIGINAL LOGIC (for groups <= 1 whole, or during animations) ---
     return (
         <div 
-            className={`flex flex-row gap-px transition-opacity animate-pop-in ${onBarClick ? 'cursor-pointer hover:opacity-80' : ''}`}
-            style={{ width: `${totalWidthPercentage}%` }}
+            className={`flex flex-row gap-px transition-opacity ${isCombining ? '' : 'animate-pop-in'} ${onBarClick ? 'cursor-pointer hover:opacity-80' : ''}`}
+            style={{ width: `${totalValue * 100}%` }}
             onClick={handleBarClick}
         >
-            {group.map(piece => (
-                <div key={piece.id} className="flex-1">
-                    <FractionPiece 
-                        fraction={piece.fraction} 
-                        isDraggable={!!onWorkspacePieceDragStart}
-                        onDragStart={onWorkspacePieceDragStart ? (e) => { e.stopPropagation(); onWorkspacePieceDragStart(e, piece.id)} : undefined}
-                        onDragEnd={onWorkspacePieceDragEnd ? (e) => { e.stopPropagation(); onWorkspacePieceDragEnd()} : undefined}
-                    />
-                </div>
-            ))}
+            {group.map(piece => {
+                if (piece.state === 'splitting' && piece.splitInto) {
+                    return <SplittingPiece key={piece.id} piece={piece} />;
+                }
+
+                const animationClass = 
+                    piece.state === 'removing' ? 'animate-subtract-poof' : 
+                    isCombining ? 'transition-all duration-1000 ease-in-out' : '';
+                
+                return (
+                    <div key={piece.id} className={`flex-1 ${animationClass}`} style={{ marginRight: isCombining ? '0' : undefined }}>
+                        <FractionPiece 
+                            fraction={piece.fraction} 
+                            isDraggable={!!onWorkspacePieceDragStart}
+                            onDragStart={onWorkspacePieceDragStart ? (e) => { e.stopPropagation(); onWorkspacePieceDragStart(e, piece.id)} : undefined}
+                            onDragEnd={onWorkspacePieceDragEnd ? (e) => { e.stopPropagation(); onWorkspacePieceDragEnd()} : undefined}
+                        />
+                    </div>
+                );
+            })}
         </div>
     );
 };
@@ -61,41 +112,24 @@ export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ piec
 
     if (isExploreMode) {
         equationForRender = equation;
-    } else {
-        const groupedPieces: WorkspacePiece[][] = [];
-        if (pieces && pieces.length > 0) {
-            let currentGroup: WorkspacePiece[] = [];
-            for (let i = 0; i < pieces.length; i++) {
-                const piece = pieces[i];
-                const prevPiece = pieces[i - 1];
-
-                if (currentGroup.length > 0 && piece.state === 'idle' && prevPiece.state === 'idle' && piece.fraction.denominator === prevPiece.fraction.denominator) {
-                    currentGroup.push(piece);
-                } else {
-                    if (currentGroup.length > 0) {
-                        groupedPieces.push(currentGroup);
-                    }
-                    currentGroup = [piece];
-                }
-            }
-            if (currentGroup.length > 0) {
-                groupedPieces.push(currentGroup);
-            }
-        }
-
+    } else { // Training Mode
+        const term: EquationTerm = { fraction: null, pieces: pieces || [] };
         equationForRender = {
-            terms: groupedPieces.map(group => ({ fraction: null, pieces: group })),
+            terms: [term],
             operators: [],
             result: null,
             resultPieces: [],
             isSolved: false,
+            isWorkoutActive: false,
+            workoutStep: 'idle'
         };
     }
 
     const hasContent = equationForRender.terms.some(t => t.pieces.length > 0);
+    const isMerging = equationForRender.terms.some(t => t.pieces.some(p => p.state === 'merging'));
 
     const containerClasses = `w-full min-h-[20rem] p-6 rounded-2xl chalk-border flex flex-col justify-start relative transition-all duration-300 gap-2 ${isDropZoneActive ? 'bg-slate-700/50' : ''}`;
-    const alignmentClass = 'items-start'; // Always align items to the start for consistent bar layout
+    const alignmentClass = 'items-start';
 
     return (
         <div
@@ -111,12 +145,12 @@ export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ piec
                 </div>
             )}
             
-            <div className="w-full">
+            <div className={`w-full ${isMerging ? 'animate-merge-converge' : ''}`}>
                 {equationForRender.isSolved ? (
-                    <div className="w-full flex flex-col items-start animate-pop-in">
+                    <div className="w-full flex flex-col items-start animate-bouncy-pop-in">
                         <div className="border-t-4 border-chalk-yellow w-full my-4"></div>
                         {equationForRender.resultPieces.map((piece, index) => {
-                             const value = getFractionalValue(piece.fraction);
+                             const value = piece.fraction.numerator / piece.fraction.denominator;
                              const width = value > 1.2 ? '100%' : `${value * 100}%`;
                              return (
                                 <div key={piece.id || index} className="w-full" style={{ width }}>
@@ -137,9 +171,11 @@ export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ piec
                                         return acc;
                                     }, {} as Record<number, WorkspacePiece[]>);
                                     
+                                    const isCombining = term.pieces.some(p => p.state === 'combining');
+
                                     return Object.values(piecesByDenominator).map((pieceGroup, i) => (
-                                        <div key={i} className="w-full">
-                                            {renderPieceGroup(pieceGroup, onBarClick, onWorkspacePieceDragStart, onWorkspacePieceDragEnd)}
+                                        <div key={i} className="w-full merge-container">
+                                            {renderPieceGroup(pieceGroup, isCombining, onBarClick, onWorkspacePieceDragStart, onWorkspacePieceDragEnd)}
                                         </div>
                                     ));
                                 })()}

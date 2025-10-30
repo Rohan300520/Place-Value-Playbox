@@ -19,6 +19,7 @@ import { useAudio } from '../../contexts/AudioContext';
 import { HelpModal } from './components/HelpModal';
 import { CalculationStepsPanel } from './components/CalculationStepsPanel';
 import { FractionControls } from './components/FractionControls';
+import { WorkoutControls } from './components/WorkoutControls';
 import { EquationInfoPanel } from './components/EquationInfoPanel';
 import { OrderWorkspace } from './components/OrderWorkspace';
 import { addFractions, subtractFractions, simplifyFraction, lcm, getFractionalValue, fractionsAreEqual } from './utils/fractions';
@@ -27,6 +28,7 @@ import { ActivityPanel } from './components/ActivityPanel';
 
 const DURATION_MAP: Record<Difficulty, number> = { easy: 60, medium: 45, hard: 30 };
 const DENOMINATORS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16];
+const ANIMATION_DURATION = 1500;
 
 const EMPTY_EQUATION: EquationState = {
     terms: [{ fraction: null, pieces: [] }],
@@ -36,6 +38,27 @@ const EMPTY_EQUATION: EquationState = {
     unsimplifiedResult: null,
     unsimplifiedResultPieces: [],
     isSolved: false,
+    isWorkoutActive: false,
+    workoutStep: 'idle',
+    autoAdvanceWorkout: false,
+};
+
+const denominatorToWord = (den: number): string => {
+    switch (den) {
+        case 1: return 'whole';
+        case 2: return 'half';
+        case 3: return 'third';
+        case 4: return 'fourth';
+        case 5: return 'fifth';
+        case 6: return 'sixth';
+        case 7: return 'seventh';
+        case 8: return 'eighth';
+        case 9: return 'ninth';
+        case 10: return 'tenth';
+        case 12: return 'twelfth';
+        case 16: return 'sixteenth';
+        default: return `${den}th`;
+    }
 };
 
 export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo | null }> = ({ onExit, currentUser }) => {
@@ -54,7 +77,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
     const { isSpeechEnabled } = useAudio();
     const currentTrainingStep = useMemo(() => fractionTrainingPlan.find(s => s.step === trainingStep) || null, [trainingStep]);
 
-    // Explore Mode State
+    // Explore & Challenge Mode State
     const [equation, setEquation] = useState<EquationState>(EMPTY_EQUATION);
     
     // Challenge Mode State
@@ -71,9 +94,12 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         if (forTraining) {
             setWorkspacePieces([]);
         } else {
+            if (isSpeechEnabled && gameState === 'explore' && (equation.terms.length > 1 || equation.terms[0].fraction !== null || equation.isSolved)) {
+                speak("Workspace cleared.", 'en-US');
+            }
             setEquation(EMPTY_EQUATION);
         }
-    }, []);
+    }, [isSpeechEnabled, gameState, equation]);
 
     const advanceStep = useCallback(() => {
         const step = fractionTrainingPlan.find(s => s.step === trainingStep);
@@ -109,9 +135,14 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
             state: 'idle',
         };
 
+        if (isSpeechEnabled && gameState === 'explore') {
+            const pieceName = denominatorToWord(fraction.denominator);
+            speak(`Added one ${pieceName}.`, 'en-US');
+        }
+
         if (gameState === 'training') {
             setWorkspacePieces(prev => [...prev, newPiece]);
-        } else if ((gameState === 'explore' || gameState === 'challenge') && !equation.isSolved) {
+        } else if ((gameState === 'explore' || gameState === 'challenge') && !equation.isSolved && !equation.isWorkoutActive) {
             setEquation(prev => {
                 const newTerms = [...prev.terms];
                 const lastTermIndex = newTerms.length - 1;
@@ -128,7 +159,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
     };
     
     const handleChartPieceClick = (fraction: Fraction) => {
-        if ((gameState !== 'explore' && gameState !== 'challenge') || equation.isSolved) {
+        if ((gameState !== 'explore' && gameState !== 'challenge') || equation.isSolved || equation.isWorkoutActive) {
             return;
         }
         // For challenge mode, only allow adding pieces for add/subtract questions
@@ -154,6 +185,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
     };
 
     const removePieceFromEquation = (pieceId: string) => {
+        if (equation.isWorkoutActive) return;
         setEquation(prev => {
             const newTerms = prev.terms.map(term => {
                 if (!term.pieces.some(p => p.id === pieceId)) {
@@ -181,7 +213,11 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
     };
     
     const handleSetOperator = (op: FractionOperator) => {
-        if (gameState === 'explore' && !equation.isSolved) {
+        if ((gameState === 'explore' || gameState === 'challenge') && !equation.isSolved && !equation.isWorkoutActive) {
+            if (isSpeechEnabled && gameState === 'explore') {
+                const word = op === '+' ? 'plus' : 'minus';
+                speak(word, 'en-US');
+            }
              setEquation(prev => {
                 const lastTerm = prev.terms[prev.terms.length - 1];
                 if (lastTerm.fraction) {
@@ -197,13 +233,19 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
     }
 
     const handleSolveEquation = () => {
-        if (gameState !== 'explore' || equation.terms.length < 2 || equation.isSolved) return;
+        if ((gameState !== 'explore' && gameState !== 'challenge') || equation.terms.length < 2 || equation.isSolved) return;
+        
+        if (equation.isWorkoutActive && gameState === 'explore') {
+             if (isSpeechEnabled) {
+                speak("Solving directly.", 'en-US');
+            }
+        }
 
         const { terms, operators } = equation;
         
         if (!terms[terms.length - 1].fraction) return;
 
-        let currentResult = terms[0].fraction!;
+        let currentResult: Fraction = terms[0].fraction!;
         
         for (let i = 0; i < operators.length; i++) {
             const nextTerm = terms[i + 1].fraction!;
@@ -230,8 +272,150 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                 resultPieces.push({ id: `result-rem-${Date.now()}`, fraction: { numerator: remainderNum, denominator: finalResult.denominator }, position: { x: 0, y: 0 } });
             }
         }
+        
+        if (isSpeechEnabled && (gameState === 'explore' || (gameState === 'challenge' && !equation.isWorkoutActive))) {
+            speak(`Equals ${finalResult.numerator} over ${finalResult.denominator}.`, 'en-US');
+        }
+        
+        setEquation(prev => ({ ...prev, isSolved: true, isWorkoutActive: false, workoutStep: 'done', unsimplifiedResult, result: finalResult, resultPieces }));
+    };
 
-        setEquation(prev => ({ ...prev, isSolved: true, unsimplifiedResult, result: finalResult, resultPieces }));
+    // --- Workout Logic ---
+    const handleStartWorkout = () => {
+        if (isSpeechEnabled && gameState === 'explore') {
+            speak("Let's solve this step by step. First, find a common denominator.", 'en-US');
+        }
+        setEquation(prev => ({...prev, isWorkoutActive: true, workoutStep: 'commonDenominator'}));
+    };
+
+    const handleWorkoutNextStep = useCallback(() => {
+        const { workoutStep, terms, operators, unsimplifiedResult, result } = equation;
+
+        if (workoutStep === 'commonDenominator') {
+            if (isSpeechEnabled && gameState === 'explore') {
+                speak("Converting to a common denominator.", 'en-US');
+            }
+            const allDenominators = terms.map(t => t.fraction!.denominator);
+            const commonDen = allDenominators.reduce((a, b) => lcm(a, b));
+            const needsConversion = allDenominators.some(d => d !== commonDen);
+
+            if (!needsConversion) { // Skip if not needed
+                setEquation(prev => ({ ...prev, workoutStep: 'combine', autoAdvanceWorkout: true }));
+                return;
+            }
+
+            const animatedTerms = terms.map(term => ({
+                ...term,
+                pieces: term.pieces.map(p => ({ ...p, state: 'splitting' as const, splitInto: { numerator: 1, denominator: commonDen } }))
+            }));
+            setEquation(prev => ({ ...prev, terms: animatedTerms }));
+
+            setTimeout(() => {
+                const finalTerms = terms.map(term => {
+                    const multiplier = commonDen / term.fraction!.denominator;
+                    const finalPieces: WorkspacePiece[] = term.pieces.flatMap(p => 
+                        Array.from({ length: p.fraction.numerator * multiplier }).map((_, i) => ({
+                            id: `${p.id}-splt-${i}`, fraction: { numerator: 1, denominator: commonDen }, position: { x: 0, y: 0 }, state: 'idle'
+                        }))
+                    );
+                    return { 
+                        fraction: { numerator: term.fraction!.numerator * multiplier, denominator: commonDen },
+                        pieces: finalPieces 
+                    };
+                });
+                setEquation(prev => ({ ...prev, terms: finalTerms, workoutStep: 'combine' }));
+            }, ANIMATION_DURATION);
+
+        } else if (workoutStep === 'combine') {
+            if (isSpeechEnabled && gameState === 'explore') {
+                const action = operators[0] === '+' ? 'Combining' : 'Subtracting';
+                speak(`${action} the fractions.`, 'en-US');
+            }
+            let finalPieces: WorkspacePiece[] = [];
+            if (operators[0] === '+') {
+                 finalPieces = terms.flatMap(t => t.pieces.map(p => ({...p, state: 'combining' as const})));
+            } else {
+                 finalPieces = [...terms[0].pieces];
+                 let piecesToRemoveCount = terms[1].pieces.length;
+                 finalPieces = finalPieces.map(p => {
+                    if (piecesToRemoveCount > 0 && p.state === 'idle') {
+                        piecesToRemoveCount--;
+                        return { ...p, state: 'removing' as const };
+                    }
+                    return p;
+                 });
+            }
+            
+            setEquation(prev => ({ ...prev, terms: [{ ...prev.terms[0], pieces: finalPieces }, ...prev.terms.slice(1).map(t => ({...t, pieces: []}))]}));
+
+            setTimeout(() => {
+                const remainingPieces = finalPieces.filter(p => p.state !== 'removing');
+                const resultFraction = remainingPieces.reduce((acc, p) => addFractions(acc, p.fraction), { numerator: 0, denominator: 1 } as Fraction);
+                const simplified = simplifyFraction(resultFraction);
+                const canSimplify = !fractionsAreEqual(resultFraction, simplified);
+                
+                setEquation(prev => ({
+                    ...prev,
+                    terms: [{ fraction: resultFraction, pieces: remainingPieces.map(p => ({...p, state: 'idle'})) }], operators: [],
+                    unsimplifiedResult: resultFraction, result: simplified,
+                    workoutStep: canSimplify ? 'simplify' : 'done'
+                }));
+
+                if (isSpeechEnabled && gameState === 'explore') {
+                    if (canSimplify) {
+                        speak("Now, let's simplify the result.", 'en-US');
+                    } else {
+                        speak(`The result is ${resultFraction.numerator} over ${resultFraction.denominator}. Workout complete.`, 'en-US');
+                    }
+                }
+            }, ANIMATION_DURATION);
+
+        } else if (workoutStep === 'simplify') {
+            if (isSpeechEnabled && gameState === 'explore') {
+                speak(`Simplifying.`, 'en-US');
+            }
+            const piecesToMerge = [...equation.terms[0].pieces];
+            setEquation(prev => ({ ...prev, terms: [{ ...prev.terms[0], pieces: piecesToMerge.map(p => ({ ...p, state: 'merging' as const })) }]}));
+
+            setTimeout(() => {
+                const { result } = equation;
+                if (!result) return;
+                const resultPieces: WorkspacePiece[] = [];
+                const wholeParts = Math.floor(result.numerator / result.denominator);
+                const remainderNum = result.numerator % result.denominator;
+                if (wholeParts > 0) {
+                    for(let i=0; i < wholeParts; i++) {
+                        resultPieces.push({ id: `wr-w-${Date.now()}-${i}`, fraction: { numerator: 1, denominator: 1 }, position: { x: 0, y: 0 }, state: 'idle' });
+                    }
+                }
+                if (remainderNum > 0) resultPieces.push({ id: `wr-r-${Date.now()}`, fraction: { numerator: remainderNum, denominator: result.denominator }, position: { x: 0, y: 0 }, state: 'idle' });
+                
+                if (isSpeechEnabled && result && gameState === 'explore') {
+                    speak(`The final answer is ${result.numerator} over ${result.denominator}. Workout complete.`, 'en-US');
+                }
+                setEquation(prev => ({ ...prev, terms: [{ fraction: result, pieces: resultPieces }], resultPieces, isSolved: true, workoutStep: 'done'}));
+            }, ANIMATION_DURATION);
+        }
+    }, [equation, isSpeechEnabled, gameState]);
+
+    useEffect(() => {
+        if (equation.autoAdvanceWorkout) {
+            setEquation(prev => ({ ...prev, autoAdvanceWorkout: false }));
+            handleWorkoutNextStep();
+        }
+    }, [equation.autoAdvanceWorkout, handleWorkoutNextStep]);
+
+
+    const handleFinishWorkout = () => {
+        // If workout is done, reset. Otherwise, solve directly.
+        if (equation.workoutStep === 'done') {
+            if (isSpeechEnabled && gameState === 'explore') {
+                speak("Finished.", 'en-US');
+            }
+            clearWorkspace(false);
+        } else {
+            handleSolveEquation();
+        }
     };
 
     const goBackToMenu = useCallback(() => {
@@ -268,6 +452,8 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                 result: { numerator: 1, denominator: 2 },
                 resultPieces: [{ id: `result-${Date.now()}`, fraction: { numerator: 1, denominator: 2 }, position: { x: 0, y: 0 } }],
                 isSolved: true,
+                isWorkoutActive: false,
+                workoutStep: 'idle',
             };
             setEquation(solvedEquation);
             advanceStep();
@@ -390,9 +576,14 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         let finalUserAnswer: Fraction | Fraction[] | number | null = userAnswer;
 
         if (currentQuestion.type === 'add' || currentQuestion.type === 'subtract') {
-            const workspaceAnswer = simplifyFraction(equation.terms[0].fraction || { numerator: 0, denominator: 1 });
-            finalUserAnswer = workspaceAnswer;
-            isCorrect = fractionsAreEqual(workspaceAnswer, answer as Fraction);
+            const workspaceAnswer = equation.isWorkoutActive 
+                ? equation.result
+                : simplifyFraction(equation.terms[0].fraction || { numerator: 0, denominator: 1 });
+            
+            if (workspaceAnswer) {
+                finalUserAnswer = workspaceAnswer;
+                isCorrect = fractionsAreEqual(workspaceAnswer, answer as Fraction);
+            }
         } else if (currentQuestion.type === 'compare') {
             isCorrect = userAnswer === answer;
             if (typeof userAnswer === 'number' && userAnswer >= 0 && userAnswer < currentQuestion.fractions.length) {
@@ -420,7 +611,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
         } else {
             setChallengeStatus('incorrect');
         }
-    }, [currentQuestion, userAnswer, equation.terms, currentUser, difficulty]);
+    }, [currentQuestion, userAnswer, equation, currentUser, difficulty]);
     
     const handleNextChallenge = useCallback(() => {
         if (questionIndex < questions.length - 1) {
@@ -663,13 +854,23 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                                         onWorkspacePieceDragStart={handleWorkspacePieceDragStart}
                                         onWorkspacePieceDragEnd={handleWorkspacePieceDragEnd}
                                     />
-                                    <FractionControls 
-                                        onOperatorSelect={handleSetOperator}
-                                        onSolve={handleSolveEquation}
-                                        onClear={() => clearWorkspace(false)}
-                                        equation={equation}
-                                    />
-                                    {equation.isSolved && <CalculationStepsPanel equation={equation} isVisible={equation.isSolved} />}
+                                    {equation.isWorkoutActive ? (
+                                        <WorkoutControls
+                                            workoutStep={equation.workoutStep}
+                                            onNextStep={handleWorkoutNextStep}
+                                            onFinish={handleFinishWorkout}
+                                            equation={equation}
+                                        />
+                                    ) : (
+                                        <FractionControls 
+                                            onOperatorSelect={handleSetOperator}
+                                            onSolve={handleSolveEquation}
+                                            onWorkout={handleStartWorkout}
+                                            onClear={() => clearWorkspace(false)}
+                                            equation={equation}
+                                        />
+                                    )}
+                                    {equation.isSolved && !equation.isWorkoutActive && <CalculationStepsPanel equation={equation} isVisible={equation.isSolved} />}
                                 </div>
                             </div>
                         </div>
@@ -698,6 +899,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                                 onClearAnswer={() => clearWorkspace(false)}
                                 score={score}
                                 timeLimit={DURATION_MAP[difficulty]}
+                                isWorkoutActive={equation.isWorkoutActive}
                             />
 
                             {isOrderMode && (
@@ -723,7 +925,7 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                                     </div>
                                     <div className="flex flex-col gap-4">
                                         <p className="text-chalk-light font-semibold text-center text-lg">
-                                            Build your answer in the workspace below.
+                                            Build your answer below, or use the Workout mode to solve step-by-step.
                                         </p>
                                         <CalculationWorkspace
                                             equation={equation}
@@ -733,6 +935,22 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
                                             onWorkspacePieceDragStart={handleWorkspacePieceDragStart}
                                             onWorkspacePieceDragEnd={handleWorkspacePieceDragEnd}
                                         />
+                                         {equation.isWorkoutActive ? (
+                                            <WorkoutControls
+                                                workoutStep={equation.workoutStep}
+                                                onNextStep={handleWorkoutNextStep}
+                                                onFinish={handleFinishWorkout}
+                                                equation={equation}
+                                            />
+                                        ) : (
+                                            <FractionControls 
+                                                onOperatorSelect={handleSetOperator}
+                                                onSolve={handleSolveEquation}
+                                                onWorkout={handleStartWorkout}
+                                                onClear={() => clearWorkspace(false)}
+                                                equation={equation}
+                                            />
+                                        )}
                                     </div>
                                 </div>
                             )}

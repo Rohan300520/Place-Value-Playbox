@@ -232,6 +232,33 @@
         }
         .animate-slide-out-left { animation: slide-out-left 0.7s ease-in forwards; }
 
+        /* --- New Fraction Workout Animations --- */
+        @keyframes piece-cut-lines-anim {
+            from { stroke-dashoffset: 24; opacity: 0; } /* Line height */
+            to { stroke-dashoffset: 0; opacity: 1; }
+        }
+        @keyframes fade-out-slow {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        .animate-fade-out-slow { animation: fade-out-slow 1s 0.5s forwards; }
+        
+        @keyframes subtract-poof {
+            0% { transform: scale(1); opacity: 1; }
+            40% { transform: scale(1.1); background-color: rgba(100, 116, 139, 0.7); }
+            100% { transform: scale(0.2); opacity: 0; }
+        }
+        .animate-subtract-poof { animation: subtract-poof 1s forwards ease-in-out; }
+
+        .merge-container { display: flex; gap: 1px; }
+        .animate-merge-converge .merge-container > * { 
+            animation: merge-converge-child 0.8s forwards ease-in-out;
+            transform-origin: center;
+        }
+        @keyframes merge-converge-child {
+            to { transform: scale(0); opacity: 0.5; }
+        }
+
 
         /* --- GEOMETRY THEME (SURFACE AREA & VOLUMES) --- */
         .geometry-theme {
