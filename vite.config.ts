@@ -14,8 +14,12 @@ export default defineConfig({
       srcDir: '.', // The root directory where service-worker.js is located.
       filename: 'service-worker.js',
       
-      // This glob pattern ensures all files within the assets directory are precached.
-      includeAssets: ['assets/**/*', '404.html'],
+      // Explicitly define glob patterns to ensure all assets are precached. This is
+      // more reliable than `includeAssets` for ensuring images are cached.
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,svg,png,jpeg,webp}'],
+      },
+      
       manifest: {
         name: 'Place Value Playbox',
         short_name: 'Playbox',
@@ -34,9 +38,7 @@ export default defineConfig({
           },
         ],
       },
-      // 'globPatterns' is not used with the 'injectManifest' strategy.
-      // The manifest is built from the project's output files and 'includeAssets'.
-      maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 5 MB
+      maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 25 MB
     }),
   ],
 });
