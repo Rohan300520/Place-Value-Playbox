@@ -1,11 +1,11 @@
 // This is an explicit service worker implementation using Workbox.
 // It gives us full control over caching strategies for better offline reliability.
 
-import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'workbox-precaching';
-import { registerRoute, NavigationRoute } from 'workbox-routing';
-import { StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
-import { ExpirationPlugin } from 'workbox-expiration';
-import { CacheableResponsePlugin } from 'workbox-cacheable-response';
+import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'https://aistudiocdn.com/workbox-precaching@^7.3.0';
+import { registerRoute, NavigationRoute } from 'https://aistudiocdn.com/workbox-routing@^7.3.0';
+import { StaleWhileRevalidate, CacheFirst } from 'https://aistudiocdn.com/workbox-strategies@^7.3.0';
+import { ExpirationPlugin } from 'https://aistudiocdn.com/workbox-expiration@^7.3.0';
+import { CacheableResponsePlugin } from 'https://aistudiocdn.com/workbox-cacheable-response@^7.3.0';
 
 // Immediately take control of the page when the service worker activates.
 self.addEventListener('install', () => {

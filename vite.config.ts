@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'inline',
       
-      // Use the 'injectManifest' strategy for full control over the service worker.
-      strategy: 'injectManifest',
+      // Fix: Removed the explicit 'strategy' property. The presence of the 'injectManifest'
+      // object below is sufficient to enable the 'injectManifest' strategy.
       srcDir: '.', // The root directory where service-worker.js is located.
       filename: 'service-worker.js',
       
