@@ -9,12 +9,17 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'inline',
       
+      // Use the 'injectManifest' strategy for full control over the service worker.
+      strategy: 'injectManifest',
+      srcDir: '.', // The root directory where service-worker.js is located.
+      filename: 'service-worker.js',
+      
       injectManifest: {
-        swSrc: 'service-worker.js',
-        swDest: 'sw.js',
-        // This more explicit pattern ensures assets from the public/assets directory are reliably captured.
-        globPatterns: ['**/*.{js,css,html}', 'assets/*.{svg,png,jpeg,webp}'],
-        maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 25 MB
+        // This updated glob pattern is more explicit to ensure all assets, especially
+        // those from the 'public/assets' directory, are included in the precache manifest.
+        // The first part captures the core app shell files, and the second part
+        // captures all assets within the assets directory, resolving the offline issue.
+        globPatterns: ['**/*.{js,css,html}', 'assets/**/*.*'],
       },
       
       manifest: {
@@ -35,6 +40,7 @@ export default defineConfig({
           },
         ],
       },
+      maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 25 MB
     }),
   ],
 });

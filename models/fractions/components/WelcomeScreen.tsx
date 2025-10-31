@@ -20,7 +20,7 @@ export const WelcomeScreen: React.FC<{ onStart: () => void }> = ({ onStart }) =>
         
         <div className="mt-8 border-t-2 pt-6" style={{ borderColor: 'var(--border-primary)' }}>
           <div className="flex items-center justify-center gap-4">
-            <img src="/assets/logo.svg" alt="SMART C Logo" className="h-14" style={{ color: 'var(--text-primary)' }} />
+            <img src="/assets/logo.jpeg" alt="SMART C Logo" className="h-14" style={{ color: 'var(--text-primary)' }} />
             <div className="text-left">
               <p className="text-sm font-bold tracking-wide" style={{ color: 'var(--text-secondary)' }}>
                 An interactive digital lab from the creators at
