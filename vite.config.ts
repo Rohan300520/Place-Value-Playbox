@@ -9,18 +9,19 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'inline',
       
-      srcDir: '.', // The root directory where service-worker.js is located.
-      filename: 'service-worker.js',
-      
-      // Explicitly include public/ assets in precache (e.g., assets/icon.svg and any images in public/assets/).
-      // Globs are relative to public/. This ensures they're added to __WB_MANIFEST even if not imported.
-      includeAssets: ['**/*.{ico,png,jpg,jpeg,jpg,svg,gif,webp,avif}'], // Add common image formats; adjust paths if images are nested (e.g., 'assets/**/*.{png,jpg}').
-      
+      // The 'injectManifest' object automatically sets the strategy. The configuration
+      // is now corrected to use the modern 'swSrc' and 'swDest' properties.
       injectManifest: {
-        // Expand to catch more static formats (added 'jpg', 'gif', 'avif' for completeness).
-        // Use "**/*" to precache *everything* in dist/ for fully offline (but exclude large videos/audio via !patterns if needed).
-        globPatterns: ['**/*.{js,css,html,ico,svg,png,jpg,jpeg,gif,webp,avif}'],
-        maximumFileSizeToCacheInBytes: 40 * 1024 * 1024, // 40 MB
+        // Explicitly define the source service worker file.
+        swSrc: 'service-worker.js',
+        // Define the output file name. 'sw.js' is used to avoid a file collision
+        // with the empty 'public/service-worker.js' during the build process.
+        swDest: 'sw.js',
+        // This robust pattern ensures all assets, including images from the public directory,
+        // are captured in the precache manifest after the build completes.
+        globPatterns: ['**/*.{js,css,html,svg,png,jpeg,webp,jpeg}'],
+        // Workbox options must be placed inside the injectManifest object.
+        maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 25 MB
       },
       
       manifest: {

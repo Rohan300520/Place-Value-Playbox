@@ -25,7 +25,7 @@ function createTextSprite(text: string, options: { color?: string, fontSize?: nu
     // Fix: The THREE.Sprite constructor requires a material argument.
     // Fix: Provide a default SpriteMaterial to the Sprite constructor.
     // FIX: The THREE.Sprite constructor requires a material. Provided a default material to prevent a crash if the canvas context is not available.
-    // Fix: The THREE.Sprite constructor requires a material argument. Provided a default SpriteMaterial to prevent a crash.
+    // Fix: The THREE.Sprite constructor requires a material. Provided a default material to prevent a crash if the canvas context is not available.
     if (!context) return new THREE.Sprite(new THREE.SpriteMaterial());
 
     context.font = `Bold ${fontSize}px Arial`;
@@ -236,6 +236,7 @@ const createCapsule = (dims: ShapeDimensions) => {
     return group;
 };
 
+// Fix: Add missing mesh creation function
 const createConeOnCylinder = (dims: ShapeDimensions) => {
     const r = dims.r > 0 ? dims.r : 3;
     const hCyl = dims.hCyl > 0 ? dims.hCyl : 4;
@@ -261,6 +262,7 @@ const createConeOnCylinder = (dims: ShapeDimensions) => {
     return group;
 };
 
+// Fix: Add missing mesh creation function
 const createFrustum = (dims: ShapeDimensions) => {
     const r1 = dims.r1 > 0 ? dims.r1 : 4;
     const r2 = dims.r2 > 0 ? dims.r2 : 2;
