@@ -51,8 +51,10 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({ shape, dimensions, isUnfolde
         controls.enableDamping = true;
         controlsRef.current = controls;
 
-        const renderer = rendererRef.current || new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        rendererRef.current = renderer;
+        // Fix: Ensure renderer is created only once with correct arguments.
+        if (!rendererRef.current) {
+            rendererRef.current = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        }
     }, []);
 
 
@@ -76,6 +78,7 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({ shape, dimensions, isUnfolde
         
         const scene = new THREE.Scene();
         sceneRef.current = scene;
+        // Fix: Use the renderer instance created in useLayoutEffect, avoiding redundant initialization.
         const renderer = rendererRef.current;
         currentMount.appendChild(renderer.domElement);
         
