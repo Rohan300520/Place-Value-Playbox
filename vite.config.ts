@@ -12,12 +12,14 @@ export default defineConfig({
       // Fix: Removed the explicit 'strategy' property. The presence of the 'injectManifest'
       // object below is sufficient to enable the 'injectManifest' strategy.
       srcDir: '.', // The root directory where service-worker.js is located.
-      filename: 'service-worker.js',
+      filename: 'sw.js',
       
       injectManifest: {
         // A robust glob pattern to ensure all essential assets are precached for offline use.
         // This includes HTML, JS, CSS, and all common image formats.
         globPatterns: ['**/*.{js,css,html,svg,png,jpeg,webp}'],
+        // Fix: Moved maximumFileSizeToCacheInBytes into the injectManifest object, as it is a workbox property.
+        maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 25 MB
       },
       
       manifest: {
@@ -38,7 +40,6 @@ export default defineConfig({
           },
         ],
       },
-      maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 25 MB
     }),
   ],
 });
