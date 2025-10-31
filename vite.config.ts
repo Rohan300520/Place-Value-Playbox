@@ -9,15 +9,16 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'inline',
       
-      // Fix: Replaced the 'strategy' property with the 'injectManifest' object
-      // to align with modern vite-plugin-pwa configuration and resolve the TypeScript error.
-      injectManifest: {
-        swSrc: 'service-worker.js',
-      },
+      // Use the 'injectManifest' strategy for full control over the service worker.
+      strategy: 'injectManifest',
+      srcDir: '.', // The root directory where service-worker.js is located.
+      filename: 'service-worker.js',
       
-      // By removing the explicit 'injectManifest.globPatterns', we allow the plugin
-      // to use its default behavior, which is to precache all assets in the output directory.
-      // This is more reliable for ensuring all images are included.
+      // Explicitly define glob patterns to ensure all assets are precached. This is
+      // more reliable than `includeAssets` for ensuring images are cached.
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,svg,png,jpeg,webp}'],
+      },
       
       manifest: {
         name: 'Place Value Playbox',
