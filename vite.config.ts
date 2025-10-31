@@ -7,21 +7,14 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'inline',
-      
-      // Use the 'injectManifest' strategy for full control over the service worker.
-      strategy: 'injectManifest',
-      srcDir: '.', // The root directory where service-worker.js is located.
-      filename: 'service-worker.js',
-      
-      injectManifest: {
-        // This updated glob pattern is more explicit to ensure all assets, especially
-        // those from the 'public/assets' directory, are included in the precache manifest.
-        // The first part captures the core app shell files, and the second part
-        // captures all assets within the assets directory, resolving the offline issue.
-        globPatterns: ['**/*.{js,css,html}', 'assets/**/*.*'],
+      injectRegister: 'inline', // Use a more robust registration strategy
+      devOptions: {
+        enabled: true,
       },
-      
+      // Explicitly include the large image in the precache manifest.
+      includeAssets: ['assets/place-value-box-model.png', 'assets/logo.jpeg', 'assets/fractions_thumbnail.jpeg', 'assets/artery.jpeg', 'assets/blood-tissue-animated.png', 'assets/candy.svg', 'assets/endothelial-cell.webp', 'assets/geo-bot.svg', 'assets/icon.svg', 'assets/muscle-cell.webp',
+        'assets/muscle-tissue-fibrous.jpeg', 'assets/platelet.webp', 'assets/rbc.webp', 'assets/wbc.webp'
+      ],
       manifest: {
         name: 'Place Value Playbox',
         short_name: 'Playbox',
@@ -33,14 +26,19 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'assets/icon.svg',
+            src: 'assets/logo.jpeg', // Point to an existing icon
             sizes: 'any',
             type: 'image/svg+xml',
             purpose: 'any maskable',
           },
         ],
       },
-      maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 25 MB
+      workbox: {
+        skipWaiting: true, // Immediately activate new service worker
+        clientsClaim: true, // Take control of the page immediately
+        navigateFallback: '/index.html', // Serve the app shell for offline navigation
+        maximumFileSizeToCacheInBytes: 30 * 1024 * 1024, // Cache larger files
+      },
     }),
   ],
 });
