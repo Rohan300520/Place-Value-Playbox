@@ -73,7 +73,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({ status, onVerify, 
           backdropFilter: 'blur(10px)',
         }}
       >
-        <img src="/assets/logo.jpeg" alt="SMART C Logo" className="h-16 mx-auto mb-4" />
+        <img src="/assets/logo.svg" alt="SMART C Logo" className="h-16 mx-auto mb-4" />
         <h1 className="text-4xl font-black font-display mb-2" style={{ color: 'var(--text-accent)' }}>
           {getTitle()}
         </h1>

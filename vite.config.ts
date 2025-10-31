@@ -19,7 +19,7 @@ export default defineConfig({
         swDest: 'sw.js',
         // This robust pattern ensures all assets, including images from the public directory,
         // are captured in the precache manifest after the build completes.
-        globPatterns: ['**/*.{js,css,html,svg,png,jpeg,webp,jpeg}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,jpeg,webp}'],
         // Workbox options must be placed inside the injectManifest object.
         maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 25 MB
       },
