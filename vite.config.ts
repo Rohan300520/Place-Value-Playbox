@@ -20,7 +20,7 @@ export default defineConfig({
         // Expand to catch more static formats (added 'jpg', 'gif', 'avif' for completeness).
         // Use "**/*" to precache *everything* in dist/ for fully offline (but exclude large videos/audio via !patterns if needed).
         globPatterns: ['**/*.{js,css,html,ico,svg,png,jpg,jpeg,gif,webp,avif}'],
-        maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 25 MB
+        maximumFileSizeToCacheInBytes: 40 * 1024 * 1024, // 40 MB
       },
       
       manifest: {
