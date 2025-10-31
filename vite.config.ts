@@ -10,7 +10,7 @@ export default defineConfig({
       injectRegister: 'inline',
       
       srcDir: '.', // The root directory where service-worker.js is located.
-      filename: 'sw.js',
+      filename: 'service-worker.js',
       
       // Explicitly include public/ assets in precache (e.g., assets/icon.svg and any images in public/assets/).
       // Globs are relative to public/. This ensures they're added to __WB_MANIFEST even if not imported.
