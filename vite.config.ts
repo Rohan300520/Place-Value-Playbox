@@ -14,10 +14,12 @@ export default defineConfig({
       srcDir: '.', // The root directory where service-worker.js is located.
       filename: 'service-worker.js',
       
-      // Explicitly define glob patterns to ensure all assets are precached. This is
-      // more reliable than `includeAssets` for ensuring images are cached.
       injectManifest: {
-        globPatterns: ['**/*.{js,css,html,svg,png,jpeg,webp}'],
+        // This updated glob pattern is more explicit to ensure all assets, especially
+        // those from the 'public/assets' directory, are included in the precache manifest.
+        // The first part captures the core app shell files, and the second part
+        // captures all assets within the assets directory, resolving the offline issue.
+        globPatterns: ['**/*.{js,css,html}', 'assets/**/*.*'],
       },
       
       manifest: {
