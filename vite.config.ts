@@ -9,16 +9,17 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'inline',
       
-      // Fix: Removed the explicit 'strategy' property. The presence of the 'injectManifest'
-      // object below is sufficient to enable the 'injectManifest' strategy.
       srcDir: '.', // The root directory where service-worker.js is located.
       filename: 'sw.js',
       
+      // Explicitly include public/ assets in precache (e.g., assets/icon.svg and any images in public/assets/).
+      // Globs are relative to public/. This ensures they're added to __WB_MANIFEST even if not imported.
+      includeAssets: ['**/*.{ico,png,jpg,jpeg,jpg,svg,gif,webp,avif}'], // Add common image formats; adjust paths if images are nested (e.g., 'assets/**/*.{png,jpg}').
+      
       injectManifest: {
-        // A robust glob pattern to ensure all essential assets are precached for offline use.
-        // This includes HTML, JS, CSS, and all common image formats.
-        globPatterns: ['**/*.{js,css,html,svg,png,jpeg,webp}'],
-        // Fix: Moved maximumFileSizeToCacheInBytes into the injectManifest object, as it is a workbox property.
+        // Expand to catch more static formats (added 'jpg', 'gif', 'avif' for completeness).
+        // Use "**/*" to precache *everything* in dist/ for fully offline (but exclude large videos/audio via !patterns if needed).
+        globPatterns: ['**/*.{js,css,html,ico,svg,png,jpg,jpeg,gif,webp,avif}'],
         maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 25 MB
       },
       
