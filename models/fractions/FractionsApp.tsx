@@ -942,8 +942,6 @@ export const FractionsApp: React.FC<{ onExit: () => void; currentUser: UserInfo 
 
                                 {displayType === 'pizza' && (
                                     <PizzaVisual
-                                        // FIX: Cast `currentQuestion.answer` to Fraction. The data structure for 'pizza'
-                                        // displayType guarantees that the answer will be a Fraction object.
                                         totalSlices={(currentQuestion.answer as Fraction).denominator}
                                         onSelectionChange={(fraction) => setUserAnswer(fraction)}
                                     />
