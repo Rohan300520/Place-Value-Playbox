@@ -21,6 +21,7 @@ cleanupOutdatedCaches();
 
 // Precache all the assets injected by the build process.
 // The self.__WB_MANIFEST variable is a placeholder that vite-plugin-pwa will replace.
+// This is the correct way to cache all local assets, including images, upon installation.
 precacheAndRoute(self.__WB_MANIFEST || []);
 
 // Set up App Shell-style routing. All navigation requests are fulfilled with index.html.
@@ -72,19 +73,10 @@ registerRoute(
   })
 );
 
-// Cache images with a Cache First strategy to ensure they are available offline.
-registerRoute(
-  ({ request }) => request.destination === 'image',
-  new CacheFirst({
-    cacheName: 'image-cache',
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 60,
-        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
-      }),
-      new CacheableResponsePlugin({
-        statuses: [0, 200], // Also cache opaque responses for cross-origin images
-      }),
-    ],
-  })
-);
+// The runtime caching rule for images that was previously here has been removed.
+// It was conflicting with the precaching strategy defined above (`precacheAndRoute`).
+// The precaching configuration in `vite.config.ts` correctly includes all local image
+// assets in the service worker's installation phase, ensuring they are available offline
+// immediately. The previous runtime rule was intercepting these requests and preventing
+// them from being served from the precache. Removing it allows the precaching to function
+// as intended.
