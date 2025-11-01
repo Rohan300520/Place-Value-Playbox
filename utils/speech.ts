@@ -52,12 +52,12 @@ const utteranceQueue: SpeechSynthesisUtterance[] = [];
 
 /**
  * Finds the most suitable voice from the available list, prioritizing a sweet female voice.
+ * This function is "offline-first": it will always prefer a local voice if one is available.
  * @param lang The desired language code (e.g., 'en-US').
  * @param availableVoices The list of all available voices.
  * @returns The best matching SpeechSynthesisVoice or null if none are found.
  */
 const findBestVoice = (lang: string, availableVoices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null => {
-    // Filter for voices that match the base language (e.g., 'en' for 'en-US').
     const langBase = lang.split('-')[0];
     const voicesForLang = availableVoices.filter(v => v.lang.startsWith(langBase));
     if (!voicesForLang.length) return null;
@@ -65,24 +65,53 @@ const findBestVoice = (lang: string, availableVoices: SpeechSynthesisVoice[]): S
     const lowerCaseIncludes = (name: string, keyword: string) => name.toLowerCase().includes(keyword);
 
     const femaleVoiceChecks = [
-        (v: SpeechSynthesisVoice) => lowerCaseIncludes(v.name, 'female') && lowerCaseIncludes(v.name, 'google'), // Highest quality female
-        (v: SpeechSynthesisVoice) => lowerCaseIncludes(v.name, 'female'), // Any female
-        (v: SpeechSynthesisVoice) => ['zira', 'samantha', 'susan', 'serena', 'karen', 'tessa'].some(name => lowerCaseIncludes(v.name, name)), // Known female names
-        (v: SpeechSynthesisVoice) => lowerCaseIncludes(v.name, 'google') && !lowerCaseIncludes(v.name, 'male'), // Google voice (not male)
-        (v: SpeechSynthesisVoice) => !lowerCaseIncludes(v.name, 'male'), // Any voice that isn't explicitly male
+        (v: SpeechSynthesisVoice) => lowerCaseIncludes(v.name, 'female') && lowerCaseIncludes(v.name, 'google'),
+        (v: SpeechSynthesisVoice) => lowerCaseIncludes(v.name, 'female'),
+        (v: SpeechSynthesisVoice) => ['zira', 'samantha', 'susan', 'serena', 'karen', 'tessa', 'fiona', 'moira', 'veena'].some(name => lowerCaseIncludes(v.name, name)),
+        (v: SpeechSynthesisVoice) => lowerCaseIncludes(v.name, 'google') && !lowerCaseIncludes(v.name, 'male'),
+        (v: SpeechSynthesisVoice) => !lowerCaseIncludes(v.name, 'male'),
     ];
 
-    for (const check of femaleVoiceChecks) {
-        const voice = voicesForLang.find(check);
-        if (voice) {
-            console.log("Selected voice based on priority check:", { name: voice.name, lang: voice.lang });
-            return voice;
+    // Create prioritized lists of voices
+    const localVoices = voicesForLang.filter(v => v.localService);
+    const remoteVoices = voicesForLang.filter(v => !v.localService);
+
+    // Search function to find a voice in a list based on checks
+    const findVoice = (voiceList: SpeechSynthesisVoice[]) => {
+        for (const check of femaleVoiceChecks) {
+            const voice = voiceList.find(check);
+            if (voice) return voice;
         }
+        return null; // No female voice found from checks
+    };
+
+    // 1. Find best local female voice
+    let bestVoice = findVoice(localVoices);
+    if (bestVoice) {
+        console.log("Selected best local female voice:", { name: bestVoice.name, lang: bestVoice.lang });
+        return bestVoice;
     }
 
-    // Fallback to the first available voice for the language.
-    console.log("Using fallback voice:", { name: voicesForLang[0].name, lang: voicesForLang[0].lang });
-    return voicesForLang[0];
+    // 2. If online, find best remote female voice
+    bestVoice = findVoice(remoteVoices);
+    if (bestVoice) {
+        console.log("Selected best remote female voice:", { name: bestVoice.name, lang: bestVoice.lang });
+        return bestVoice;
+    }
+    
+    // 3. Fallback to first available local voice to ensure offline works
+    if (localVoices.length > 0) {
+        console.log("Using fallback local voice:", { name: localVoices[0].name, lang: localVoices[0].lang });
+        return localVoices[0];
+    }
+    
+    // 4. Absolute fallback: first available voice for the language (might be remote)
+    if (voicesForLang.length > 0) {
+        console.log("Using absolute fallback voice:", { name: voicesForLang[0].name, lang: voicesForLang[0].lang });
+        return voicesForLang[0];
+    }
+
+    return null;
 };
 
 
