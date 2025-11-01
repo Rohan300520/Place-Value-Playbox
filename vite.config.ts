@@ -7,19 +7,15 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // The 'includeAssets' option is a more direct and reliable way to ensure
+      // static assets are precached. We explicitly list all image formats
+      // used in the app. The plugin automatically handles JS/CSS files from the build.
+      // This approach avoids potential path resolution issues with `globPatterns` in
+      // different build environments like Render.com.
+      includeAssets: ['assets/*.svg', 'assets/*.jpeg', 'assets/*.png', 'assets/*.webp'],
       workbox: {
-        // Explicitly list all file types to be precached. The default
-        // globPatterns value does not include all image formats (like .jpeg or .webp),
-        // which was causing them to be missed by the service worker. This
-        // comprehensive list ensures all assets are cached for offline use.
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpeg,jpg,webp,gif}'],
-        
-        // This is still needed to resolve "conflicting entries" build errors,
-        // as the plugin includes these assets through other mechanisms (e.g., from the manifest).
-        globIgnores: [
-          '**/icon.svg',
-          '**/manifest.webmanifest',
-        ],
+        // By using `includeAssets`, we no longer need `globPatterns` or `globIgnores`.
+        // The plugin now has full control over building the precache manifest.
         
         // Runtime caching rules for external assets not included in the precache.
         runtimeCaching: [
