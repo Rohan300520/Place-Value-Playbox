@@ -7,20 +7,16 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // The 'includeAssets' option is a more direct and reliable way to ensure
-      // static assets are precached. We explicitly list all image formats
-      // used in the app. The plugin automatically handles JS/CSS files from the build.
-      // This approach avoids potential path resolution issues with `globPatterns` in
-      // different build environments like Render.com.
       includeAssets: ['assets/*.svg', 'assets/*.jpeg', 'assets/*.png', 'assets/*.webp'],
       workbox: {
-        // By using `includeAssets`, we no longer need `globPatterns` or `globIgnores`.
-        // The plugin now has full control over building the precache manifest.
+        // This is the key fix. It tells Workbox to ignore the revision parameter
+        // when matching precached assets. The app requests '/assets/image.png', but
+        // Workbox caches '/assets/image.png?__WB_REVISION__=...'. This option
+        // allows the service worker to correctly match the request and serve the cached file.
+        ignoreURLParametersMatching: [/^__WB_REVISION__$/],
         
-        // Runtime caching rules for external assets not included in the precache.
         runtimeCaching: [
           {
-            // Cache external JS libraries and CSS from CDNs.
             urlPattern: ({url}) => [
               'aistudiocdn.com',
               'cdn.jsdelivr.net',
@@ -41,7 +37,6 @@ export default defineConfig({
             },
           },
           {
-            // Cache Google Fonts files with a cache-first strategy for performance.
             urlPattern: ({url}) => url.hostname === 'fonts.gstatic.com',
             handler: 'CacheFirst',
             options: {
@@ -56,12 +51,7 @@ export default defineConfig({
             },
           },
         ],
-        // This is crucial for single-page applications (SPAs).
-        // It tells the service worker to serve 'index.html' for any navigation request
-        // that doesn't match a precached asset, allowing the app to handle routing.
         navigateFallback: 'index.html',
-        // This denylist prevents the fallback from applying to direct file requests (e.g., /image.png),
-        // ensuring that missing assets correctly show a 404 error instead of the app's HTML.
         navigateFallbackDenylist: [/\.[^\/]+$/],
       },
       manifest: {
