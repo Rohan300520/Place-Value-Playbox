@@ -16,6 +16,12 @@ export default defineConfig({
         // that all images are available offline upon installation.
         globPatterns: ['**/*.{js,css,html,webmanifest,svg,png,jpg,jpeg,webp}'],
         
+        // This option tells Workbox to ignore the revisioning query parameter
+        // when comparing URLs for caching. This resolves the "conflicting entries"
+        // error caused by the same asset (icon.svg) being included by both the
+        // manifest.icons option and the globPatterns.
+        ignoreURLParametersMatching: [/__WB_REVISION__/],
+        
         // Runtime caching rules for external assets not included in the precache.
         // This logic was moved from the old service-worker.js file.
         runtimeCaching: [
