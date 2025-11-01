@@ -8,17 +8,61 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'inline',
-      // We are using the 'injectManifest' strategy, which gives us full control
-      // over the service worker logic via the 'service-worker.js' file.
-      injectManifest: {
-        // This points to our custom service worker file in the project root.
-        swSrc: 'service-worker.js',
-        // This glob pattern is crucial. It ensures ALL assets from the build output
-        // are included in the precache manifest, including index.html, JS, CSS, and all images.
-        // This fixes both the missing images and the offline connection error.
+      // Switched to the 'generateSW' strategy for robust, automatic service worker generation.
+      // This approach is simpler and less error-prone than managing a custom service worker file.
+      workbox: {
+        // This glob pattern is crucial. It tells Workbox to find and precache
+        // ALL specified file types from the build output directory, guaranteeing
+        // that all images are available offline upon installation.
         globPatterns: ['**/*.{js,css,html,webmanifest,svg,png,jpg,jpeg,webp}'],
-        // A generous limit to ensure larger assets like images are cached.
-        maximumFileSizeToCacheInBytes: 25 * 1024 * 1024,
+        
+        // Runtime caching rules for external assets not included in the precache.
+        // This logic was moved from the old service-worker.js file.
+        runtimeCaching: [
+          {
+            // Cache external JS libraries and CSS from CDNs.
+            urlPattern: ({url}) => [
+              'aistudiocdn.com',
+              'cdn.jsdelivr.net',
+              'unpkg.com',
+              'cdn.tailwindcss.com',
+              'fonts.googleapis.com'
+            ].includes(url.hostname),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'external-assets-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Cache Google Fonts files with a cache-first strategy for performance.
+            urlPattern: ({url}) => url.hostname === 'fonts.gstatic.com',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'font-cache',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 365 * 24 * 60 * 60, // 1 Year
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
+        // This is the definitive fix for the 'ERR_CONNECTION_REFUSED' error.
+        // It tells the service worker to serve 'index.html' for any navigation request
+        // that doesn't match a precached asset, allowing the SPA to load offline.
+        navigateFallback: 'index.html',
+        // This denylist prevents the fallback from applying to direct file requests (e.g., /image.png),
+        // ensuring that missing assets correctly show a 404 error instead of the app's HTML.
+        navigateFallbackDenylist: [/\.[^\/]+$/],
       },
       manifest: {
         name: 'Place Value Playbox',
