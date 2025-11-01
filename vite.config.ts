@@ -14,12 +14,11 @@ export default defineConfig({
       filename: 'service-worker.js',
       
       injectManifest: {
-        // Redesigned globPatterns for maximum asset inclusion.
-        // This is the core fix. The previous pattern may have missed some image files.
-        // 'assets/**/*' specifically targets all files in the assets directory,
-        // which is where all local images for the app are stored.
-        // Also explicitly including the manifest file.
-        globPatterns: ['**/*.{js,css,html,webmanifest}', 'assets/**/*'],
+        // This single, explicit pattern ensures all asset types, including all images,
+        // are discovered and added to the precache manifest.
+        globPatterns: ['**/*.{js,css,html,webmanifest,svg,png,jpg,jpeg,webp}'],
+        // Fix: Moved maximumFileSizeToCacheInBytes into the injectManifest options block.
+        maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 25 MB
       },
       
       manifest: {
@@ -40,7 +39,6 @@ export default defineConfig({
           },
         ],
       },
-      maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 25 MB
     }),
   ],
 });
