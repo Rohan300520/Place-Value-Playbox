@@ -17,7 +17,7 @@ const ASSET_PATHS = {
   'muscle-tissue': '/assets/muscle-tissue-fibrous.jpeg',
   'blood-tissue': '/assets/blood-tissue-animated.png',
   // Final Artery Image
-  'artery': '/assets/artery.jpeg',
+  'artery': '/assets/artery.png',
 };
 
 const ASSET_INFO = {

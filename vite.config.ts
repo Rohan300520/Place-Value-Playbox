@@ -7,14 +7,20 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'inline', // Use a more robust registration strategy
-      devOptions: {
-        enabled: true,
+      injectRegister: 'inline',
+      
+      // Use the 'injectManifest' strategy for full control over the service worker.
+      strategy: 'injectManifest',
+      srcDir: '.', // The root directory where service-worker.js is located.
+      filename: 'service-worker.js',
+      
+      injectManifest: {
+        // This glob pattern ensures that all essential app assets, including all image
+        // types used across the application (.svg, .png, .jpeg, .webp), are precached.
+        // This resolves the issue where images were not available offline after installation.
+        globPatterns: ['**/*.{js,css,html,svg,png,jpeg,webp}'],
       },
-      // Explicitly include the large image in the precache manifest.
-      includeAssets: ['assets/place-value-box-model.png', 'assets/logo.jpeg', 'assets/fractions_thumbnail.jpeg', 'assets/artery.jpeg', 'assets/blood-tissue-animated.png', 'assets/candy.svg', 'assets/endothelial-cell.webp', 'assets/geo-bot.svg', 'assets/icon.svg', 'assets/muscle-cell.webp',
-        'assets/muscle-tissue-fibrous.jpeg', 'assets/platelet.webp', 'assets/rbc.webp', 'assets/wbc.webp'
-      ],
+      
       manifest: {
         name: 'Place Value Playbox',
         short_name: 'Playbox',
@@ -26,19 +32,14 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'assets/logo.jpeg', // Point to an existing icon
+            src: 'assets/icon.svg',
             sizes: 'any',
             type: 'image/svg+xml',
             purpose: 'any maskable',
           },
         ],
       },
-      workbox: {
-        skipWaiting: true, // Immediately activate new service worker
-        clientsClaim: true, // Take control of the page immediately
-        navigateFallback: '/index.html', // Serve the app shell for offline navigation
-        maximumFileSizeToCacheInBytes: 30 * 1024 * 1024, // Cache larger files
-      },
+      maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 25 MB
     }),
   ],
 });
