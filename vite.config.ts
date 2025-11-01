@@ -20,6 +20,7 @@ export default defineConfig({
         // error caused by the same asset (icon.svg) being included by both the
         // manifest.icons option and the globPatterns.
         ignoreURLParametersMatching: [/__WB_REVISION__/],
+        globIgnores: ['**/icon.svg'],
         
         // Runtime caching rules for external assets not included in the precache.
         // This logic was moved from the old service-worker.js file.
