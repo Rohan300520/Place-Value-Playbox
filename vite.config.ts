@@ -7,9 +7,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'inline',
-      // Switched to the 'generateSW' strategy for robust, automatic service worker generation.
-      // This approach is simpler and less error-prone than managing a custom service worker file.
+      // The 'generateSW' strategy automatically handles service worker registration.
+      // The conflicting 'injectRegister' option has been removed to fix offline loading.
       workbox: {
         // This glob pattern is crucial. It tells Workbox to find and precache
         // ALL specified file types from the build output directory, guaranteeing
