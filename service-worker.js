@@ -73,10 +73,24 @@ registerRoute(
   })
 );
 
-// The runtime caching rule for images that was previously here has been removed.
-// It was conflicting with the precaching strategy defined above (`precacheAndRoute`).
-// The precaching configuration in `vite.config.ts` correctly includes all local image
-// assets in the service worker's installation phase, ensuring they are available offline
-// immediately. The previous runtime rule was intercepting these requests and preventing
-// them from being served from the precache. Removing it allows the precaching to function
-// as intended.
+// A runtime caching rule for images is added here as a robust fallback mechanism.
+// It uses a CacheFirst strategy, which is ideal for static assets like images.
+// This means that once an image is fetched, it will be served from the cache,
+// ensuring it's available offline on subsequent visits. This complements the
+// precaching strategy by catching any images that might be missed during the
+// initial service worker installation.
+registerRoute(
+  ({ request }) => request.destination === 'image',
+  new CacheFirst({
+    cacheName: 'image-cache',
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 60, // Keep up to 60 images in the cache
+        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+      }),
+      new CacheableResponsePlugin({
+        statuses: [0, 200], // Cache successful responses and opaque responses
+      }),
+    ],
+  })
+);

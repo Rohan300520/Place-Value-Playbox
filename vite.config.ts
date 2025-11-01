@@ -15,10 +15,10 @@ export default defineConfig({
       filename: 'service-worker.js',
       
       injectManifest: {
-        // This glob pattern ensures that all essential app assets, including all image
-        // types used across the application (.svg, .png, .jpeg, .webp), are precached.
-        // This resolves the issue where images were not available offline after installation.
-        globPatterns: ['**/*.{js,css,html,svg,png,jpeg,webp}'],
+        // Explicitly include all assets from the 'public' directory (which are copied to 'dist/assets')
+        // alongside the standard JS, CSS, and HTML files. This ensures all images
+        // are included in the precache manifest, making them available offline immediately after installation.
+        globPatterns: ['**/*.{js,css,html}', 'assets/**/*.{svg,png,jpeg,webp,json}'],
       },
       
       manifest: {
