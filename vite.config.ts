@@ -8,80 +8,18 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'inline',
-      
-      // Switched to 'generateSW' strategy by providing a 'workbox' config.
-      // This is simpler and more robust for standard PWA caching.
-      workbox: {
-        // This glob pattern ensures ALL assets from the build output are precached,
-        // which is the definitive fix for the missing images.
+      // We are using the 'injectManifest' strategy, which gives us full control
+      // over the service worker logic via the 'service-worker.js' file.
+      injectManifest: {
+        // This points to our custom service worker file in the project root.
+        swSrc: 'service-worker.js',
+        // This glob pattern is crucial. It ensures ALL assets from the build output
+        // are included in the precache manifest, including index.html, JS, CSS, and all images.
+        // This fixes both the missing images and the offline connection error.
         globPatterns: ['**/*.{js,css,html,webmanifest,svg,png,jpg,jpeg,webp}'],
-        
-        // The maximum file size to precache.
-        maximumFileSizeToCacheInBytes: 25 * 1024 * 1024, // 25 MB
-
-        // These rules handle caching for external resources like fonts and CDNs.
-        runtimeCaching: [
-          // Rule for Google Fonts stylesheets
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'google-fonts-stylesheets',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-              },
-            },
-          },
-          // Rule for Google Fonts font files
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-webfonts',
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-              expiration: {
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-                maxEntries: 30,
-              },
-            },
-          },
-          // Rule for other external CDN assets
-          {
-            urlPattern: ({url}) => [
-              'aistudiocdn.com',
-              'cdn.jsdelivr.net',
-              'unpkg.com',
-              'cdn.tailwindcss.com',
-            ].includes(url.hostname),
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'external-assets-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
-              },
-              cacheableResponse: { statuses: [0, 200] },
-            }
-          },
-          // Fallback rule for images (serves as a safety net)
-          {
-            urlPattern: ({ request }) => request.destination === 'image',
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'image-fallback-cache',
-              expiration: {
-                maxEntries: 60,
-                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
-              },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
+        // A generous limit to ensure larger assets like images are cached.
+        maximumFileSizeToCacheInBytes: 25 * 1024 * 1024,
       },
-      
       manifest: {
         name: 'Place Value Playbox',
         short_name: 'Playbox',
