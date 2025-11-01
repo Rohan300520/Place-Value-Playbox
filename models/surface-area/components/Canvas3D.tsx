@@ -32,8 +32,8 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({ shape, dimensions, isUnfolde
     const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
     const controlsRef = useRef<OrbitControls | null>(null);
     const groupRef = useRef<THREE.Group | null>(null); // Main group for all content
-    // Fix: Corrected useRef typing. useRef without an initial value will be undefined, so the type must allow for it.
-    const animationFrameIdRef = useRef<number>();
+    // Fix: Corrected the initialization of the useRef. The type `useRef<number>()` is invalid because it's initialized with `undefined` by default, which is not a `number`.
+    const animationFrameIdRef = useRef<number | null>(null);
     const onNextFrameCallbackRef = useRef<(() => void) | null>(null);
 
     const [isLoading, setIsLoading] = useState(true);
