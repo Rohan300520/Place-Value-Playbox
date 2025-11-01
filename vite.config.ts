@@ -7,15 +7,30 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['assets/*.svg', 'assets/*.jpeg', 'assets/*.png', 'assets/*.webp'],
+      // We are removing `includeAssets` to switch strategy.
+      // The plugin will still precache the JS, CSS, and HTML output from the build.
       workbox: {
-        // This is the key fix. It tells Workbox to ignore the revision parameter
-        // when matching precached assets. The app requests '/assets/image.png', but
-        // Workbox caches '/assets/image.png?__WB_REVISION__=...'. This option
-        // allows the service worker to correctly match the request and serve the cached file.
-        ignoreURLParametersMatching: [/^__WB_REVISION__$/],
-        
+        // We will add a runtime caching rule for images instead of precaching them.
         runtimeCaching: [
+          {
+            // This rule will catch all requests for images within the /assets/ directory.
+            urlPattern: /\/assets\/.*\.(?:png|jpg|jpeg|svg|webp)$/,
+            // 'CacheFirst' strategy: If a response is in the cache, it will be used.
+            // If not, it will be fetched from the network, and the response will be
+            // added to the cache for future requests.
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'app-images',
+              expiration: {
+                maxEntries: 100, // Store up to 100 images
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+              },
+              cacheableResponse: {
+                // Ensure we cache successful responses.
+                statuses: [0, 200],
+              },
+            },
+          },
           {
             urlPattern: ({url}) => [
               'aistudiocdn.com',
