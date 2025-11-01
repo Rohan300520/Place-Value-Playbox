@@ -1,94 +1,95 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // The 'generateSW' strategy automatically handles service worker registration.
-      // The conflicting 'injectRegister' option has been removed to fix offline loading.
+      injectRegister: 'script',
       workbox: {
-        // This glob pattern tells Workbox to precache all specified file types
-        // from the build output directory, ensuring they are available offline.
-        globPatterns: ['**/*.{js,css,html,webmanifest,svg,png,jpg,jpeg,webp}'],
-        
-        // This is the correct way to resolve "conflicting entries" build errors.
-        // Such errors occur because some assets (like the manifest and icons) are
-        // included automatically by the PWA plugin AND are also matched by globPatterns.
-        // We tell Workbox to ignore them in the glob scan and let the plugin handle them.
-        globIgnores: [
-          '**/icon.svg',
-          '**/manifest.webmanifest',
-        ],
-        
-        // Runtime caching rules for external assets not included in the precache.
-        // This logic was moved from the old service-worker.js file.
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg,jpeg}'],
+        // Exclude the icon from the glob pattern since it's added by the manifest.
+        // This prevents a duplicate entry error in the service worker.
+        globIgnores: ['assets/icon.svg'],
         runtimeCaching: [
           {
-            // Cache external JS libraries and CSS from CDNs.
-            urlPattern: ({url}) => [
-              'aistudiocdn.com',
-              'cdn.jsdelivr.net',
-              'unpkg.com',
-              'cdn.tailwindcss.com',
-              'fonts.googleapis.com'
-            ].includes(url.hostname),
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'external-assets-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            // Cache Google Fonts files with a cache-first strategy for performance.
-            urlPattern: ({url}) => url.hostname === 'fonts.gstatic.com',
+            urlPattern: /^https:\/\/aistudiocdn\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'font-cache',
+              cacheName: 'aistudio-cdn-cache',
               expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 365 * 24 * 60 * 60, // 1 Year
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 365 days
               },
               cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
+                statuses: [0, 200]
+              }
+            }
           },
-        ],
-        // This is the definitive fix for the 'ERR_CONNECTION_REFUSED' error.
-        // It tells the service worker to serve 'index.html' for any navigation request
-        // that doesn't match a precached asset, allowing the SPA to load offline.
-        navigateFallback: 'index.html',
-        // This denylist prevents the fallback from applying to direct file requests (e.g., /image.png),
-        // ensuring that missing assets correctly show a 404 error instead of the app's HTML.
-        navigateFallbackDenylist: [/\.[^\/]+$/],
+          {
+            urlPattern: /^https:\/\/cdn\.tailwindcss\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'tailwindcss-cdn-cache',
+              expiration: {
+                maxEntries: 2,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 365 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 365 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'gstatic-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 365 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ]
       },
       manifest: {
-        name: 'Place Value Playbox',
-        short_name: 'Playbox',
-        description: 'An interactive educational tool for learning place value.',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
-        display: 'standalone',
-        scope: '/',
-        start_url: '/',
-        icons: [
+        "short_name": "Playbox",
+        "name": "Place Value Playbox",
+        "description": "An interactive and animated application for young children to learn about place value (Ones, Tens, Hundreds) through a fun drag-and-drop experience.",
+        "icons": [
           {
-            src: 'assets/icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any maskable',
-          },
+            "src": "/assets/icon.svg",
+            "type": "image/svg+xml",
+            "sizes": "192x192 512x512",
+            "purpose": "any maskable"
+          }
         ],
-      },
-    }),
+        "start_url": ".",
+        "display": "standalone",
+        "theme_color": "#38bdf8",
+        "background_color": "#e0f2fe"
+      }
+    })
   ],
-});
+})
