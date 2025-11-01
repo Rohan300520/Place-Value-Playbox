@@ -10,17 +10,18 @@ export default defineConfig({
       // The 'generateSW' strategy automatically handles service worker registration.
       // The conflicting 'injectRegister' option has been removed to fix offline loading.
       workbox: {
-        // This glob pattern is crucial. It tells Workbox to find and precache
-        // ALL specified file types from the build output directory, guaranteeing
-        // that all images are available offline upon installation.
+        // This glob pattern tells Workbox to precache all specified file types
+        // from the build output directory, ensuring they are available offline.
         globPatterns: ['**/*.{js,css,html,webmanifest,svg,png,jpg,jpeg,webp}'],
         
-        // This option tells Workbox to ignore the revisioning query parameter
-        // when comparing URLs for caching. This resolves the "conflicting entries"
-        // error caused by the same asset (icon.svg) being included by both the
-        // manifest.icons option and the globPatterns.
-        ignoreURLParametersMatching: [/__WB_REVISION__/],
-        globIgnores: ['**/icon.svg'],
+        // This is the correct way to resolve "conflicting entries" build errors.
+        // Such errors occur because some assets (like the manifest and icons) are
+        // included automatically by the PWA plugin AND are also matched by globPatterns.
+        // We tell Workbox to ignore them in the glob scan and let the plugin handle them.
+        globIgnores: [
+          '**/icon.svg',
+          '**/manifest.webmanifest',
+        ],
         
         // Runtime caching rules for external assets not included in the precache.
         // This logic was moved from the old service-worker.js file.
