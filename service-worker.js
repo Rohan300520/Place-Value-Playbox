@@ -1,96 +1,90 @@
-// This is an explicit service worker implementation using Workbox.
-// It gives us full control over caching strategies for better offline reliability.
+// This service worker has been redesigned for robustness and clarity.
 
-import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'workbox-precaching';
+import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
-// Immediately take control of the page when the service worker activates.
-self.addEventListener('install', () => {
-  self.skipWaiting();
-});
+// --- Lifecycle Events ---
+// Ensure the new service worker takes control immediately.
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
-});
+// --- Caching Strategy ---
 
-// Remove old caches.
+// 1. Precaching:
+// All local application assets (JS, CSS, HTML, and importantly, all images in the /assets folder)
+// are precached upon installation. This is the primary strategy for ensuring offline availability.
+// The manifest of files to cache is injected by VitePWA.
 cleanupOutdatedCaches();
-
-// Precache all the assets injected by the build process.
-// The self.__WB_MANIFEST variable is a placeholder that vite-plugin-pwa will replace.
-// This is the correct way to cache all local assets, including images, upon installation.
 precacheAndRoute(self.__WB_MANIFEST || []);
 
-// Set up App Shell-style routing. All navigation requests are fulfilled with index.html.
-// This is crucial for a Single Page Application (SPA).
-// FIX: Use 'index.html' instead of '/index.html' to match the precache manifest entry.
-const handler = createHandlerBoundToURL('index.html');
-const navigationRoute = new NavigationRoute(handler);
-registerRoute(navigationRoute);
+// 2. Navigation Fallback (for SPAs):
+// Any navigation request that doesn't match a precached asset will fall back to the main 'index.html' file.
+// This allows the React Router to handle all application routes.
+const spaFallback = new NavigationRoute(
+    ({ event }) => {
+        const { precacheController } = self.__WB_CONTROLLERS;
+        // Use 'index.html' without a leading slash to match the typical precache manifest entry.
+        const precachedUrl = precacheController.getCacheKeyForURL('index.html');
+        return precacheController.matchPrecache(precachedUrl);
+    },
+    {
+        // Do not redirect for URLs that look like file paths.
+        // This prevents the SW from serving index.html for a missing image, for example.
+        denylist: [/\.[^\/]+$/],
+    }
+);
+registerRoute(spaFallback);
 
-// --- Runtime Caching Strategies ---
 
-// Cache CDN assets (React, Three.js, etc.) with a Stale-While-Revalidate strategy.
+// 3. Runtime Caching:
+// These rules handle requests for resources that are not part of the initial precache.
+
+// External assets (CDNs for JS/CSS, Google Fonts CSS)
+// Strategy: Stale-While-Revalidate. Serve from cache for speed, update in background.
 registerRoute(
-  ({url}) => /^https:\/\/(aistudiocdn\.com|cdn\.jsdelivr\.net|unpkg\.com|cdn\.tailwindcss\.com)\/.*/i.test(url.href),
+  ({url}) => [
+    'aistudiocdn.com',
+    'cdn.jsdelivr.net',
+    'unpkg.com',
+    'cdn.tailwindcss.com',
+    'fonts.googleapis.com'
+  ].includes(url.hostname),
   new StaleWhileRevalidate({
-    cacheName: 'cdn-cache',
+    cacheName: 'external-assets-cache',
     plugins: [
-      new ExpirationPlugin({
-        maxEntries: 100,
-        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
-      }),
-      new CacheableResponsePlugin({
-        statuses: [0, 200], // Cache opaque responses (for CORS requests)
-      }),
+      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 30 * 24 * 60 * 60 }), // 30 Days
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
     ],
   })
 );
 
-// Cache Google Fonts stylesheets with Stale-While-Revalidate.
-registerRoute(
-  ({url}) => url.hostname === 'fonts.googleapis.com',
-  new StaleWhileRevalidate({ cacheName: 'google-fonts-stylesheets' })
-);
-
-// Cache Google Fonts font files with CacheFirst for long-term storage.
+// Font files (from fonts.gstatic.com)
+// Strategy: Cache-First. Fonts are static and rarely change.
 registerRoute(
   ({url}) => url.hostname === 'fonts.gstatic.com',
   new CacheFirst({
-    cacheName: 'google-fonts-webfonts',
+    cacheName: 'font-cache',
     plugins: [
-      new CacheableResponsePlugin({
-        statuses: [0, 200],
-      }),
-      new ExpirationPlugin({
-        maxEntries: 30,
-        maxAgeSeconds: 365 * 24 * 60 * 60, // 1 Year
-      }),
+      new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 365 * 24 * 60 * 60 }), // 1 Year
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
     ],
   })
 );
 
-// A runtime caching rule for images is added here as a robust fallback mechanism.
-// It uses a CacheFirst strategy, which is ideal for static assets like images.
-// This means that once an image is fetched, it will be served from the cache,
-// ensuring it's available offline on subsequent visits. This complements the
-// precaching strategy by catching any images that might be missed during the
-// initial service worker installation.
+// Image Fallback Caching
+// This is a safety net for any images NOT included in the precache (e.g., from a different path or external source).
+// Precaching is the primary method for this app's local images.
+// Strategy: Cache-First. Images are static assets. Once cached, they are served from cache.
 registerRoute(
-  ({ request }) => request.destination === 'image',
+  ({request}) => request.destination === 'image',
   new CacheFirst({
-    cacheName: 'image-cache',
+    cacheName: 'image-fallback-cache',
     plugins: [
-      new ExpirationPlugin({
-        maxEntries: 60, // Keep up to 60 images in the cache
-        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
-      }),
-      new CacheableResponsePlugin({
-        statuses: [0, 200], // Cache successful responses and opaque responses
-      }),
+      new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 }), // 30 Days
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
     ],
   })
 );

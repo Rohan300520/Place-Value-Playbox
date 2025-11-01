@@ -26,6 +26,7 @@ function createTextSprite(text: string, options: { color?: string, fontSize?: nu
     // Fix: Provide a default SpriteMaterial to the Sprite constructor.
     // FIX: The THREE.Sprite constructor requires a material. Provided a default material to prevent a crash if the canvas context is not available.
     // Fix: The THREE.Sprite constructor was called without a material argument. Provided a default SpriteMaterial.
+    // FIX: The THREE.Sprite constructor requires a material argument. Provided a default SpriteMaterial to prevent a crash if the canvas context is not available.
     if (!context) return new THREE.Sprite(new THREE.SpriteMaterial());
 
     context.font = `Bold ${fontSize}px Arial`;
