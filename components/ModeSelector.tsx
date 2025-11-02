@@ -61,6 +61,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode }) => {
           shadow="shadow-amber-500/40"
           borderColor="border-amber-800"
         />
+        {/*
          <ModeCard
           title="STEM Connection"
           description="Discover how place value relates to the building blocks of our world!"
@@ -71,6 +72,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode }) => {
           borderColor="border-indigo-800"
           fullWidth={true}
         />
+        */}
       </div>
     </div>
   );
