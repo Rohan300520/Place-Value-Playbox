@@ -280,7 +280,8 @@ export type SurfaceAreaState =
   | 'explore'
   | 'training'
   | 'challenge'
-  | 'challenge_difficulty_selection';
+  | 'challenge_difficulty_selection'
+  | 'volume_comparison';
 
 export type RenderMode = 'solid' | 'wireframe';
 

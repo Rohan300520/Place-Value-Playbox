@@ -31,7 +31,7 @@ const ModeCard: React.FC<{
 export const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode }) => {
   return (
     <div className="flex-grow flex flex-col items-center justify-center p-4">
-       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-pop-in" style={{ animationDelay: '0.2s' }}>
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-pop-in" style={{ animationDelay: '0.2s' }}>
         <ModeCard
           title="Training"
           description="A step-by-step guide to understanding formulas and concepts for each shape."
@@ -58,6 +58,15 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode }) => {
           color="bg-gradient-to-br from-amber-400 to-amber-600"
           shadow="shadow-amber-500/40"
           borderColor="border-amber-800"
+        />
+        <ModeCard
+          title="Volume Relationships"
+          description="Discover how the volumes of cones and cylinders are related through an interactive animation."
+          icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 sm:h-10 sm:w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>}
+          onClick={() => onSelectMode('volume_comparison')}
+          color="bg-gradient-to-br from-purple-500 to-indigo-600"
+          shadow="shadow-indigo-500/40"
+          borderColor="border-indigo-800"
         />
       </div>
     </div>

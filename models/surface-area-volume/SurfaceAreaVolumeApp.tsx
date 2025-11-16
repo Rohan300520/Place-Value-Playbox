@@ -12,6 +12,7 @@ import { DifficultySelector } from '../../components/DifficultySelector';
 import { challengeQuestions } from './utils/challenges';
 import { logEvent, syncAnalyticsData } from '../../utils/analytics';
 import { cancelSpeech } from '../../utils/speech';
+import { VolumeComparisonView } from './components/VolumeComparisonView';
 
 export const SurfaceAreaVolumeApp: React.FC<{ onExit: () => void; currentUser: UserInfo | null; }> = ({ onExit, currentUser }) => {
     const [gameState, setGameState] = useState<SurfaceAreaState>('welcome');
@@ -49,6 +50,7 @@ export const SurfaceAreaVolumeApp: React.FC<{ onExit: () => void; currentUser: U
             case 'mode_selection': return 'Choose a Mode';
             case 'objectives': return 'Learning Objectives';
             case 'challenge_difficulty_selection': return 'Choose Difficulty';
+            case 'volume_comparison': return 'Volume Comparison';
             default: return null;
         }
     };
@@ -74,6 +76,8 @@ export const SurfaceAreaVolumeApp: React.FC<{ onExit: () => void; currentUser: U
                             difficulty={difficulty}
                             onComplete={goBackToMenu} 
                         />;
+            case 'volume_comparison':
+                return <VolumeComparisonView />;
             default:
                 return <div className="text-white text-2xl">Coming Soon</div>;
         }
