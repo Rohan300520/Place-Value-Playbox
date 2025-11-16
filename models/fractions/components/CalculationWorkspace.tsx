@@ -3,7 +3,6 @@ import type { WorkspacePiece, Fraction, EquationState, EquationTerm } from '../.
 import { FractionPiece } from './FractionBlock';
 import { SplittingPiece } from './SplittingPiece';
 
-// FIX: Define the missing props interface for the component.
 interface CalculationWorkspaceProps {
     pieces?: WorkspacePiece[]; // For training mode
     equation?: EquationState; // For explore mode
@@ -141,29 +140,30 @@ const renderPieceGroup = (
 
 
 export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ pieces, equation, onDrop, onDragOver, isDropZoneActive, spotlightOn, onBarClick, onWorkspacePieceDragStart, onWorkspacePieceDragEnd }) => {
+    // Determine which pieces to render based on mode
     const isExploreMode = !!equation;
-
-    let equationForRender: EquationState;
-
-    if (isExploreMode) {
-        equationForRender = equation;
-    } else { // Training Mode
-        const term: EquationTerm = { fraction: null, pieces: pieces || [] };
-        equationForRender = {
-            terms: [term],
-            operators: [],
-            result: null,
-            resultPieces: [],
-            isSolved: false,
-            isWorkoutActive: false,
-            workoutStep: 'idle'
-        };
+    const piecesToRender = isExploreMode ? [] : (pieces || []);
+    
+    // Group consecutive pieces for training mode
+    const groupedPieces: WorkspacePiece[][] = [];
+    if (!isExploreMode && piecesToRender.length > 0) {
+        let currentGroup: WorkspacePiece[] = [];
+        for (let i = 0; i < piecesToRender.length; i++) {
+            const piece = piecesToRender[i];
+            const prevPiece = piecesToRender[i - 1];
+            if (piece.state !== 'idle' || currentGroup.length === 0 || piece.fraction.denominator !== prevPiece.fraction.denominator || prevPiece.state !== 'idle') {
+                if (currentGroup.length > 0) groupedPieces.push(currentGroup);
+                currentGroup = [piece];
+            } else {
+                currentGroup.push(piece);
+            }
+        }
+        if (currentGroup.length > 0) groupedPieces.push(currentGroup);
     }
+    
+    const hasContent = isExploreMode ? (equation.terms.some(t => t.pieces.length > 0)) : (piecesToRender.length > 0);
 
-    const hasContent = equationForRender.terms.some(t => t.pieces.length > 0);
-    const isMerging = equationForRender.terms.some(t => t.pieces.some(p => p.state === 'merging'));
-
-    const containerClasses = `w-full min-h-[20rem] p-6 rounded-2xl chalk-border flex flex-col justify-start relative transition-all duration-300 gap-2 ${isDropZoneActive ? 'bg-slate-700/50' : ''}`;
+    const containerClasses = `w-full min-h-[16rem] sm:min-h-[20rem] p-6 rounded-2xl chalk-border flex flex-col justify-start relative transition-all duration-300 gap-2 ${isDropZoneActive ? 'bg-slate-700/50' : ''}`;
     const alignmentClass = 'items-start';
 
     return (
@@ -176,56 +176,53 @@ export const CalculationWorkspace: React.FC<CalculationWorkspaceProps> = ({ piec
 
             {!hasContent && !isDropZoneActive && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <p className="text-xl text-chalk-light">Drag pieces into this workspace.</p>
+                    <p className="text-xl text-chalk-light">Drag pieces from the chart into this workspace.</p>
                 </div>
             )}
             
-            <div className={`w-full ${isMerging ? 'animate-merge-converge' : ''}`}>
-                {equationForRender.isSolved ? (
-                    <div className="w-full flex flex-col items-start animate-bouncy-pop-in">
-                        <div className="border-t-4 border-chalk-yellow w-full my-4"></div>
-                        {equationForRender.resultPieces.map((piece, index) => {
-                             const value = piece.fraction.numerator / piece.fraction.denominator;
-                             const width = value > 1.2 ? '100%' : `${value * 100}%`;
-                             return (
-                                <div key={piece.id || index} className="w-full" style={{ width }}>
-                                    <FractionPiece fraction={piece.fraction} />
-                                </div>
-                             )
-                        })}
-                    </div>
-                ) : (
-                    <div className="flex flex-col w-full items-start gap-4">
-                        {equationForRender.terms.map((term, index) => (
-                            <React.Fragment key={`term-${index}`}>
-                                {(() => {
-                                    const piecesByDenominator = term.pieces.reduce((acc, piece) => {
-                                        const den = piece.fraction.denominator;
-                                        if (!acc[den]) acc[den] = [];
-                                        acc[den].push(piece);
-                                        return acc;
-                                    }, {} as Record<number, WorkspacePiece[]>);
-                                    
-                                    const isCombining = term.pieces.some(p => p.state === 'combining');
-
-                                    return Object.values(piecesByDenominator).map((pieceGroup, i) => (
-                                        <div key={i} className="w-full merge-container">
-                                            {renderPieceGroup(pieceGroup, isCombining, onBarClick, onWorkspacePieceDragStart, onWorkspacePieceDragEnd)}
-                                        </div>
-                                    ));
-                                })()}
-                                {isExploreMode && equationForRender.operators[index] && term.fraction && (
-                                    <div className="self-center py-2">
+            {/* EXPLORE MODE RENDERING */}
+            {isExploreMode && (
+                <div className="w-full">
+                    {equation.isSolved ? (
+                        // SOLVED VIEW: Only show the result.
+                        <div className="w-full flex flex-col items-center animate-pop-in">
+                            <div className="border-t-4 border-chalk-yellow w-full my-4"></div>
+                            {renderPieceGroup(equation.resultPieces, false)}
+                        </div>
+                    ) : (
+                        // BUILDING VIEW: Show the terms horizontally.
+                        <div className="flex flex-wrap items-center gap-4">
+                            {equation.terms.map((term, index) => {
+                                const isCombining = term.pieces.some(p => p.state === 'combining');
+                                return (
+                                <React.Fragment key={`term-${index}`}>
+                                        {renderPieceGroup(term.pieces, isCombining, onBarClick, onWorkspacePieceDragStart, onWorkspacePieceDragEnd)}
+                                    {equation.operators[index] && (
                                         <span className="text-5xl font-chalk text-chalk-yellow animate-pop-in">
-                                            {equationForRender.operators[index] === ', or' ? <span className="text-2xl">or</span> : equationForRender.operators[index]}
+                                            {equation.operators[index]}
                                         </span>
-                                    </div>
-                                )}
-                            </React.Fragment>
-                        ))}
-                    </div>
-                )}
-            </div>
+                                    )}
+                                </React.Fragment>
+                            )})}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* TRAINING MODE RENDERING */}
+            {!isExploreMode && groupedPieces.map((group, groupIndex) => {
+                if (group.length === 1 && group[0].state !== 'idle') {
+                    const piece = group[0];
+                    const animationClass = piece.state === 'splitting' ? 'animate-bouncy-pop-in' : piece.state === 'removing' ? 'animate-slide-out-left' : piece.state === 'merging' ? 'animate-piece-merge' : '';
+                    return (
+                         <div key={piece.id} className={`flex flex-row gap-px ${animationClass}`} style={{ width: `${(piece.fraction.numerator / piece.fraction.denominator) * 100}%` }}>
+                            <div className="flex-1"><FractionPiece fraction={piece.fraction} /></div>
+                        </div>
+                    );
+                }
+                // Fix: Pass 'isCombining' as false and forward the correct handlers for training mode.
+                return <div key={groupIndex}>{renderPieceGroup(group, false, onBarClick, onWorkspacePieceDragStart, onWorkspacePieceDragEnd)}</div>;
+            })}
         </div>
     );
 };

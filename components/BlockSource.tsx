@@ -52,7 +52,7 @@ export const BlockSource: React.FC<BlockSourceProps> = ({ onDragStart, onTouchSt
   }
 
   return (
-    <div className="flex items-end justify-center gap-4 sm:gap-8 p-4 rounded-xl">
+    <div className="flex items-end justify-center gap-2 sm:gap-4 md:gap-8 p-2 sm:p-4 rounded-xl">
       {blocksToRender.map(block => (
         <BlockWrapper 
           key={block.value}

@@ -8,10 +8,7 @@ interface BackgroundManagerProps {
 
 // These models provide their own opaque, full-screen background,
 // so the global animated background is not needed.
-const MODELS_WITH_OWN_BACKGROUND: AppState[] = [
-    'surface_area_9',
-    'surface_area_10',
-];
+const MODELS_WITH_OWN_BACKGROUND: AppState[] = ['surface_area_volume'];
 
 export const BackgroundManager: React.FC<BackgroundManagerProps> = ({ activeState }) => {
     const { theme } = useTheme();

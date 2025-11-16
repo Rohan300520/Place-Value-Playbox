@@ -1,7 +1,7 @@
 import type React from 'react';
 
 // --- Core App State ---
-export type AppState = 'model_selection' | 'place_value_playbox' | 'fractions' | 'surface_area_9' | 'surface_area_10';
+export type AppState = 'model_selection' | 'place_value_playbox' | 'fractions' | 'surface_area_volume';
 export type SchoolLevel = 'Lower School' | 'Middle School' | 'High School';
 
 export type UserInfo = {
@@ -181,87 +181,6 @@ export interface FractionTrainingStep {
   activity?: TrainingActivity;
 }
 
-
-// --- Surface Area & Volume Models ---
-export type ShapeType = 
-  | 'cuboid' | 'cube' | 'cylinder' | 'cone' | 'sphere' | 'hemisphere'
-  | 'cone_on_hemisphere' | 'cylinder_with_hemispheres' | 'cone_on_cylinder' | 'frustum';
-  
-export type CalculationType = 'volume' | 'lsa' | 'tsa';
-export type RenderMode = 'solid' | 'wireframe';
-
-export type ShapeDimensions = {
-  [key: string]: number;
-};
-
-export type FormulaPart = {
-  partName: string;
-  formula: string;
-  meshId: string | string[];
-};
-
-export type CalculationResult = {
-  value: number;
-  formula: string;
-  derivation?: {
-    title: string;
-    parts: FormulaPart[];
-    finalFormula?: string;
-  };
-  steps: {
-    description: string;
-    calculation: string;
-    result: string;
-  }[];
-} | null;
-
-export type SurfaceAreaState = 'welcome' | 'mode_selection' | 'training' | 'explore' | 'challenge_difficulty_selection' | 'challenge';
-
-export interface SurfaceAreaChallengeQuestion {
-  id: number;
-  level: Difficulty;
-  class: 9 | 10;
-  question: string; // The word problem for the user
-  contextInfo?: string[]; // Extra info like rates, costs etc.
-  shape: ShapeType; // The correct shape to select
-  dimensions: ShapeDimensions; // Correct dimensions to input
-  calculationType: CalculationType; // Correct calculation type
-  answer: number; // The final numeric answer for the main calculation
-  tolerance?: number; 
-  unit?: 'cm' | 'm' | 'mm';
-  followUp?: {
-    prompt: string;
-    answer: number;
-    unit?: string;
-  };
-}
-
-export type TrainingSpotlight = 
-  | 'dimension' 
-  | 'calculation_type' 
-  | 'calculate_button' 
-  | 'unfold_button' 
-  | `shape-${ShapeType}` 
-  | `dimension-${string}` 
-  | `calc_type-${CalculationType}`
-  | 'comparison_button';
-
-export type TrainingAnimation = 'cylinder_unfold' | 'cone_volume_compare';
-
-export interface SurfaceAreaTrainingStep {
-  step: number;
-  type: 'intro' | 'action' | 'feedback' | 'complete';
-  text: string;
-  title?: string;
-  duration?: number;
-  spotlightOn?: TrainingSpotlight;
-  requiredAction?: 'select_shape' | 'change_dimension' | 'select_calc_type' | 'calculate' | 'unfold' | 'continue' | 'return_to_selector' | 'toggle_comparison';
-  requiredValue?: ShapeType | CalculationType;
-  // Visual training properties
-  highlightPartId?: string | string[] | null;
-}
-
-
 // --- Analytics ---
 export interface AnalyticsEvent {
   id: string;
@@ -313,4 +232,97 @@ export interface SchoolChallengeStats {
   correct_count: number;
   incorrect_count: number;
   timed_out_count: number;
+}
+
+// Fix: Added missing type definitions for the Surface Area & Volume models.
+// --- Surface Area & Volume Model ---
+export type ShapeType =
+  | 'cuboid'
+  | 'cube'
+  | 'cylinder'
+  | 'cone'
+  | 'sphere'
+  | 'hemisphere'
+  | 'cone_on_hemisphere'
+  | 'cylinder_with_hemispheres'
+  | 'cone_on_cylinder'
+  | 'frustum';
+
+export type ShapeDimensions = {
+  [key: string]: number;
+};
+
+export type CalculationType = 'volume' | 'lsa' | 'tsa';
+
+export type CalculationResult = {
+  value: number;
+  formula: string;
+  steps: {
+    description: string;
+    calculation: string;
+    result: string;
+  }[];
+  derivation?: {
+    title: string;
+    parts: {
+      partName: string;
+      formula: string;
+      meshId: string | string[];
+    }[];
+    finalFormula?: string;
+  };
+} | null;
+
+export type SurfaceAreaState =
+  | 'welcome'
+  | 'objectives'
+  | 'mode_selection'
+  | 'explore'
+  | 'training'
+  | 'challenge'
+  | 'challenge_difficulty_selection';
+
+export type RenderMode = 'solid' | 'wireframe';
+
+export type TrainingSpotlight = string;
+
+export interface SurfaceAreaChallengeQuestion {
+  id: number;
+  level: Difficulty;
+  class: 9 | 10;
+  shape: ShapeType;
+  question: string;
+  contextInfo?: string[];
+  dimensions: ShapeDimensions;
+  calculationType: CalculationType;
+  answer: number;
+  tolerance?: number;
+  unit?: string;
+  followUp?: {
+    prompt: string;
+    answer: number;
+    unit?: string;
+  };
+}
+
+export interface SurfaceAreaTrainingStep {
+  step: number;
+  type: 'intro' | 'feedback' | 'action' | 'complete';
+  title?: string;
+  text: string;
+  duration?: number;
+  requiredAction?:
+    | 'select_shape'
+    | 'change_dimension'
+    | 'select_calc_type'
+    | 'calculate'
+    | 'unfold'
+    | 'toggle_comparison'
+    | 'return_to_selector'
+    | 'continue'
+    | 'show_examples';
+  requiredValue?: ShapeType | CalculationType;
+  spotlightOn?: TrainingSpotlight;
+  highlightPartId?: string | string[] | null;
+  unfoldOnStep?: boolean;
 }

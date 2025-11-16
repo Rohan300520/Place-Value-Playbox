@@ -6,7 +6,7 @@ import { FractionIntroScreen } from './components/FractionIntroScreen';
 import { ModeSelector } from './components/ModeSelector';
 import { DifficultySelector } from '../../components/DifficultySelector';
 import { FractionChart } from './components/FractionWall';
-import { CalculationWorkspace } from './components/CalculationWorkspace';
+import { CalculationWorkspace } from './components/CalculationCanvas';
 import { CompareWorkspace } from './components/CompareWorkspace';
 import { FractionChallengePanel } from './components/FractionChallengePanel';
 import { TrainingGuide } from './components/TrainingGuide';

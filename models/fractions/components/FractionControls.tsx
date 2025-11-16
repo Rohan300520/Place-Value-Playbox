@@ -19,7 +19,7 @@ export const FractionControls: React.FC<FractionControlsProps> = ({ onOperatorSe
     const canClear = terms.length > 1 || terms[0].fraction !== null || isSolved;
 
     return (
-        <div className="w-full mt-4 p-4 rounded-2xl chalk-bg-light flex justify-between items-center flex-wrap gap-2">
+        <div className="w-full mt-4 p-4 rounded-2xl chalk-bg-light flex justify-center sm:justify-between items-center flex-wrap gap-2 sm:gap-4">
             <div className="flex gap-4">
                 <button 
                     onClick={() => onOperatorSelect('+')}

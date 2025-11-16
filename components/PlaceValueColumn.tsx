@@ -84,11 +84,10 @@ export const PlaceValueColumn: React.FC<PlaceValueColumnProps> = ({
             {blocks.map((block, index) => (
               <div
                 key={block.id}
-                className="absolute left-1/2 -translate-x-1/2 transition-all duration-300"
+                className="absolute left-1/2 -translate-x-1/2 transition-all duration-300 scale-75 sm:scale-80"
                 style={{
-                  bottom: `${index * 8}px`,
+                  bottom: `${index * 6}px`,
                   zIndex: index,
-                  transform: 'scale(0.8)',
                 }}
               >
                 <NumberBlock 

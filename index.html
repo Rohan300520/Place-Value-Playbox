@@ -24,14 +24,13 @@
     "vite-plugin-pwa": "https://aistudiocdn.com/vite-plugin-pwa@^1.0.3",
     "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/+esm",
     "chart.js": "https://aistudiocdn.com/chart.js@^4.5.0",
-    "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/",
-    "three/": "https://aistudiocdn.com/three@^0.180.0/",
     "workbox-strategies": "https://aistudiocdn.com/workbox-strategies@^7.3.0",
     "workbox-precaching": "https://aistudiocdn.com/workbox-precaching@^7.3.0",
     "workbox-expiration": "https://aistudiocdn.com/workbox-expiration@^7.3.0",
     "workbox-routing": "https://aistudiocdn.com/workbox-routing@^7.3.0",
-    "workbox-cacheable-response": "https://aistudiocdn.com/workbox-cacheable-response@^7.3.0"
+    "workbox-cacheable-response": "https://aistudiocdn.com/workbox-cacheable-response@^7.3.0",
+    "three": "https://aistudiocdn.com/three@^0.181.1",
+    "three/": "https://aistudiocdn.com/three@^0.181.1/"
   }
 }
 </script>
@@ -197,14 +196,21 @@
 
         .fractions-theme .control-button {
             font-family: 'Fredoka One', cursive;
-            font-size: 1.5rem; /* 2xl */
+            font-size: 1.125rem; /* text-lg */
             color: white;
-            padding: 0.75rem 1.5rem; /* py-3 px-6 */
+            padding: 0.5rem 1rem; /* py-2 px-4 */
             border-radius: 0.75rem; /* rounded-xl */
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); /* shadow-lg */
-            border-bottom-width: 8px;
+            border-bottom-width: 6px;
             transition: all 150ms;
             transform: translateY(0);
+        }
+        @media (min-width: 640px) { /* sm breakpoint */
+            .fractions-theme .control-button {
+                font-size: 1.5rem; /* 2xl */
+                padding: 0.75rem 1.5rem; /* py-3 px-6 */
+                border-bottom-width: 8px;
+            }
         }
         .fractions-theme .control-button:hover { transform: translateY(-0.25rem); }
         .fractions-theme .control-button:active { border-bottom-width: 4px; }
@@ -259,60 +265,6 @@
             to { transform: scale(0); opacity: 0.5; }
         }
 
-
-        /* --- GEOMETRY THEME (SURFACE AREA & VOLUMES) --- */
-        .geometry-theme {
-            --blueprint-bg: #283a4b;
-            --blueprint-grid: rgba(255, 255, 255, 0.1);
-            --blueprint-text-primary: #e0f2fe;
-            --blueprint-text-secondary: #94a3b8;
-            --blueprint-accent: #38bdf8;
-            --blueprint-accent-dark: #0ea5e9;
-            --blueprint-panel-bg: rgba(51, 65, 85, 0.7);
-            --blueprint-border: rgba(125, 211, 252, 0.4);
-            --blueprint-input-bg: rgba(15, 23, 42, 0.5);
-            background-color: var(--blueprint-bg);
-            background-image:
-                linear-gradient(var(--blueprint-grid) 1px, transparent 1px),
-                linear-gradient(90deg, var(--blueprint-grid) 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-
-        .geometry-theme input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            height: 8px;
-            background: var(--blueprint-input-bg);
-            border-radius: 5px;
-            outline: none;
-            border: 1px solid var(--blueprint-border);
-        }
-
-        .geometry-theme input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 24px;
-            height: 24px;
-            background: var(--blueprint-accent);
-            cursor: pointer;
-            border-radius: 50%;
-            border: 4px solid var(--blueprint-bg);
-        }
-
-        .geometry-theme input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            background: var(--blueprint-accent);
-            cursor: pointer;
-            border-radius: 50%;
-            border: 4px solid var(--blueprint-bg);
-        }
-        
-        .guide-box-arrow-down::after { content: ''; position: absolute; width: 0; height: 0; border: 20px solid transparent; border-top-color: var(--blueprint-panel-bg); bottom: -40px; left: 50%; transform: translateX(-50%); }
-        .guide-box-arrow-up::after { content: ''; position: absolute; width: 0; height: 0; border: 20px solid transparent; border-bottom-color: var(--blueprint-panel-bg); top: -40px; left: 50%; transform: translateX(-50%); }
-        .guide-box-arrow-left::after { content: ''; position: absolute; width: 0; height: 0; border: 20px solid transparent; border-right-color: var(--blueprint-panel-bg); left: -40px; top: 50%; transform: translateY(-50%); }
-        .guide-box-arrow-right::after { content: ''; position: absolute; width: 0; height: 0; border: 20px solid transparent; border-left-color: var(--blueprint-panel-bg); right: -40px; top: 50%; transform: translateY(-50%); }
         
         /* --- BACKGROUND ANIMATIONS --- */
         .background-container {
@@ -343,6 +295,34 @@
             animation-name: drift;
             animation-timing-function: linear;
             animation-iteration-count: infinite;
+        }
+
+        /* --- SURFACE AREA & VOLUME --- */
+        @keyframes bot-float {
+            0%, 100% { transform: translateY(0) rotate(-5deg); }
+            50% { transform: translateY(-8px) rotate(5deg); }
+        }
+        .animate-bot-float {
+            animation: bot-float 4s ease-in-out infinite;
+        }
+        .speech-bubble {
+            position: relative;
+            background: var(--bubble-bg, rgba(30, 41, 59, 0.95));
+            border-radius: .4em;
+            padding: 1rem;
+        }
+        .speech-bubble:after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border: 20px solid transparent;
+            border-right-color: var(--bubble-bg, rgba(30, 41, 59, 0.95));
+            border-left: 0;
+            margin-top: -20px;
+            margin-left: -20px;
         }
 
     </style>
