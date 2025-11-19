@@ -108,7 +108,8 @@ const App: React.FC = () => {
         localStorage.setItem('app_license', JSON.stringify(license));
         localStorage.setItem('app_user_info', JSON.stringify(userInfo));
         localStorage.setItem('app_last_check', now.toString());
-        window.location.replace(window.location.href);
+        setCurrentUser(userInfo);
+        setLicenseStatus('valid');
       } catch (e) {
         console.error("Could not save to localStorage.", e);
         return { success: false, message: "Could not save license. Storage may be full." };
