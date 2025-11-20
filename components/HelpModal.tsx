@@ -60,7 +60,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
 
           <section>
             <h3 id="about-section-title" className="text-3xl font-black font-display" style={{ color: 'var(--text-accent)'}}>About</h3>
-            <p><strong>Place Value Playbox</strong> is an interactive educational tool designed to make learning math concepts fun for young children. By visualizing numbers and regrouping, it helps build a strong foundation for future math skills.</p>
+            <p><strong>Smart Digital Lab</strong> is an interactive educational tool designed to make learning math concepts fun for young children. By visualizing numbers and regrouping, it helps build a strong foundation for future math skills.</p>
           </section>
         </div>
       </div>
