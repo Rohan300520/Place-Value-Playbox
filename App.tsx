@@ -6,8 +6,7 @@ import { AdminPage } from './AdminPage';
 import { ModelSelectionScreen } from './components/ModelSelectionScreen';
 import { PlaceValuePlaybox } from './models/place-value-playbox/PlaceValuePlaybox';
 import { FractionsApp } from './models/fractions/FractionsApp';
-// import { SurfaceArea9App } from './models/surface-area/SurfaceArea9App';
-// import { SurfaceArea10App } from './models/surface-area/SurfaceArea10App';
+import { SurfaceAreaVolumeApp } from './models/surface-area-volume/SurfaceAreaVolumeApp';
 import type { UserInfo, AppState } from './types';
 import { initAnalytics, logEvent, syncAnalyticsData } from './utils/analytics';
 
@@ -32,13 +31,17 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Check license and user info on initial load
+    let intervalId: NodeJS.Timeout;
+
     try {
       const licenseData = localStorage.getItem('app_license');
       const lastCheck = localStorage.getItem('app_last_check');
       const userInfo = localStorage.getItem('app_user_info');
       const now = Date.now();
 
-      if (lastCheck && now < parseInt(lastCheck, 10)) {
+      // Fix: Add tolerance (e.g., 1 minute) to prevent lockout due to minor clock drift or slow reloads.
+      if (lastCheck && now < parseInt(lastCheck, 10) - 60000) {
+        console.warn("System time appears to have moved backwards.");
         setLicenseStatus('tampered');
         return;
       }
@@ -52,7 +55,15 @@ const App: React.FC = () => {
       
       const { expiryTime, duration } = JSON.parse(licenseData);
       
+      // Safety check: If expiryTime is invalid/NaN, force re-login (locked) instead of expired.
+      if (!expiryTime || isNaN(expiryTime)) {
+          console.warn("Invalid license data detected.");
+          setLicenseStatus('locked');
+          return;
+      }
+
       if (now >= expiryTime) {
+        console.log("License expired. Now:", now, "Expiry:", expiryTime);
         setLicenseStatus('expired');
         setExpiredDuration(duration);
         localStorage.removeItem('app_user_info'); // Clear user info on expiry
@@ -65,19 +76,27 @@ const App: React.FC = () => {
       }
       setLicenseStatus('valid');
 
-      const timeToExpire = expiryTime - now;
-      if (timeToExpire > 0) {
-        const timerId = setTimeout(() => {
+      // Use setInterval instead of setTimeout to reliably check for expiration
+      // even if the tab is inactive or the duration is very long (exceeding setTimeout limits).
+      intervalId = setInterval(() => {
+        const currentTime = Date.now();
+        if (currentTime >= expiryTime) {
+          console.log("License expired during session.");
           setLicenseStatus('expired');
           setExpiredDuration(duration);
-        }, timeToExpire);
-        return () => clearTimeout(timerId);
-      }
+          localStorage.removeItem('app_user_info');
+          clearInterval(intervalId);
+        }
+      }, 1000); // Check every second
 
     } catch (e) {
       console.error("Could not access localStorage.", e);
       setLicenseStatus('locked');
     }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, []);
 
   // Analytics session start and sync setup
@@ -92,7 +111,8 @@ const App: React.FC = () => {
 
   const handleKeyVerification = async (key: string, name: string) => {
     const result = await verifyKeyOnServer(key);
-    if (result.success && result.validityInMs && result.school && result.keyId) {
+    // Ensure strict check on values before proceeding
+    if (result.success && result.validityInMs && result.validityInMs > 0 && result.school && result.keyId) {
       const now = Date.now();
       const license = {
         activationTime: now,
@@ -108,8 +128,23 @@ const App: React.FC = () => {
         localStorage.setItem('app_license', JSON.stringify(license));
         localStorage.setItem('app_user_info', JSON.stringify(userInfo));
         localStorage.setItem('app_last_check', now.toString());
+        
+        // Update state immediately to unlock the app without reloading.
+        // This prevents race conditions where reload happens before storage is committed.
         setCurrentUser(userInfo);
         setLicenseStatus('valid');
+        
+        // Re-run the expiration check logic (simplified version for post-login)
+        // Ideally, the main useEffect would handle this if we refactored, 
+        // but here we force a reload to ensure clean state initialization 
+        // OR we can rely on the fact that the component might re-mount.
+        // For robustness in this architecture, reloading is often safest after auth change,
+        // but let's try to just update state. 
+        // Actually, the main useEffect dependency array is empty [], so it won't re-run 
+        // the interval setup on state change. 
+        // We should reload to be safe and ensure the interval is set up correctly.
+        window.location.reload();
+        
       } catch (e) {
         console.error("Could not save to localStorage.", e);
         return { success: false, message: "Could not save license. Storage may be full." };
@@ -140,10 +175,8 @@ const App: React.FC = () => {
         return <PlaceValuePlaybox onExit={() => setAppState('model_selection')} currentUser={currentUser} />;
       case 'fractions':
         return <FractionsApp onExit={() => setAppState('model_selection')} currentUser={currentUser} />;
-      // case 'surface_area_9':
-      //   return <SurfaceArea9App onExit={() => setAppState('model_selection')} currentUser={currentUser} />;
-      // case 'surface_area_10':
-      //   return <SurfaceArea10App onExit={() => setAppState('model_selection')} currentUser={currentUser} />;
+      case 'surface_area_volume':
+        return <SurfaceAreaVolumeApp onExit={() => setAppState('model_selection')} currentUser={currentUser} />;
       case 'model_selection':
       default:
         return <ModelSelectionScreen onSelectModel={handleSelectModel} currentUser={currentUser} />;
