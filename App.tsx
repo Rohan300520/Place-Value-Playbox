@@ -31,6 +31,20 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Effect to handle forced logout from other components (e.g. analytics sync failure)
+  useEffect(() => {
+      const handleInvalidation = () => {
+          console.warn("Session invalidated by server (key deletion or revocation detected).");
+          setLicenseStatus('locked');
+          localStorage.removeItem('app_user_info');
+          localStorage.removeItem('app_license');
+          setExpiredDuration(null);
+          setCurrentUser(null);
+      };
+      window.addEventListener('auth:session_invalidated', handleInvalidation);
+      return () => window.removeEventListener('auth:session_invalidated', handleInvalidation);
+  }, []);
+
   useEffect(() => {
     // Check license and user info on initial load
     let intervalId: ReturnType<typeof setInterval>;
@@ -104,6 +118,9 @@ const App: React.FC = () => {
         }
     };
 
+    // Execute immediately to catch deleted keys on page load
+    performHeartbeat();
+    
     // Check every 30 seconds
     const heartbeatInterval = setInterval(performHeartbeat, 30000);
     
