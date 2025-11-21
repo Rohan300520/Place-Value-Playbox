@@ -34,11 +34,11 @@ const BlockWrapper: React.FC<BlockWrapperProps> = React.memo(({ value, onDragSta
 
     return (
         <div 
-          className={`flex flex-col items-center p-2 rounded-lg transition-all duration-300 ${animationClass} ${isSpotlighted ? 'relative z-20' : ''}`}
+          className={`flex flex-col items-center p-1 sm:p-2 rounded-lg transition-all duration-300 ${animationClass} ${isSpotlighted ? 'relative z-20' : ''}`}
           style={{ animationDelay: isSpotlighted ? '0s' : animationDelay }}
         >
             <NumberBlock value={value} isDraggable={true} onDragStart={onDragStart} onTouchStart={onTouchStart} onClick={() => onBlockClick(value)} />
-            <span className={`mt-2 font-bold text-lg`} style={{ color: colorVar }}>{label}</span>
+            <span className={`mt-1 font-bold text-base sm:text-lg`} style={{ color: colorVar }}>{label}</span>
         </div>
     );
 });
@@ -52,7 +52,7 @@ export const BlockSource: React.FC<BlockSourceProps> = ({ onDragStart, onTouchSt
   }
 
   return (
-    <div className="flex items-end justify-center gap-4 sm:gap-8 p-4 rounded-xl">
+    <div className="flex items-end justify-center gap-2 sm:gap-4 md:gap-8 p-1 sm:p-2 rounded-xl">
       {blocksToRender.map(block => (
         <BlockWrapper 
           key={block.value}
