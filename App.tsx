@@ -32,7 +32,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Check license and user info on initial load
-    let intervalId: NodeJS.Timeout;
+    let intervalId: ReturnType<typeof setInterval>;
     try {
       const licenseData = localStorage.getItem('app_license');
       const lastCheck = localStorage.getItem('app_last_check');
