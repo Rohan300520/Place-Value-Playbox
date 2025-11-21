@@ -77,7 +77,7 @@ export const ChallengePanel: React.FC<ChallengePanelProps> = ({ question, score,
     }
 
     return (
-        <div className={`backdrop-blur-md rounded-2xl border-2 ${statusClasses} shadow-lg p-2 sm:p-4 mb-2 sm:mb-4 flex flex-col justify-between items-center w-full transition-all duration-500`} style={{ backgroundColor: 'var(--backdrop-bg)'}}>
+        <div className={`backdrop-blur-md rounded-2xl border-2 ${statusClasses} shadow-lg p-2 sm:p-4 mb-2 flex flex-col justify-between items-center w-full transition-all duration-500`} style={{ backgroundColor: 'var(--backdrop-bg)'}}>
             <div className="flex justify-between w-full items-start gap-4">
                 <div className="flex-1 text-left">
                     <span className="text-md sm:text-lg font-bold uppercase tracking-wider font-display" style={{ color: 'var(--text-accent)'}}>Level {question.level}</span>
