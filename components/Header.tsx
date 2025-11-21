@@ -44,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
         borderBottom: '1px solid var(--border-primary)',
     }}>
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
+        <div className="flex items-center justify-between h-14 sm:h-16">
           <div className="flex items-center gap-2">
             <button
                 onClick={onExit}
@@ -72,21 +72,21 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          <div className="absolute left-1/2 -translate-x-1/2 text-center">
-            {modelTitle && <h1 className="text-2xl sm:text-4xl font-black tracking-tight font-display" style={{ color: 'var(--text-primary)' }}>{modelTitle}</h1>}
-            {modelSubtitle && <h2 className="text-lg sm:text-2xl font-bold tracking-tight -mt-1 sm:-mt-2" style={{ color: 'var(--text-accent)'}}>{modelSubtitle}</h2>}
+          <div className="absolute left-1/2 -translate-x-1/2 text-center px-2">
+            {modelTitle && <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight font-display" style={{ color: 'var(--text-primary)' }}>{modelTitle}</h1>}
+            {modelSubtitle && <h2 className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight -mt-1" style={{ color: 'var(--text-accent)'}}>{modelSubtitle}</h2>}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
               {showScore && (
-                 <div className={`text-center rounded-2xl px-3 sm:px-6 py-1 sm:py-2 shadow-inner ${isAnimating ? 'animate-tada' : ''}`} style={{
+                 <div className={`text-center rounded-2xl px-2 sm:px-4 py-1 shadow-inner ${isAnimating ? 'animate-tada' : ''}`} style={{
                     backgroundColor: 'var(--panel-bg)',
                     border: '1px solid var(--border-primary)',
                 }}>
-                  <div className="text-4xl sm:text-6xl font-black text-green-600 tabular-nums tracking-tighter" style={{ textShadow: '0 0 10px rgba(22, 163, 74, 0.3)' }}>
+                  <div className="text-2xl sm:text-3xl md:text-5xl font-black text-green-600 tabular-nums tracking-tighter" style={{ textShadow: '0 0 10px rgba(22, 163, 74, 0.3)' }}>
                     {new Intl.NumberFormat().format(score || 0)}
                   </div>
-                  <div className="text-xs sm:text-lg font-bold capitalize min-h-[1.25rem] sm:min-h-[1.75rem] flex items-center justify-center" style={{ color: 'var(--text-secondary)'}}>
+                  <div className="text-[10px] sm:text-xs font-bold capitalize min-h-[1rem] flex items-center justify-center" style={{ color: 'var(--text-secondary)'}}>
                       {(score || 0) > 0 ? scoreInWords : '\u00A0'}
                   </div>
                 </div>
