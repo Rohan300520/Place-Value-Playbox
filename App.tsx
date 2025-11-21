@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BackgroundManager } from './components/Starfield';
+import { LicenseScreen } from './components/LicenseScreen';
 import { verifyKeyOnServer, checkKeyStatus } from './utils/license';
 import { verifyKeyOnServer } from './utils/license';
 import { AdminPage } from './AdminPage';
