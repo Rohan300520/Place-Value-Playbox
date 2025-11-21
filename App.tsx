@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BackgroundManager } from './components/Starfield';
-import { LicenseScreen } from './components/LicenseScreen';
+import { verifyKeyOnServer, checkKeyStatus } from './utils/license';
 import { verifyKeyOnServer } from './utils/license';
 import { AdminPage } from './AdminPage';
 import { ModelSelectionScreen } from './components/ModelSelectionScreen';
@@ -86,6 +86,28 @@ const App: React.FC = () => {
       if (intervalId) clearInterval(intervalId);
     };
   }, []);
+
+  // Heartbeat Check: Verify key still exists on server
+  useEffect(() => {
+    if (licenseStatus !== 'valid' || !currentUser?.keyId) return;
+
+    const performHeartbeat = async () => {
+        const isValid = await checkKeyStatus(currentUser.keyId);
+        if (!isValid) {
+            console.warn("Active session invalidated: Key has been revoked or deleted.");
+            setLicenseStatus('locked');
+            localStorage.removeItem('app_user_info');
+            localStorage.removeItem('app_license');
+            setExpiredDuration(null);
+            setCurrentUser(null);
+        }
+    };
+
+    // Check every 30 seconds
+    const heartbeatInterval = setInterval(performHeartbeat, 30000);
+    
+    return () => clearInterval(heartbeatInterval);
+  }, [licenseStatus, currentUser]);
 
   // Analytics session start and sync setup
   useEffect(() => {
