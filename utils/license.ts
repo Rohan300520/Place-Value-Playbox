@@ -192,3 +192,33 @@ export const verifyKeyOnServer = (
     }, delay);
   });
 };
+
+/**
+ * Checks if a key exists in the database by its ID.
+ * This is used for periodic heartbeat checks to revoke access if a key is deleted.
+ * @param keyId The UUID of the key.
+ * @returns Promise<boolean> True if key exists, False if not found (deleted).
+ */
+export const checkKeyStatus = async (keyId: string): Promise<boolean> => {
+  // If we are offline, we cannot check the DB, so we assume valid to prevent locking out users with spotty internet.
+  if (!navigator.onLine) return true;
+
+  try {
+    const { data, error } = await supabase
+      .from('keys')
+      .select('id')
+      .eq('id', keyId)
+      .maybeSingle(); // Use maybeSingle to return null instead of error for no rows
+
+    if (error) {
+        // If there is a DB error (e.g. connection), assume valid to avoid accidental lockout.
+        console.warn("Heartbeat check error:", error);
+        return true;
+    }
+    // If data is null, the key was not found (deleted).
+    return !!data;
+  } catch (e) {
+    console.error("Unexpected error during heartbeat:", e);
+    return true; // Fail open on unexpected errors
+  }
+};
