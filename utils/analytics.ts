@@ -124,6 +124,27 @@ export const syncAnalyticsData = async (): Promise<void> => {
 
         if (error) {
             console.error('ANALYTICS SYNC FAILED. Data remains in local DB. Error:', error);
+            
+            // CRITICAL FIX: Handle Foreign Key Violation (Code 23503)
+            // This means the Key ID in the logs no longer exists in the 'keys' table (it was deleted).
+            // We must invalidate the user's session immediately.
+            if (error.code === '23503') {
+                console.warn("Sync failed due to missing Key ID. Invalidating session.");
+                window.dispatchEvent(new CustomEvent('auth:session_invalidated'));
+                
+                // We also need to clear these events, otherwise they will block the queue forever.
+                const deleteTx = db.transaction(STORE_NAME, 'readwrite');
+                const deleteStore = deleteTx.objectStore(STORE_NAME);
+                for (const event of eventsToProcess) {
+                    deleteStore.delete(event.id);
+                }
+                await new Promise<void>((resolve, reject) => {
+                    deleteTx.oncomplete = () => resolve();
+                    deleteTx.onerror = () => reject(deleteTx.error);
+                });
+                return; // Exit early
+            }
+
         } else {
             console.log(`Successfully synced ${eventsToProcess.length} analytics events.`);
             // On success, clear the synced events from IndexedDB

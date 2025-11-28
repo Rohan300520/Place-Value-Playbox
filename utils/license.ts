@@ -1,3 +1,4 @@
+
 // This file handles all interactions with the Supabase backend for key verification and management.
 
 import { supabase } from './supabaseClient';
@@ -136,59 +137,117 @@ export const verifyKeyOnServer = (
   key: string
 ): Promise<{ success: boolean; message: string; validityInMs?: number; school?: string; keyId?: string; }> => {
   return new Promise(async (resolve) => {
-    // Simulate network latency of 0.5 to 1.5 seconds for UX
+    // Simulate network latency for UX
     const delay = 500 + Math.random() * 1000;
 
-    // Fetch the key from Supabase
-    const { data: keyDetails, error: fetchError } = await supabase
-      .from('keys')
-      .select('*')
-      .eq('key', key)
-      .single();
+    try {
+        // Fetch the key from Supabase
+        const { data: keyDetails, error: fetchError } = await supabase
+          .from('keys')
+          .select('*')
+          .eq('key', key)
+          .single();
 
-    if (fetchError || !keyDetails) {
-      setTimeout(() => {
-        const keyRegex = /^SMARTC-([A-Z0-9]{4})-([A-Z0-9]{4})$/;
-        if (!keyRegex.test(key)) {
-          resolve({ success: false, message: 'Invalid key format. Please check the key and try again.' });
-        } else {
-          resolve({ success: false, message: 'The key you entered is not valid.' });
+        if (fetchError || !keyDetails) {
+          setTimeout(() => {
+            const keyRegex = /^SMARTC-([A-Z0-9]{4})-([A-Z0-9]{4})$/;
+            if (!keyRegex.test(key)) {
+              resolve({ success: false, message: 'Invalid key format. Please check the key and try again.' });
+            } else {
+              console.error("Key check failed:", fetchError);
+              resolve({ success: false, message: 'The key you entered is not valid.' });
+            }
+          }, delay);
+          return;
         }
-      }, delay);
-      return;
-    }
-    
-    // Check if the usage limit has been reached
-    if (keyDetails.current_usage >= keyDetails.usage_limit) {
-      setTimeout(() => {
-        resolve({ success: false, message: 'This key has reached its maximum number of uses.' });
-      }, delay);
-      return;
-    }
-      
-    // If valid, increment the usage count in Supabase.
-    // NOTE: For a high-traffic app, an RPC function in Supabase would be better to avoid race conditions.
-    // For this use case, a direct update is sufficient.
-    const { error: updateError } = await supabase
-      .from('keys')
-      .update({ current_usage: keyDetails.current_usage + 1 })
-      .eq('id', keyDetails.id);
+        
+        // Check usage
+        const currentUsage = Number(keyDetails.current_usage || 0);
+        const usageLimit = Number(keyDetails.usage_limit || 0);
 
-    if (updateError) {
-      setTimeout(() => {
-        resolve({ success: false, message: 'Error: Could not update key status. Please try again.' });
-      }, delay);
-      return;
-    }
+        if (currentUsage >= usageLimit) {
+          setTimeout(() => {
+            resolve({ success: false, message: 'This key has reached its maximum number of uses.' });
+          }, delay);
+          return;
+        }
+          
+        // Update usage
+        const { error: updateError } = await supabase
+          .from('keys')
+          .update({ current_usage: currentUsage + 1 })
+          .eq('id', keyDetails.id);
 
-    setTimeout(() => {
-      resolve({ 
-        success: true, 
-        message: 'Key successfully validated.', 
-        validityInMs: keyDetails.validity_in_ms,
-        school: keyDetails.school_name,
-        keyId: keyDetails.id
-      });
-    }, delay);
+        if (updateError) {
+          console.error("Usage update failed:", updateError);
+          setTimeout(() => {
+            resolve({ success: false, message: 'Error: Could not update key status. Please try again.' });
+          }, delay);
+          return;
+        }
+
+        setTimeout(() => {
+          // ROBUST FIX: Safely parse validity_in_ms with a fallback
+          // 2592000000 ms = 30 Days
+          let validity = 2592000000; 
+          
+          if (keyDetails.validity_in_ms !== undefined && keyDetails.validity_in_ms !== null) {
+              const parsed = Number(keyDetails.validity_in_ms);
+              // Ensure it's a valid positive number. 
+              // If DB returns 0, we assume it's an error and give default 30 days rather than expiring immediately.
+              if (!isNaN(parsed) && parsed > 0) {
+                  validity = parsed;
+              } else {
+                  console.warn(`Invalid validity_in_ms from DB (${keyDetails.validity_in_ms}), defaulting to 30 days.`);
+              }
+          } else {
+              console.warn("validity_in_ms missing from DB response, defaulting to 30 days.");
+          }
+          
+          resolve({ 
+            success: true, 
+            message: 'Key successfully validated.', 
+            validityInMs: validity,
+            school: keyDetails.school_name || 'Unknown School',
+            keyId: keyDetails.id
+          });
+        }, delay);
+
+    } catch (e) {
+        console.error("Unexpected error during verification:", e);
+        setTimeout(() => {
+            resolve({ success: false, message: 'An unexpected connection error occurred.' });
+        }, delay);
+    }
   });
+};
+
+/**
+ * Checks if a key exists in the database by its ID.
+ * This is used for periodic heartbeat checks to revoke access if a key is deleted.
+ * @param keyId The UUID of the key.
+ * @returns Promise<boolean> True if key exists, False if not found (deleted).
+ */
+export const checkKeyStatus = async (keyId: string): Promise<boolean> => {
+  // If we are offline, we cannot check the DB, so we assume valid to prevent locking out users with spotty internet.
+  if (!navigator.onLine) return true;
+
+  try {
+    const { data, error } = await supabase
+      .from('keys')
+      .select('id')
+      .eq('id', keyId)
+      .maybeSingle(); // Use maybeSingle to return null instead of error for no rows
+
+    if (error) {
+        // If there is a DB error (e.g. connection), assume valid to avoid accidental lockout.
+        console.warn("Heartbeat check error:", error);
+        return true;
+    }
+    // If data is null, the key was not found (deleted).
+    return !!data;
+  } catch (e) {
+    console.error("Unexpected error during heartbeat:", e);
+    return true; // Fail open on unexpected errors
+  }
 };

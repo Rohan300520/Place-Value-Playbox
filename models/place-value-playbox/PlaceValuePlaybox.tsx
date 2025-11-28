@@ -460,7 +460,7 @@ export const PlaceValuePlaybox: React.FC<{ onExit: () => void, currentUser: User
               <PlaceValueColumn title="Tens" category="tens" blocks={columns.tens} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={columns.ones.length >= 10} isDropAllowed={isDropAllowedForValue('tens', draggedValue)} isDragging={!!draggedValue} color="green" isTouchTarget={touchTarget === 'tens'} appState={gameState} isSpotlighted={currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi') && currentStepConfig.column === 'tens'} />
               <PlaceValueColumn title="Ones" category="ones" blocks={columns.ones} onDrop={handleDrop} onDragOver={handleGenericDragOver} onDragStart={handleDragStart} isRegroupingDestination={false} isDropAllowed={isDropAllowedForValue('ones', draggedValue)} isDragging={!!draggedValue} color="blue" isTouchTarget={touchTarget === 'ones'} appState={gameState} isSpotlighted={currentStepConfig && (currentStepConfig.type === 'action' || currentStepConfig.type === 'action_multi') && currentStepConfig.column === 'ones'} />
             </div>
-            <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row items-center justify-between w-full gap-4">
+            <div className="mt-2 flex flex-col sm:flex-row items-center justify-between w-full gap-2 sm:gap-4">
               <div className="flex-1">
                 {(gameState === 'playground' || gameState === 'challenge') && <ResetButton onClick={() => resetBoard(true)} />}
               </div>
@@ -504,7 +504,7 @@ export const PlaceValuePlaybox: React.FC<{ onExit: () => void, currentUser: User
             score={total}
             scoreInWords={totalInWords}
         />
-        <main className="flex-grow w-full flex items-center justify-center py-4 px-2 sm:px-4" onDrop={handleDropOnBackground} onDragOver={handleGenericDragOver}>
+        <main className="flex-grow w-full flex items-center justify-center py-2 px-2 sm:px-4" onDrop={handleDropOnBackground} onDragOver={handleGenericDragOver}>
             {renderGameState()}
         </main>
         

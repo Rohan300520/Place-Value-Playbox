@@ -101,7 +101,7 @@ export const VolumeComparisonView: React.FC = () => {
                         ...(animationState.phase === 'moving' && { transform: `translateX(var(--end-x)) translateY(var(--end-y))` }),
                         ...(animationState.phase === 'pouring' && { transform: `translateX(var(--end-x)) translateY(var(--end-y))` }),
                         ...(animationState.phase === 'returning' && { transform: `translateX(var(--start-x)) translateY(var(--start-y))`, opacity: 0, transition: 'transform 0.5s ease-in-out, opacity 0.5s 0.3s' })
-                    }}
+                    } as React.CSSProperties}
                 >
                     <div 
                         className="pouring-cone-visual relative w-full h-full"
@@ -141,7 +141,7 @@ export const VolumeComparisonView: React.FC = () => {
                         {[0, 1, 2].map(index => (
                              <button
                                 key={index}
-                                ref={el => sourceConesRef.current[index] = el}
+                                ref={el => { sourceConesRef.current[index] = el; }}
                                 onClick={() => handlePour(index)}
                                 disabled={!filledCones[index] || animationState.phase !== 'idle'}
                                 className="flex flex-col items-center gap-2 group disabled:cursor-not-allowed transition-opacity"

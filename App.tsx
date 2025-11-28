@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { BackgroundManager } from './components/Starfield';
 import { LicenseScreen } from './components/LicenseScreen';
-import { verifyKeyOnServer } from './utils/license';
+import { verifyKeyOnServer, checkKeyStatus } from './utils/license';
 import { AdminPage } from './AdminPage';
 import { ModelSelectionScreen } from './components/ModelSelectionScreen';
 import { PlaceValuePlaybox } from './models/place-value-playbox/PlaceValuePlaybox';
@@ -29,15 +30,33 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Effect to handle forced logout from other components (e.g. analytics sync failure)
   useEffect(() => {
-    // Check license and user info on initial load
+      const handleInvalidation = () => {
+          console.warn("Session invalidated by server (key deletion or revocation detected).");
+          setLicenseStatus('locked');
+          localStorage.removeItem('app_user_info');
+          localStorage.removeItem('app_license');
+          setExpiredDuration(null);
+          setCurrentUser(null);
+      };
+      window.addEventListener('auth:session_invalidated', handleInvalidation);
+      return () => window.removeEventListener('auth:session_invalidated', handleInvalidation);
+  }, []);
+
+  // Initial License Check
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval>;
+
     try {
       const licenseData = localStorage.getItem('app_license');
       const lastCheck = localStorage.getItem('app_last_check');
       const userInfo = localStorage.getItem('app_user_info');
       const now = Date.now();
 
-      if (lastCheck && now < parseInt(lastCheck, 10)) {
+      // Fix: Add tolerance (e.g., 1 minute) to prevent lockout due to minor clock drift or slow reloads.
+      if (lastCheck && now < parseInt(lastCheck, 10) - 60000) {
+        console.warn("System time appears to have moved backwards.");
         setLicenseStatus('tampered');
         return;
       }
@@ -51,7 +70,15 @@ const App: React.FC = () => {
       
       const { expiryTime, duration } = JSON.parse(licenseData);
       
+      // Safety check: If expiryTime is invalid/NaN, force re-login (locked) instead of expired.
+      if (!expiryTime || isNaN(expiryTime)) {
+          console.warn("Invalid license data detected.");
+          setLicenseStatus('locked');
+          return;
+      }
+
       if (now >= expiryTime) {
+        console.log("License expired. Now:", now, "Expiry:", expiryTime);
         setLicenseStatus('expired');
         setExpiredDuration(duration);
         localStorage.removeItem('app_user_info'); // Clear user info on expiry
@@ -64,20 +91,53 @@ const App: React.FC = () => {
       }
       setLicenseStatus('valid');
 
-      const timeToExpire = expiryTime - now;
-      if (timeToExpire > 0) {
-        const timerId = setTimeout(() => {
+      // Use setInterval instead of setTimeout to reliably check for expiration
+      // even if the tab is inactive or the duration is very long (exceeding setTimeout limits).
+      intervalId = setInterval(() => {
+        const currentTime = Date.now();
+        if (currentTime >= expiryTime) {
+          console.log("License expired during session.");
           setLicenseStatus('expired');
           setExpiredDuration(duration);
-        }, timeToExpire);
-        return () => clearTimeout(timerId);
-      }
+          localStorage.removeItem('app_user_info');
+          clearInterval(intervalId);
+        }
+      }, 1000); // Check every second
 
     } catch (e) {
       console.error("Could not access localStorage.", e);
       setLicenseStatus('locked');
     }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, []);
+
+  // Heartbeat Check: Verify key still exists on server
+  useEffect(() => {
+    if (licenseStatus !== 'valid' || !currentUser?.keyId) return;
+
+    const performHeartbeat = async () => {
+        const isValid = await checkKeyStatus(currentUser.keyId);
+        if (!isValid) {
+            console.warn("Active session invalidated: Key has been revoked or deleted.");
+            setLicenseStatus('locked');
+            localStorage.removeItem('app_user_info');
+            localStorage.removeItem('app_license');
+            setExpiredDuration(null);
+            setCurrentUser(null);
+        }
+    };
+
+    // Execute immediately to catch deleted keys on page load
+    performHeartbeat();
+
+    // Then Check every 30 seconds
+    const heartbeatInterval = setInterval(performHeartbeat, 30000);
+    
+    return () => clearInterval(heartbeatInterval);
+  }, [licenseStatus, currentUser]);
 
   // Analytics session start and sync setup
   useEffect(() => {
@@ -91,7 +151,8 @@ const App: React.FC = () => {
 
   const handleKeyVerification = async (key: string, name: string) => {
     const result = await verifyKeyOnServer(key);
-    if (result.success && result.validityInMs && result.school && result.keyId) {
+    // Ensure strict check on values before proceeding
+    if (result.success && result.validityInMs && result.validityInMs > 0 && result.school && result.keyId) {
       const now = Date.now();
       const license = {
         activationTime: now,
@@ -107,7 +168,15 @@ const App: React.FC = () => {
         localStorage.setItem('app_license', JSON.stringify(license));
         localStorage.setItem('app_user_info', JSON.stringify(userInfo));
         localStorage.setItem('app_last_check', now.toString());
-        window.location.replace(window.location.href);
+        
+        // Update state immediately to unlock the app without reloading.
+        // This prevents race conditions where reload happens before storage is committed.
+        setCurrentUser(userInfo);
+        setLicenseStatus('valid');
+        
+        // Re-run the expiration check logic (simplified version for post-login)
+        window.location.reload();
+        
       } catch (e) {
         console.error("Could not save to localStorage.", e);
         return { success: false, message: "Could not save license. Storage may be full." };

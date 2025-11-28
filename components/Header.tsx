@@ -44,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
         borderBottom: '1px solid var(--border-primary)',
     }}>
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
+        <div className="flex items-center justify-between h-14 sm:h-16">
           <div className="flex items-center gap-2">
             <button
                 onClick={onExit}
@@ -73,8 +73,8 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           <div className="absolute left-1/2 -translate-x-1/2 text-center px-2">
-            {modelTitle && <h1 className="text-xl sm:text-3xl lg:text-4xl font-black tracking-tight font-display" style={{ color: 'var(--text-primary)' }}>{modelTitle}</h1>}
-            {modelSubtitle && <h2 className="text-base sm:text-xl lg:text-2xl font-bold tracking-tight -mt-1 sm:-mt-2" style={{ color: 'var(--text-accent)'}}>{modelSubtitle}</h2>}
+            {modelTitle && <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight font-display" style={{ color: 'var(--text-primary)' }}>{modelTitle}</h1>}
+            {modelSubtitle && <h2 className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight -mt-1" style={{ color: 'var(--text-accent)'}}>{modelSubtitle}</h2>}
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
@@ -83,10 +83,10 @@ export const Header: React.FC<HeaderProps> = ({
                     backgroundColor: 'var(--panel-bg)',
                     border: '1px solid var(--border-primary)',
                 }}>
-                  <div className="text-3xl sm:text-4xl md:text-6xl font-black text-green-600 tabular-nums tracking-tighter" style={{ textShadow: '0 0 10px rgba(22, 163, 74, 0.3)' }}>
+                  <div className="text-2xl sm:text-3xl md:text-5xl font-black text-green-600 tabular-nums tracking-tighter" style={{ textShadow: '0 0 10px rgba(22, 163, 74, 0.3)' }}>
                     {new Intl.NumberFormat().format(score || 0)}
                   </div>
-                  <div className="text-[10px] sm:text-xs md:text-lg font-bold capitalize min-h-[1rem] sm:min-h-[1.25rem] md:min-h-[1.75rem] flex items-center justify-center" style={{ color: 'var(--text-secondary)'}}>
+                  <div className="text-[10px] sm:text-xs font-bold capitalize min-h-[1rem] flex items-center justify-center" style={{ color: 'var(--text-secondary)'}}>
                       {(score || 0) > 0 ? scoreInWords : '\u00A0'}
                   </div>
                 </div>
