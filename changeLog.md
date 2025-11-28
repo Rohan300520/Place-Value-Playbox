@@ -1,4 +1,4 @@
-# Place Value Playbox - Changelog
+# Smart Digital Lab - Changelog
 
 ## Version 1.2.0 - Polish & Enhancements (Latest)
 - **New Feature:** Re-introduced the Model Introduction screen, which displays a photo of the physical model and its learning objectives before mode selection.

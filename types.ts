@@ -15,7 +15,7 @@ export type Theme = 'light' | 'dark';
 export type Language = 'en' | 'hi' | 'kn';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
-// --- Place Value Playbox Model ---
+// --- Smart Digital Lab Model ---
 export type BlockValue = 1 | 10 | 100 | 1000;
 export type PlaceValueCategory = 'ones' | 'tens' | 'hundreds' | 'thousands';
 

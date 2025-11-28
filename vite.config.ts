@@ -70,7 +70,7 @@ export default defineConfig({
         navigateFallbackDenylist: [/\.[^\/]+$/],
       },
       manifest: {
-        name: 'Place Value Playbox',
+        name: 'Smart Digital Lab',
         short_name: 'Playbox',
         description: 'An interactive educational tool for learning place value.',
         theme_color: '#ffffff',
