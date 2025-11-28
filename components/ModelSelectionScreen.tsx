@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import type { AppState, UserInfo, SchoolLevel } from '../types';
 import { Sidebar } from './Sidebar';
@@ -31,7 +32,9 @@ const MODELS_CONFIG: Record<SchoolLevel, {
             color: 'from-emerald-400 to-emerald-600',
             shadow: 'shadow-emerald-500/40',
             border: 'border-emerald-800'
-        },
+        }
+    ],
+    'High School': [
         { 
             id: 'surface_area_volume' as AppState, 
             title: 'Surface Area & Volume', 
@@ -42,7 +45,6 @@ const MODELS_CONFIG: Record<SchoolLevel, {
             border: 'border-indigo-800'
         }
     ],
-    'High School': [],
 };
 
 // --- UI COMPONENTS ---
