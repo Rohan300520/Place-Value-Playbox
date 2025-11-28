@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { UserInfo, ShapeType, ShapeDimensions, CalculationType, CalculationResult, SurfaceAreaTrainingStep } from '../../types';
 import { ShapeSelector } from './components/ShapeSelector';
@@ -115,10 +116,10 @@ export const TrainingView: React.FC<TrainingViewProps> = ({ currentUser, onCompl
     const shapeInfo = SHAPE_DATA[selectedShape];
 
     return (
-        <div className="w-full flex-grow flex flex-col lg:flex-row gap-4 animate-pop-in min-h-0">
-            {/* Left Panel: 3D Viewer */}
-            <div className="w-full lg:w-1/2 flex flex-col gap-4">
-                <div className="flex-grow rounded-2xl shadow-lg border relative min-h-[300px] sm:min-h-[400px] lg:min-h-0" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)' }}>
+        <div className="w-full flex-grow flex flex-col lg:flex-row gap-4 animate-pop-in min-h-0 lg:h-full">
+            {/* Left Panel: 3D Viewer - Full height on desktop */}
+            <div className="w-full lg:w-1/2 flex flex-col gap-4 lg:h-full">
+                <div className="flex-grow rounded-2xl shadow-lg border relative min-h-[300px] sm:min-h-[400px] lg:min-h-0 lg:h-full" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)' }}>
                     <ShapeViewer 
                         shapeType={selectedShape}
                         dimensions={dimensions}
@@ -130,8 +131,8 @@ export const TrainingView: React.FC<TrainingViewProps> = ({ currentUser, onCompl
                 </div>
             </div>
             
-            {/* Right Panel: Guide, Controls & Calculation */}
-            <div className="w-full lg:w-1/2 flex flex-col gap-4">
+            {/* Right Panel: Guide, Controls & Calculation - Scrollable on desktop */}
+            <div className="w-full lg:w-1/2 flex flex-col gap-4 lg:h-full lg:overflow-y-auto lg:pr-2 custom-scrollbar">
                 <TrainingGuide currentStep={currentStep} onContinue={() => handleAction('continue')} onComplete={onComplete} />
                 <ControlsPanel 
                     shapeConfig={shapeInfo}

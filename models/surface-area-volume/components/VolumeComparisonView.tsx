@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -29,7 +30,7 @@ const STREAM_MATERIAL = new THREE.MeshBasicMaterial({
 
 const DerivationPanel: React.FC<{ type: ExperimentType }> = ({ type }) => {
     return (
-        <div className="w-full max-w-2xl mt-4 p-6 rounded-2xl bg-slate-800/90 border border-indigo-500/50 shadow-xl animate-pop-in text-left">
+        <div className="w-full max-w-2xl mt-4 p-6 rounded-2xl bg-slate-800/90 border border-indigo-500/50 shadow-xl animate-pop-in text-left mb-8">
             <h3 className="text-2xl font-bold text-indigo-400 mb-4 font-display flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -503,7 +504,6 @@ export const VolumeComparisonView: React.FC = () => {
         const group = sourceGroupsRef.current[index];
         animationRef.current = {
             active: true,
-            coneIndex: index, // reusing property name but means sourceIndex
             sourceIndex: index,
             startTime: Date.now(),
             phase: 'move_to_center',
@@ -546,7 +546,7 @@ export const VolumeComparisonView: React.FC = () => {
     const isComplete = (activeExperiment === 'sphere-cylinder' && fillCount === 1) || fillCount === 3;
 
     return (
-        <div className="w-full flex-grow flex flex-col items-center gap-4 animate-pop-in p-4 relative min-h-0">
+        <div className="w-full flex-grow flex flex-col items-center gap-4 animate-pop-in p-4 relative min-h-0 lg:h-full lg:overflow-y-auto custom-scrollbar">
             {/* Nav Tabs */}
             <div className="flex flex-wrap justify-center gap-2 mb-2">
                 <button 
@@ -577,7 +577,7 @@ export const VolumeComparisonView: React.FC = () => {
                 </div>
             </div>
 
-            <div className="w-full max-w-2xl p-4 rounded-2xl shadow-lg border flex flex-col items-center gap-4" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)' }}>
+            <div className="w-full max-w-2xl p-4 rounded-2xl shadow-lg border flex flex-col items-center gap-4 flex-shrink-0" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)' }}>
                 {activeExperiment !== 'sphere-cylinder' && (
                     <div className="w-full bg-gray-700/50 rounded-full h-8 relative overflow-hidden border border-gray-600 flex">
                         {[0, 1, 2].map(i => (

@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import type { UserInfo, SurfaceAreaState, Difficulty, SurfaceAreaChallengeQuestion } from '../../types';
 import { Header } from '../../components/Header';
@@ -84,7 +85,7 @@ export const SurfaceAreaVolumeApp: React.FC<{ onExit: () => void; currentUser: U
     };
 
     return (
-        <div className="min-h-screen flex flex-col font-sans bg-gray-900 text-white">
+        <div className="h-screen flex flex-col font-sans bg-gray-900 text-white overflow-hidden">
             <Header
                 onHelpClick={() => setShowHelp(true)}
                 currentUser={currentUser}
@@ -93,8 +94,15 @@ export const SurfaceAreaVolumeApp: React.FC<{ onExit: () => void; currentUser: U
                 modelTitle="3D Shapes Lab"
                 modelSubtitle={getSubtitle() ?? undefined}
             />
-            <main className="flex-grow flex flex-col items-center justify-start p-2 sm:p-4">
-                {renderContent()}
+            {/* 
+                Responsive Layout Strategy:
+                - Mobile: Use overflow-y-auto to allow scrolling the entire page if content is tall.
+                - Desktop (lg): Use overflow-hidden to fix the height to the viewport, and let inner components manage their own scrolling.
+            */}
+            <main className="flex-grow w-full flex flex-col items-center justify-start p-2 sm:p-4 overflow-y-auto lg:overflow-hidden relative">
+                <div className="w-full max-w-[1920px] h-full flex flex-col">
+                    {renderContent()}
+                </div>
             </main>
             {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
         </div>

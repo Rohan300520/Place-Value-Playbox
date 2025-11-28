@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { UserInfo, Difficulty, SurfaceAreaChallengeQuestion } from '../../types';
 import { ShapeViewer } from './components/ShapeViewer';
@@ -91,12 +92,12 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({ currentUser, quest
     }
     
     return (
-        <div className="w-full flex-grow flex flex-col lg:flex-row gap-4 animate-pop-in min-h-0">
+        <div className="w-full flex-grow flex flex-col lg:flex-row gap-4 animate-pop-in min-h-0 lg:h-full">
             {showConfetti && <Confetti onComplete={() => setShowConfetti(false)} />}
             
             {/* Left Panel: 3D Viewer & Info */}
-            <div className="w-full lg:w-2/3 flex flex-col gap-4">
-                <div className="flex-grow rounded-2xl shadow-lg border relative min-h-[300px] sm:min-h-[400px] lg:min-h-0" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)' }}>
+            <div className="w-full lg:w-2/3 flex flex-col gap-4 lg:h-full">
+                <div className="flex-grow rounded-2xl shadow-lg border relative min-h-[300px] sm:min-h-[400px] lg:min-h-0 lg:h-full" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)' }}>
                     <ShapeViewer
                         shapeType={currentQuestion.shape}
                         dimensions={currentQuestion.dimensions}
@@ -106,7 +107,7 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({ currentUser, quest
                     />
                 </div>
                 {currentQuestion.contextInfo && (
-                    <div className="p-4 rounded-lg bg-gray-800/50 border border-sky-500/30">
+                    <div className="p-4 rounded-lg bg-gray-800/50 border border-sky-500/30 flex-shrink-0">
                         <h3 className="font-bold text-sky-300 mb-2">Hints & Context</h3>
                         <ul className="list-disc list-inside space-y-1 text-gray-300">
                             {currentQuestion.contextInfo.map((info, i) => <li key={i}>{info}</li>)}
@@ -115,8 +116,8 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({ currentUser, quest
                 )}
             </div>
 
-            {/* Right Panel: Challenge UI */}
-            <div className="w-full lg:w-1/3 flex flex-col gap-4">
+            {/* Right Panel: Challenge UI - Scrollable on Desktop */}
+            <div className="w-full lg:w-1/3 flex flex-col gap-4 lg:h-full lg:overflow-y-auto lg:pr-2 custom-scrollbar">
                 <ChallengePanel
                     question={currentQuestion}
                     status={status}
@@ -125,7 +126,7 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({ currentUser, quest
                     onNext={handleNext}
                     onTimeOut={handleTimeOut}
                 />
-                <div className="p-4 rounded-2xl shadow-lg border space-y-4 flex-grow" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)' }}>
+                <div className="p-4 rounded-2xl shadow-lg border space-y-4 flex-shrink-0" style={{ backgroundColor: 'var(--panel-bg)', borderColor: 'var(--border-primary)' }}>
                     <label htmlFor="answer-input" className="block text-xl font-bold text-center" style={{ color: 'var(--text-secondary)' }}>
                         Your Answer {currentQuestion.unit && `(in ${currentQuestion.unit})`}
                     </label>
